@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OneOrder系统全景导航</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Microsoft YaHei', sans-serif;
+        }
+        .main-container {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            margin: 20px;
+            padding: 40px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        }
+        .module-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+        .module-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+        .module-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        .status-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            border-radius: 50px;
+            padding: 5px 10px;
+            font-size: 0.8rem;
+        }
+        .feature-list {
+            list-style: none;
+            padding-left: 0;
+        }
+        .feature-list li {
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+        .system-flow {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 30px 0;
+        }
+        .flow-step {
+            text-align: center;
+            padding: 20px;
+        }
+        .flow-arrow {
+            font-size: 2rem;
+            color: #fff;
+            margin: 0 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- 系统标题 -->
+        <div class="text-center mb-5">
+            <h1 class="display-4 text-primary mb-3">
+                <i class="fas fa-cube me-3"></i>OneOrder 系统全景
+            </h1>
+            <p class="lead text-muted">企业级货代订单管理与财务清分综合平台</p>
+            <div class="alert alert-info">
+                <strong>系统运行状态：</strong>
+                <span class="badge bg-success ms-2">正常运行</span>
+                <span class="ms-3">端口: 8081</span>
+                <span class="ms-3">当前时间: <span id="currentTime"></span></span>
+            </div>
+        </div>
+
+        <!-- 业务流程图 -->
+        <div class="system-flow">
+            <h3 class="text-center mb-4"><i class="fas fa-sitemap me-2"></i>核心业务流程图</h3>
+            
+            <!-- 主流程 -->
+            <div class="row align-items-center mb-4">
+                <div class="col-md-3 flow-step">
+                    <i class="fas fa-user-headset fa-3x mb-2"></i>
+                    <h5>接单派单</h5>
+                    <small>客服接单、服务派单、操作接单</small>
+                </div>
+                <div class="col-md-1 text-center">
+                    <i class="fas fa-arrow-right flow-arrow"></i>
+                </div>
+                <div class="col-md-3 flow-step">
+                    <i class="fas fa-file-invoice-dollar fa-3x mb-2"></i>
+                    <h5>录费</h5>
+                    <small>外部收付费用录入与校验</small>
+                </div>
+                <div class="col-md-1 text-center">
+                    <i class="fas fa-arrow-right flow-arrow"></i>
+                </div>
+                <div class="col-md-3 flow-step">
+                    <i class="fas fa-code-branch fa-3x mb-2"></i>
+                    <h5>三路线处理</h5>
+                    <small>管理账分润 + 资金流处理</small>
+                </div>
+            </div>
+
+            <!-- 三路线处理详细说明 -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card bg-white border-success" style="opacity: 0.95;">
+                        <div class="card-body text-center">
+                            <i class="fas fa-users fa-2x mb-2 text-success"></i>
+                            <h6 class="text-success mb-2">管理账分润计算</h6>
+                            <small class="text-dark">
+                                <strong class="text-success">独立路线</strong><br>
+                                部门维度虚拟分润<br>
+                                用于内部考核<br>
+                                计算完成即为最终结果
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card bg-white border-info" style="opacity: 0.95;">
+                        <div class="card-body text-center">
+                            <i class="fas fa-building fa-2x mb-2 text-info"></i>
+                            <h6 class="text-info mb-2">资金流清分 + 过账处理</h6>
+                            <small class="text-dark">
+                                <strong class="text-info">联合路线</strong><br>
+                                法人维度实际交易<br>
+                                用于财务合规<br>
+                                清分→过账联合处理
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数据流向说明 -->
+            <div class="row mt-3">
+                <div class="col-md-6 text-center">
+                    <small class="text-light">
+                        <i class="fas fa-arrow-right me-1"></i>
+                        <strong>管理账分润</strong> → 绩效系统、薪酬系统
+                    </small>
+                </div>
+                <div class="col-md-6 text-center">
+                    <small class="text-light">
+                        <i class="fas fa-arrow-right me-1"></i>
+                        <strong>资金流清分→过账</strong> → 财务系统、税务系统
+                    </small>
+                </div>
+            </div>
+
+            <div class="row mt-3 text-center">
+                <div class="col-12">
+                    <small class="text-light">
+                        <strong>支撑功能：</strong>内部合约管理（分润规则配置）、统计报表（业务分析决策）
+                        <span class="badge bg-warning text-dark ms-2">非流程环节</span>
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- 核心业务系统 -->
+        <div class="mb-4 mt-5">
+            <h3 class="text-center mb-4"><i class="fas fa-cube me-2"></i>核心业务系统</h3>
+        </div>
+        <div class="row justify-content-center">
+            <!-- 完整业务系统 -->
+            <div class="col-lg-8 col-md-10">
+                <div class="card module-card position-relative">
+                    <span class="badge bg-primary status-badge">完整解决方案</span>
+                    <div class="card-body text-center">
+                        <i class="fas fa-ship module-icon text-primary"></i>
+                        <h4 class="card-title">货代订单管理与财务清分系统</h4>
+                        <p class="text-muted mb-3">完整的货代业务流程 + 智能财务清分一体化解决方案</p>
+                        
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3">业务流程</h6>
+                                <ul class="feature-list text-start">
+                                    <li><i class="fas fa-check text-success me-2"></i>接单派单三阶段流程</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>外部收付费用录入与校验</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>188个标准化费用科目</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>六大业务类型全覆盖</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>订单全生命周期管理</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-success mb-3">智能清分</h6>
+                                <ul class="feature-list text-start">
+                                    <li><i class="fas fa-check text-success me-2"></i>管理账分润计算（独立路线）</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>资金流清分（联合路线）</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>过账处理（联合路线）</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>星式/链式双清分模式</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>自动会计分录生成</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <a href="freight-order.html" class="btn btn-primary btn-lg me-3">
+                                <i class="fas fa-external-link-alt me-2"></i>进入主系统
+                            </a>
+                            <a href="freight-order.html#assignment" class="btn btn-info btn-lg me-3">
+                                <i class="fas fa-tasks me-2"></i>接派单系统
+                            </a>
+                            <a href="index.html" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-tools me-1"></i>传统清分工具
+                            </a>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <span class="badge bg-success me-2">完整流程</span>
+                            <span class="badge bg-info me-2">智能清分</span>
+                            <span class="badge bg-warning text-dark">一体化</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 支撑功能模块 -->
+        <div class="mb-4 mt-5">
+            <h3 class="text-center mb-4"><i class="fas fa-tools me-2"></i>支撑功能</h3>
+        </div>
+        <div class="row g-4">
+            <!-- 内部合约 -->
+            <div class="col-lg-6 col-md-6">
+                <div class="card module-card position-relative">
+                    <span class="badge bg-warning text-dark status-badge">配置功能</span>
+                    <div class="card-body text-center">
+                        <i class="fas fa-handshake module-icon text-info"></i>
+                        <h4 class="card-title">内部合约</h4>
+                        <p class="text-muted mb-3">部门协作、分润规则</p>
+                        
+                        <ul class="feature-list text-start">
+                            <li><i class="fas fa-cog text-warning me-2"></i>6个核心合约实体</li>
+                            <li><i class="fas fa-cog text-warning me-2"></i>218个部门协作关系</li>
+                            <li><i class="fas fa-cog text-warning me-2"></i>分润规则配置</li>
+                            <li><i class="fas fa-cog text-warning me-2"></i>智能合约模板推荐</li>
+                            <li><i class="fas fa-cog text-warning me-2"></i>跨区域协作支持</li>
+                        </ul>
+                        
+                        <div class="mt-3">
+                            <a href="simple-contract-management.html" class="btn btn-info btn-sm me-2">
+                                <i class="fas fa-external-link-alt me-1"></i>合约管理
+                            </a>
+                            <a href="protocol-admin.html" class="btn btn-outline-info btn-sm me-2">
+                                <i class="fas fa-handshake me-1"></i>协议管理
+                            </a>
+                            <a href="service-management.html" class="btn btn-outline-info btn-sm me-2">
+                                <i class="fas fa-cogs me-1"></i>服务管理
+                            </a>
+                            <span class="badge bg-secondary">配置支撑</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 统计报表 -->
+            <div class="col-lg-6 col-md-6">
+                <div class="card module-card position-relative">
+                    <span class="badge bg-info status-badge">分析功能</span>
+                    <div class="card-body text-center">
+                        <i class="fas fa-chart-line module-icon text-danger"></i>
+                        <h4 class="card-title">统计报表</h4>
+                        <p class="text-muted mb-3">业务分析、决策支持</p>
+                        
+                        <ul class="feature-list text-start">
+                            <li><i class="fas fa-chart-bar text-info me-2"></i>分润统计报表</li>
+                            <li><i class="fas fa-chart-bar text-info me-2"></i>法人体分离报表</li>
+                            <li><i class="fas fa-chart-bar text-info me-2"></i>业务绩效分析</li>
+                            <li><i class="fas fa-chart-bar text-info me-2"></i>部门协作效率</li>
+                            <li><i class="fas fa-chart-bar text-info me-2"></i>费用成本分析</li>
+                        </ul>
+                        
+                        <div class="mt-3">
+                            <a href="profit-sharing.html" class="btn btn-danger btn-sm me-2">
+                                <i class="fas fa-external-link-alt me-1"></i>分润报表
+                            </a>
+                            <span class="badge bg-secondary">分析支撑</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- 系统区别说明 -->
+        <div class="row mt-5">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0"><i class="fas fa-question-circle me-2"></i>系统模块区别详解</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5 class="text-primary">🚢 货代系统 vs 📊 清分系统</h5>
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>维度</th>
+                                            <th>货代系统</th>
+                                            <th>清分系统</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><strong>业务焦点</strong></td>
+                                            <td>订单管理、物流服务</td>
+                                            <td>财务核算、利润分配</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>主要用户</strong></td>
+                                            <td>销售、客服、操作</td>
+                                            <td>财务、管理层</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>数据流向</strong></td>
+                                            <td>客户→订单→服务交付</td>
+                                            <td>订单→成本→利润分配</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>核心功能</strong></td>
+                                            <td>创建订单、状态跟踪</td>
+                                            <td>清分计算、会计分录</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <h5 class="text-info">🤝 合约系统的独特价值</h5>
+                                <ul class="list-unstyled">
+                                    <li class="mb-3">
+                                        <strong class="text-success">🎯 战略价值：</strong>
+                                        <br>解决集团内部218个部门协作关系的利润分配问题
+                                    </li>
+                                    <li class="mb-3">
+                                        <strong class="text-info">🔗 连接作用：</strong>
+                                        <br>连接货代业务与财务清分，建立标准化分润规则
+                                    </li>
+                                    <li class="mb-3">
+                                        <strong class="text-warning">📈 管理升级：</strong>
+                                        <br>从人工协商升级为智能化、自动化合约管理
+                                    </li>
+                                    <li class="mb-3">
+                                        <strong class="text-danger">⚡ 效率提升：</strong>
+                                        <br>支持跨区域协作、事业部专业化、平台化服务
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 快速导航 -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="alert alert-light border">
+                    <h5><i class="fas fa-compass me-2"></i>角色化专业导航</h5>
+                    <div class="alert alert-info mb-3">
+                        <small><i class="fas fa-sync text-primary me-1"></i><strong>数据完全同步：</strong>两个系统使用相同的API和数据库，确保数据实时一致</small>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="text-center p-3 border rounded">
+                                <strong>👤 业务人员</strong>
+                                <br><small class="text-muted">专注订单流程</small>
+                                <hr class="my-2">
+                                <a href="freight-order.html" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-ship me-1"></i>货代订单系统
+                                </a>
+                                <div class="mt-2">
+                                    <small class="text-success">✓ 接单派单 ✓ 费用录入 ✓ 订单管理</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3 border rounded">
+                                <strong>💰 财务人员</strong>
+                                <br><small class="text-muted">专注清分管理</small>
+                                <hr class="my-2">
+                                <a href="index.html" class="btn btn-success btn-sm">
+                                    <i class="fas fa-coins me-1"></i>财务清分系统
+                                </a>
+                                <div class="mt-2">
+                                    <small class="text-success">✓ 清分计算 ✓ 凭证管理 ✓ 财务报表</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3 border rounded">
+                                <strong>👥 管理层</strong>
+                                <br><small class="text-muted">专注规则配置</small>
+                                <hr class="my-2">
+                                <a href="simple-contract-management.html" class="btn btn-info btn-sm">
+                                    <i class="fas fa-handshake me-1"></i>内部合约系统
+                                </a>
+                                <div class="mt-2">
+                                    <small class="text-success">✓ 合约配置 ✓ 分润规则 ✓ 协作管理</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/user-state.js"></script>
+    <script src="js/global-user-manager.js"></script>
+    <script>
+        // 更新当前时间
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = now.toLocaleString('zh-CN');
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        // 页面加载完成后显示欢迎信息
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('OneOrder系统全景导航页面加载完成');
+            
+            // 显示当前登录用户信息
+            setTimeout(() => {
+                if (window.UserState) {
+                    const currentUser = window.UserState.getCurrentUser();
+                    if (currentUser) {
+                        console.log('系统概览页面获取到用户信息:', currentUser);
+                        
+                        // 可以在这里添加用户信息显示
+                        const userInfo = document.createElement('div');
+                        userInfo.className = 'alert alert-info mt-3';
+                        userInfo.innerHTML = `
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-user-circle fa-2x me-3"></i>
+                                <div>
+                                    <div><strong>当前登录用户:</strong> ${currentUser.name}</div>
+                                    <div><small class="text-muted">${currentUser.department} - ${currentUser.role}</small></div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // 插入到标题下方
+                        const titleDiv = document.querySelector('.text-center.mb-5');
+                        if (titleDiv) {
+                            titleDiv.appendChild(userInfo);
+                        }
+                    }
+                }
+            }, 100);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管法分离报表 - OneOrder财务清分系统</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .reports-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        .card {
+            border: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+            border-radius: 12px;
+        }
+        .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            font-weight: 600;
+            border-radius: 12px 12px 0 0 !important;
+        }
+        
+        .nav-tabs .nav-link {
+            border: none;
+            border-radius: 8px;
+            margin-right: 0.5rem;
+            background-color: #f8f9fa;
+            color: #6c757d;
+            transition: all 0.3s;
+        }
+        .nav-tabs .nav-link.active {
+            background-color: #667eea;
+            color: white;
+        }
+        .nav-tabs .nav-link:hover {
+            border: none;
+            background-color: #667eea;
+            color: white;
+        }
+        
+        .statistics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+            border-left: 4px solid #667eea;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.875rem;
+        }
+        
+        .entity-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .entity-domestic { background-color: #d4edda; color: #155724; }
+        .entity-overseas { background-color: #cce5ff; color: #004085; }
+        .entity-branch { background-color: #fff3cd; color: #856404; }
+        
+        .mapping-ratio {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            background-color: #e7f3ff;
+            color: #0056b3;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.875rem;
+        }
+        
+        .flow-direction {
+            display: flex;
+            align-items: center;
+            margin: 0.5rem 0;
+        }
+        .flow-entity {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        .flow-arrow {
+            color: #667eea;
+            font-size: 1.2rem;
+            margin: 0 0.75rem;
+        }
+        
+        .profit-positive { color: #28a745; font-weight: bold; }
+        .profit-negative { color: #dc3545; font-weight: bold; }
+        .profit-neutral { color: #6c757d; }
+        
+        .risk-level {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .risk-low { background-color: #d4edda; color: #155724; }
+        .risk-medium { background-color: #fff3cd; color: #856404; }
+        .risk-high { background-color: #f8d7da; color: #721c24; }
+        .risk-critical { background-color: #721c24; color: white; }
+        
+        .compliance-status {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .status-passed { background-color: #d4edda; color: #155724; }
+        .status-failed { background-color: #f8d7da; color: #721c24; }
+        .status-warning { background-color: #fff3cd; color: #856404; }
+        .status-pending { background-color: #e2e3e5; color: #383d41; }
+        
+        .data-table {
+            font-size: 0.875rem;
+        }
+        .data-table th {
+            background-color: #f8f9fa;
+            border: none;
+            font-weight: 600;
+            color: #495057;
+        }
+        .data-table td {
+            border: none;
+            border-bottom: 1px solid #dee2e6;
+            vertical-align: middle;
+        }
+        
+        .filter-bar {
+            background-color: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 1rem 0;
+        }
+        
+        .export-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .amount-highlight {
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-weight: bold;
+        }
+        .amount-large { font-size: 1.1rem; color: #667eea; }
+        
+        .period-selector {
+            background-color: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 0.5rem 0.75rem;
+        }
+        
+        .entity-hierarchy {
+            padding-left: 1rem;
+            border-left: 2px solid #dee2e6;
+        }
+        .entity-level-1 { font-weight: bold; color: #495057; }
+        .entity-level-2 { color: #6c757d; padding-left: 1rem; }
+        .entity-level-3 { color: #868e96; padding-left: 2rem; }
+        .entity-level-4 { color: #adb5bd; padding-left: 3rem; }
+    </style>
+</head>
+<body>
+    <div class="reports-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1><i class="fas fa-building me-3"></i>管法分离报表</h1>
+                    <p class="mb-0">管理实体与法人实体分离的财务报表分析系统</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <select id="periodSelector" class="form-select period-selector d-inline-block w-auto me-2">
+                        <!-- 动态加载期间选项 -->
+                    </select>
+                    <button class="btn btn-light" onclick="goBack()">
+                        <i class="fas fa-arrow-left me-2"></i>返回首页
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 综合统计仪表盘 -->
+        <div class="statistics-grid" id="dashboardStats">
+            <!-- 动态加载统计卡片 -->
+        </div>
+
+        <!-- 主要内容区域 - 选项卡 -->
+        <div class="card">
+            <div class="card-header">
+                <ul class="nav nav-tabs card-header-tabs" id="reportsTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="entities-tab" data-bs-toggle="tab" data-bs-target="#entities" type="button" role="tab">
+                            <i class="fas fa-building me-2"></i>实体管理
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="fund-flow-tab" data-bs-toggle="tab" data-bs-target="#fund-flow" type="button" role="tab">
+                            <i class="fas fa-exchange-alt me-2"></i>资金流向
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="profit-loss-tab" data-bs-toggle="tab" data-bs-target="#profit-loss" type="button" role="tab">
+                            <i class="fas fa-chart-line me-2"></i>损益分析
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="passthrough-stats-tab" data-bs-toggle="tab" data-bs-target="#passthrough-stats" type="button" role="tab">
+                            <i class="fas fa-route me-2"></i>过账统计
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="compliance-tab" data-bs-toggle="tab" data-bs-target="#compliance" type="button" role="tab">
+                            <i class="fas fa-shield-alt me-2"></i>合规检查
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body">
+                <div class="tab-content" id="reportsTabContent">
+                    <!-- 1. 实体管理 -->
+                    <div class="tab-pane fade show active" id="entities" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5><i class="fas fa-university me-2"></i>法人实体</h5>
+                                <div class="table-responsive">
+                                    <table class="table data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>实体名称</th>
+                                                <th>实体代码</th>
+                                                <th>类型</th>
+                                                <th>国家</th>
+                                                <th>币种</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="legalEntitiesTable">
+                                            <tr><td colspan="5" class="text-center">加载中...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h5><i class="fas fa-sitemap me-2"></i>管理实体</h5>
+                                <div id="managementEntitiesHierarchy">
+                                    <div class="text-center text-muted">加载中...</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr class="my-4">
+                        
+                        <h5><i class="fas fa-link me-2"></i>管法对应关系</h5>
+                        <div class="table-responsive">
+                            <table class="table data-table">
+                                <thead>
+                                    <tr>
+                                        <th>管理实体</th>
+                                        <th>法人实体</th>
+                                        <th>分配比例</th>
+                                        <th>生效日期</th>
+                                        <th>状态</th>
+                                        <th>主要归属</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="entityMappingsTable">
+                                    <tr><td colspan="6" class="text-center">加载中...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 2. 资金流向 -->
+                    <div class="tab-pane fade" id="fund-flow" role="tabpanel">
+                        <div class="filter-bar">
+                            <div class="row align-items-center">
+                                <div class="col-md-3">
+                                    <label class="form-label mb-1">流向类型</label>
+                                    <select id="flowTypeFilter" class="form-select form-select-sm">
+                                        <option value="">全部类型</option>
+                                        <option value="CLEARING">清分处理</option>
+                                        <option value="PASSTHROUGH">过账处理</option>
+                                        <option value="TRANSFER">资金划转</option>
+                                        <option value="SETTLEMENT">结算付款</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label mb-1">流向汇总</label>
+                                    <div class="d-flex gap-3" id="flowSummary">
+                                        <!-- 动态加载汇总信息 -->
+                                    </div>
+                                </div>
+                                <div class="col-md-3 text-end">
+                                    <div class="export-buttons">
+                                        <button class="btn btn-outline-primary btn-sm" onclick="exportFundFlowReport()">
+                                            <i class="fas fa-download me-1"></i>导出
+                                        </button>
+                                        <button class="btn btn-outline-success btn-sm" onclick="refreshFundFlowData()">
+                                            <i class="fas fa-sync-alt me-1"></i>刷新
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="fundFlowReportsTable">
+                            <div class="text-center text-muted">加载中...</div>
+                        </div>
+                    </div>
+
+                    <!-- 3. 损益分析 -->
+                    <div class="tab-pane fade" id="profit-loss" role="tabpanel">
+                        <div class="row mb-3">
+                            <div class="col-md-8">
+                                <h5><i class="fas fa-chart-bar me-2"></i>管法分离损益对比</h5>
+                                <p class="text-muted mb-0">按管理实体和法人实体分别核算的损益情况</p>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <div class="export-buttons">
+                                    <button class="btn btn-outline-primary btn-sm" onclick="exportProfitLossReport()">
+                                        <i class="fas fa-download me-1"></i>导出报表
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table data-table">
+                                <thead>
+                                    <tr>
+                                        <th>管理实体</th>
+                                        <th>法人实体</th>
+                                        <th>总收入</th>
+                                        <th>总支出</th>
+                                        <th>净利润</th>
+                                        <th>利润率</th>
+                                        <th>管理口径</th>
+                                        <th>法人口径</th>
+                                        <th>调整金额</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="profitLossTable">
+                                    <tr><td colspan="9" class="text-center">加载中...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 4. 过账统计 -->
+                    <div class="tab-pane fade" id="passthrough-stats" role="tabpanel">
+                        <div class="row mb-3">
+                            <div class="col-md-8">
+                                <h5><i class="fas fa-route me-2"></i>过账处理统计</h5>
+                                <p class="text-muted mb-0">按法人实体统计的过账处理情况</p>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <div class="export-buttons">
+                                    <button class="btn btn-outline-info btn-sm" onclick="generatePassthroughReport()">
+                                        <i class="fas fa-chart-pie me-1"></i>生成图表
+                                    </button>
+                                    <button class="btn btn-outline-primary btn-sm" onclick="exportPassthroughStats()">
+                                        <i class="fas fa-download me-1"></i>导出统计
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table data-table">
+                                <thead>
+                                    <tr>
+                                        <th>法人实体</th>
+                                        <th>管理归属</th>
+                                        <th>总指令</th>
+                                        <th>成功率</th>
+                                        <th>原始金额</th>
+                                        <th>过账金额</th>
+                                        <th>留存金额</th>
+                                        <th>留存率</th>
+                                        <th>净流量</th>
+                                        <th>合规问题</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="passthroughStatsTable">
+                                    <tr><td colspan="10" class="text-center">加载中...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 5. 合规检查 -->
+                    <div class="tab-pane fade" id="compliance" role="tabpanel">
+                        <div class="filter-bar">
+                            <div class="row align-items-center">
+                                <div class="col-md-3">
+                                    <label class="form-label mb-1">风险等级</label>
+                                    <select id="riskLevelFilter" class="form-select form-select-sm">
+                                        <option value="">全部等级</option>
+                                        <option value="LOW">低风险</option>
+                                        <option value="MEDIUM">中风险</option>
+                                        <option value="HIGH">高风险</option>
+                                        <option value="CRITICAL">严重</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label mb-1">合规概览</label>
+                                    <div id="complianceOverview" class="d-flex gap-3">
+                                        <!-- 动态加载合规概览 -->
+                                    </div>
+                                </div>
+                                <div class="col-md-3 text-end">
+                                    <div class="export-buttons">
+                                        <button class="btn btn-outline-warning btn-sm" onclick="generateComplianceAlert()">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>预警
+                                        </button>
+                                        <button class="btn btn-outline-primary btn-sm" onclick="exportComplianceReport()">
+                                            <i class="fas fa-download me-1"></i>导出
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table data-table">
+                                <thead>
+                                    <tr>
+                                        <th>法人实体</th>
+                                        <th>检查类型</th>
+                                        <th>检查结果</th>
+                                        <th>风险等级</th>
+                                        <th>发现问题</th>
+                                        <th>负责人</th>
+                                        <th>检查日期</th>
+                                        <th>截止日期</th>
+                                        <th>状态</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="complianceReportsTable">
+                                    <tr><td colspan="9" class="text-center">加载中...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="entity-separation-reports.js"></script>
+</body>
+</html>

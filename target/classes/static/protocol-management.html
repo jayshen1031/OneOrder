@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OneOrder - 内部协议管理</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .protocol-card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+        .protocol-card:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .protocol-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px 8px 0 0;
+        }
+        .commission-rate {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #28a745;
+        }
+        .status-active {
+            background-color: #28a745;
+            color: white;
+        }
+        .status-inactive {
+            background-color: #dc3545;
+            color: white;
+        }
+        .assignment-step {
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        .assignment-step.active {
+            border-color: #007bff;
+            background-color: #f8f9fa;
+        }
+        .assignment-step.completed {
+            border-color: #28a745;
+            background-color: #d4edda;
+        }
+        .step-number {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #007bff;
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+        .step-number.completed {
+            background: #28a745;
+        }
+        .api-response {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-handshake"></i> 内部协议管理
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="freight-order.html#assignment">
+                    <i class="fas fa-arrow-left"></i> 返回接派单
+                </a>
+                <a class="nav-link" href="freight-order.html">
+                    <i class="fas fa-home"></i> 主页
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <!-- 左侧：协议测试区域 -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5><i class="fas fa-search"></i> 协议匹配测试</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- 测试参数输入 -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">客服ID</label>
+                                <input type="text" class="form-control" id="customerServiceId" value="CS001">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">操作员ID</label>
+                                <select class="form-select" id="operationStaffId">
+                                    <option value="OP001">OP001 - 海运操作员</option>
+                                    <option value="OP002">OP002 - 空运操作员</option>
+                                    <option value="OP003">OP003 - 陆运操作员</option>
+                                    <option value="OP004">OP004 - 关务操作员</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">服务代码</label>
+                                <select class="form-select" id="serviceCode">
+                                    <option value="BOOKING">BOOKING - 订舱</option>
+                                    <option value="MBL_PROCESSING">MBL_PROCESSING - MBL处理</option>
+                                    <option value="CUSTOMS_CLEARANCE">CUSTOMS_CLEARANCE - 清关</option>
+                                    <option value="CARGO_LOADING">CARGO_LOADING - 内装</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">业务类型</label>
+                                <select class="form-select" id="businessType">
+                                    <option value="OCEAN">OCEAN - 海运</option>
+                                    <option value="AIR">AIR - 空运</option>
+                                    <option value="TRUCK">TRUCK - 陆运</option>
+                                    <option value="RAIL">RAIL - 铁运</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center">
+                            <button class="btn btn-primary" onclick="testProtocolMatching()">
+                                <i class="fas fa-search"></i> 查找匹配协议
+                            </button>
+                            <button class="btn btn-success ms-2" onclick="runFullWorkflow()">
+                                <i class="fas fa-play"></i> 完整流程测试
+                            </button>
+                        </div>
+
+                        <!-- 匹配结果显示 -->
+                        <div id="matchResult" class="mt-4" style="display: none;">
+                            <h6>匹配结果:</h6>
+                            <div id="protocolList"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 完整流程测试区域 -->
+                <div class="card mt-4">
+                    <div class="card-header bg-success text-white">
+                        <h5><i class="fas fa-cogs"></i> 协议派单流程</h5>
+                    </div>
+                    <div class="card-body" id="workflowArea">
+                        <div class="assignment-step" id="step1">
+                            <div class="step-number">1</div>
+                            <h6>协议匹配</h6>
+                            <p class="text-muted">根据客服和操作员匹配可用协议</p>
+                        </div>
+                        <div class="assignment-step" id="step2">
+                            <div class="step-number">2</div>
+                            <h6>协议选择</h6>
+                            <p class="text-muted">选择合适的内部协议</p>
+                        </div>
+                        <div class="assignment-step" id="step3">
+                            <div class="step-number">3</div>
+                            <h6>服务派单</h6>
+                            <p class="text-muted">执行协议派单，关联服务和人员</p>
+                        </div>
+                        <div class="assignment-step" id="step4">
+                            <div class="step-number">4</div>
+                            <h6>协议确认</h6>
+                            <p class="text-muted">操作员确认协议，开始执行</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：协议详情和结果 -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h5><i class="fas fa-list"></i> 协议详情</h5>
+                    </div>
+                    <div class="card-body" id="protocolDetails">
+                        <p class="text-muted text-center">请先执行协议匹配测试</p>
+                    </div>
+                </div>
+
+                <!-- API响应日志 -->
+                <div class="card mt-4">
+                    <div class="card-header bg-dark text-white">
+                        <h5><i class="fas fa-terminal"></i> API响应日志</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="apiLog" class="api-response" style="height: 400px;">
+                            <div class="text-muted">等待API调用...</div>
+                        </div>
+                        <button class="btn btn-outline-secondary btn-sm mt-2" onclick="clearLog()">
+                            <i class="fas fa-trash"></i> 清空日志
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 协议选择模态框 -->
+    <div class="modal fade" id="protocolSelectionModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">选择内部协议</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="protocolSelectionBody">
+                    <!-- 动态生成协议选择项 -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmProtocolSelection()">确认选择</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 全局变量
+        let matchedProtocols = [];
+        let selectedProtocol = null;
+        let currentOrderId = 'ORD' + Date.now();
+
+        // API基础URL
+        const API_BASE = '/api/protocol-assignment';
+
+        // 日志记录函数
+        function logAPI(message, data = null) {
+            const logDiv = document.getElementById('apiLog');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `
+                <strong>${timestamp}</strong> ${message}
+                ${data ? '<pre>' + JSON.stringify(data, null, 2) + '</pre>' : ''}
+                <hr style="margin: 10px 0;">
+            `;
+            logDiv.appendChild(logEntry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        // 清空日志
+        function clearLog() {
+            document.getElementById('apiLog').innerHTML = '<div class="text-muted">日志已清空</div>';
+        }
+
+        // 更新步骤状态
+        function updateStepStatus(stepNumber, status) {
+            const step = document.getElementById(`step${stepNumber}`);
+            const stepNumberEl = step.querySelector('.step-number');
+            
+            step.className = `assignment-step ${status}`;
+            if (status === 'completed') {
+                stepNumberEl.className = 'step-number completed';
+                stepNumberEl.innerHTML = '<i class="fas fa-check"></i>';
+            } else if (status === 'active') {
+                stepNumberEl.className = 'step-number';
+                stepNumberEl.innerHTML = stepNumber;
+            }
+        }
+
+        // 重置所有步骤
+        function resetSteps() {
+            for (let i = 1; i <= 4; i++) {
+                const step = document.getElementById(`step${i}`);
+                const stepNumberEl = step.querySelector('.step-number');
+                step.className = 'assignment-step';
+                stepNumberEl.className = 'step-number';
+                stepNumberEl.innerHTML = i;
+            }
+        }
+
+        // 协议匹配测试
+        async function testProtocolMatching() {
+            logAPI('🔍 开始协议匹配测试...');
+            
+            const customerServiceId = document.getElementById('customerServiceId').value;
+            const operationStaffId = document.getElementById('operationStaffId').value;
+            const serviceCode = document.getElementById('serviceCode').value;
+            const businessType = document.getElementById('businessType').value;
+
+            const params = new URLSearchParams({
+                customerServiceId,
+                operationStaffId,
+                serviceCode,
+                businessType
+            });
+
+            try {
+                const response = await fetch(`${API_BASE}/protocols/match?${params}`);
+                const result = await response.json();
+                
+                logAPI('✅ 协议匹配成功', result);
+                
+                if (result.code === 200) {
+                    matchedProtocols = result.data.protocols;
+                    displayMatchedProtocols(matchedProtocols);
+                    showProtocolDetails(matchedProtocols[0]);
+                } else {
+                    logAPI('❌ 协议匹配失败', result);
+                }
+            } catch (error) {
+                logAPI('❌ 请求异常: ' + error.message);
+            }
+        }
+
+        // 显示匹配的协议
+        function displayMatchedProtocols(protocols) {
+            const matchResult = document.getElementById('matchResult');
+            const protocolList = document.getElementById('protocolList');
+            
+            protocolList.innerHTML = '';
+            
+            protocols.forEach((protocol, index) => {
+                const protocolCard = document.createElement('div');
+                protocolCard.className = 'protocol-card p-3 mt-2';
+                protocolCard.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">${protocol.protocolName}</h6>
+                            <small class="text-muted">${protocol.protocolId}</small>
+                        </div>
+                        <div class="text-end">
+                            <div class="commission-rate">${protocol.totalCommissionRate}%</div>
+                            <small class="text-muted">
+                                ${protocol.baseCommissionRate}% + ${protocol.performanceBonusRate}%
+                            </small>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <button class="btn btn-outline-primary btn-sm" onclick="showProtocolDetails(matchedProtocols[${index}])">
+                            查看详情
+                        </button>
+                        <button class="btn btn-primary btn-sm ms-2" onclick="selectProtocol(${index})">
+                            选择此协议
+                        </button>
+                    </div>
+                `;
+                protocolList.appendChild(protocolCard);
+            });
+            
+            matchResult.style.display = 'block';
+        }
+
+        // 选择协议
+        function selectProtocol(index) {
+            selectedProtocol = matchedProtocols[index];
+            logAPI(`📋 选择协议: ${selectedProtocol.protocolName}`, selectedProtocol);
+            showNotification(`已选择协议: ${selectedProtocol.protocolName}`, 'success');
+        }
+
+        // 显示协议详情
+        async function showProtocolDetails(protocol) {
+            logAPI('📋 获取协议详情...');
+            
+            try {
+                const response = await fetch(`${API_BASE}/protocols/${protocol.protocolId}`);
+                const result = await response.json();
+                
+                logAPI('✅ 协议详情获取成功', result);
+                
+                if (result.code === 200) {
+                    displayProtocolDetails(result.data);
+                }
+            } catch (error) {
+                logAPI('❌ 获取协议详情失败: ' + error.message);
+            }
+        }
+
+        // 显示协议详情
+        function displayProtocolDetails(details) {
+            const detailsDiv = document.getElementById('protocolDetails');
+            detailsDiv.innerHTML = `
+                <div class="protocol-header">
+                    <h5>${details.protocolName}</h5>
+                    <small>${details.protocolId}</small>
+                </div>
+                <div class="p-3">
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <strong>服务类型:</strong><br>
+                            <span class="text-muted">${details.serviceCode || '通用'}</span>
+                        </div>
+                        <div class="col-6">
+                            <strong>业务类型:</strong><br>
+                            <span class="text-muted">${details.businessType || '通用'}</span>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-4 text-center">
+                            <div class="commission-rate">${details.baseCommissionRate}%</div>
+                            <small>基础佣金</small>
+                        </div>
+                        <div class="col-4 text-center">
+                            <div class="commission-rate">${details.performanceBonusRate}%</div>
+                            <small>绩效奖金</small>
+                        </div>
+                        <div class="col-4 text-center">
+                            <div class="commission-rate">${details.totalCommissionRate}%</div>
+                            <small>总佣金率</small>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <strong>分润规则:</strong>
+                        <ul class="list-unstyled mt-2">
+                            ${details.revenueRules.map(rule => `<li>• ${rule.type}: ${rule.rate}</li>`).join('')}
+                        </ul>
+                    </div>
+                    <div class="mb-3">
+                        <strong>有效期:</strong><br>
+                        <span class="text-muted">${details.effectiveDate} ~ ${details.expiryDate}</span>
+                    </div>
+                    <div>
+                        <strong>描述:</strong><br>
+                        <span class="text-muted">${details.description}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 完整流程测试
+        async function runFullWorkflow() {
+            resetSteps();
+            logAPI('🚀 开始完整协议派单流程测试...');
+            
+            // 步骤1: 协议匹配
+            updateStepStatus(1, 'active');
+            await testProtocolMatching();
+            
+            if (matchedProtocols.length === 0) {
+                logAPI('❌ 流程中断: 没有匹配的协议');
+                return;
+            }
+            
+            updateStepStatus(1, 'completed');
+            await delay(1000);
+            
+            // 步骤2: 自动选择第一个协议
+            updateStepStatus(2, 'active');
+            selectedProtocol = matchedProtocols[0];
+            logAPI(`📋 自动选择协议: ${selectedProtocol.protocolName}`);
+            updateStepStatus(2, 'completed');
+            await delay(1000);
+            
+            // 步骤3: 执行派单
+            updateStepStatus(3, 'active');
+            await executeAssignment();
+            updateStepStatus(3, 'completed');
+            await delay(1000);
+            
+            // 步骤4: 确认协议
+            updateStepStatus(4, 'active');
+            await confirmProtocol();
+            updateStepStatus(4, 'completed');
+            
+            logAPI('🎉 完整流程测试完成!');
+            showNotification('完整协议派单流程测试成功完成!', 'success');
+        }
+
+        // 执行派单
+        async function executeAssignment() {
+            logAPI('🎯 执行协议派单...');
+            
+            const requestData = {
+                orderId: currentOrderId,
+                serviceCode: document.getElementById('serviceCode').value,
+                operationStaffId: document.getElementById('operationStaffId').value,
+                protocolId: selectedProtocol.protocolId
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/assign-with-protocol`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                const result = await response.json();
+                logAPI('✅ 协议派单成功', result);
+                
+                return result;
+            } catch (error) {
+                logAPI('❌ 协议派单失败: ' + error.message);
+                throw error;
+            }
+        }
+
+        // 确认协议
+        async function confirmProtocol() {
+            logAPI('✅ 执行协议确认...');
+            
+            const requestData = {
+                orderId: currentOrderId,
+                serviceCode: document.getElementById('serviceCode').value,
+                operationStaffId: document.getElementById('operationStaffId').value,
+                protocolId: selectedProtocol.protocolId,
+                action: 'CONFIRM'
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/confirm-protocol`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                const result = await response.json();
+                logAPI('✅ 协议确认成功', result);
+                
+                return result;
+            } catch (error) {
+                logAPI('❌ 协议确认失败: ' + error.message);
+                throw error;
+            }
+        }
+
+        // 工具函数
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function showNotification(message, type = 'info') {
+            // 简单的通知实现
+            const toast = document.createElement('div');
+            toast.className = `alert alert-${type} position-fixed`;
+            toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            toast.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+            `;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.remove();
+                }
+            }, 5000);
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            logAPI('📄 协议管理页面已加载，等待用户操作...');
+        });
+    </script>
+</body>
+</html>

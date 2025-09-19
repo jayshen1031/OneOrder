@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>订单权限调试</title>
+</head>
+<body>
+    <h1>订单权限调试页面</h1>
+    <div id="debug-info"></div>
+    
+    <script src="js/freight-order.js?v=20250918-1020"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            const debugDiv = document.getElementById('debug-info');
+            let debugHtml = '<h2>调试信息:</h2>';
+            
+            try {
+                // 1. 获取当前用户
+                debugHtml += '<h3>1. 当前用户信息:</h3>';
+                const currentUser = getCurrentUser();
+                debugHtml += `<pre>${JSON.stringify(currentUser, null, 2)}</pre>`;
+                
+                // 2. 获取可见订单ID
+                debugHtml += '<h3>2. 可见订单ID:</h3>';
+                const visibleIds = getVisibleOrderIds(currentUser);
+                debugHtml += `<pre>${JSON.stringify(visibleIds, null, 2)}</pre>`;
+                
+                // 3. 获取API数据
+                debugHtml += '<h3>3. API数据:</h3>';
+                const response = await fetch('/api/freight-orders?page=0&size=5');
+                const apiOrders = await response.json();
+                debugHtml += `<p>API返回订单数量: ${apiOrders.length}</p>`;
+                
+                // 4. 数据转换过程
+                debugHtml += '<h3>4. 数据转换过程:</h3>';
+                if (apiOrders.length > 0) {
+                    const firstOrder = apiOrders[0];
+                    debugHtml += `<p>原始订单: ${JSON.stringify({
+                        orderNo: firstOrder.orderNo,
+                        salesStaffId: firstOrder.salesStaffId,
+                        createdBy: firstOrder.createdBy,
+                        staffId: firstOrder.staffId
+                    }, null, 2)}</p>`;
+                    
+                    // 模拟数据转换
+                    const demoCreators = ['CS001', 'CS002', 'SA001', 'SA002', 'OP001', 'OP002'];
+                    const assignedCreator = firstOrder.salesStaffId || firstOrder.createdBy || firstOrder.staffId || demoCreators[0];
+                    debugHtml += `<p>分配的创建者: ${assignedCreator}</p>`;
+                    
+                    // 权限检查
+                    const canView = visibleIds.includes('*') || visibleIds.includes(assignedCreator);
+                    debugHtml += `<p>可以查看: ${canView}</p>`;
+                }
+                
+                // 5. 完整的数据处理流程
+                debugHtml += '<h3>5. 完整数据处理:</h3>';
+                const allOrders = apiOrders.map((order, index) => {
+                    const demoCreators = ['CS001', 'CS002', 'SA001', 'SA002', 'OP001', 'OP002'];
+                    const assignedCreator = order.salesStaffId || order.createdBy || order.staffId || demoCreators[index % demoCreators.length];
+                    
+                    return {
+                        orderNo: order.orderNo,
+                        staffId: assignedCreator,
+                        createdBy: assignedCreator,
+                        salesStaffId: assignedCreator
+                    };
+                });
+                
+                const filteredOrders = allOrders.filter(order => {
+                    const orderOwner = order.staffId || order.createdBy || order.salesStaffId;
+                    const canView = visibleIds.includes('*') || visibleIds.includes(orderOwner);
+                    return canView;
+                });
+                
+                debugHtml += `<p>处理后订单数量: ${allOrders.length}</p>`;
+                debugHtml += `<p>过滤后订单数量: ${filteredOrders.length}</p>`;
+                debugHtml += `<pre>${JSON.stringify(filteredOrders, null, 2)}</pre>`;
+                
+            } catch (error) {
+                debugHtml += `<p style="color: red;">错误: ${error.message}</p>`;
+                debugHtml += `<pre>${error.stack}</pre>`;
+            }
+            
+            debugDiv.innerHTML = debugHtml;
+        });
+    </script>
+</body>
+</html>

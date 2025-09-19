@@ -1,0 +1,301 @@
+package com.oneorder.clearing.controller;
+
+import com.oneorder.clearing.entity.*;
+import com.oneorder.clearing.repository.*;
+import com.oneorder.clearing.dto.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import javax.validation.Valid;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+
+/**
+ * 客服接单功能控制器
+ */
+@Tag(name = "客服接单管理", description = "客服接单、派单相关接口")
+// Temporarily commented out due to compilation errors
+// @RestController
+// @RequestMapping("/api/customer-service")
+// @RequiredArgsConstructor
+// @Slf4j
+public class CustomerServiceController {
+    
+    // private final OrderRepository orderRepository; // 暂时注释掉，OrderRepository不存在
+    private final OrderServiceRepository orderServiceRepository;
+    private final ServiceConfigRepository serviceConfigRepository;
+    private final StaffRepository staffRepository;
+    private final InternalProtocolRepository internalProtocolRepository;
+    private final ServiceAssignmentNotificationRepository notificationRepository;
+    
+    @Operation(summary = "创建订单并选择服务", description = "客服创建新订单并选择具体服务项")
+    @PostMapping("/orders/create-with-services")
+    public ResponseEntity<Map<String, Object>> createOrderWithServices(@Valid @RequestBody OrderCreationRequest request) {
+        log.info("客服接单请求 - 客服ID: {}, 客户ID: {}, 业务类型: {}", 
+                request.getCustomerServiceId(), request.getCustomerId(), request.getBusinessType());
+        
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            // 1. 验证客服权限
+            Staff customerService = staffRepository.findById(request.getCustomerServiceId()).orElse(null);
+            if (customerService == null || !Staff.RoleType.CUSTOMER_SERVICE.equals(customerService.getRoleType())) {
+                result.put("success", false);
+                result.put("message", "无效的客服身份");
+                return ResponseEntity.badRequest().body(result);
+            }
+            
+            // 2. 创建订单
+            Order order = new Order();
+            order.setOrderId(generateOrderId());
+            order.setOrderNo(generateOrderNo());
+            order.setCustomerId(request.getCustomerId());
+            order.setBusinessType(Order.BusinessType.valueOf(request.getBusinessType()));
+            order.setResponsibleStaffId(request.getCustomerServiceId()); // 客服成为订单负责人
+            order.setSalesEntityId(customerService.getDepartmentId()); // 关联客服部门
+            order.setOrderStatus(Order.OrderStatus.DRAFT);
+            order.setClearingStatus(Order.ClearingStatus.PENDING);
+            order.setOrderDate(LocalDateTime.now());
+            order.setCreatedTime(LocalDateTime.now());
+            order.setCreatedBy(request.getCustomerServiceId());
+            
+            // 设置运输信息
+            if (request.getPortOfLoading() != null) order.setPortOfLoading(request.getPortOfLoading());
+            if (request.getPortOfDischarge() != null) order.setPortOfDischarge(request.getPortOfDischarge());
+            if (request.getEstimatedDeparture() != null) order.setEstimatedDeparture(request.getEstimatedDeparture());
+            if (request.getEstimatedArrival() != null) order.setEstimatedArrival(request.getEstimatedArrival());
+            
+            // 设置货物信息
+            if (request.getCargoDescription() != null) order.setCargoDescription(request.getCargoDescription());
+            if (request.getPackageCount() != null) order.setPackageCount(request.getPackageCount());
+            if (request.getWeight() != null) order.setWeight(request.getWeight());
+            if (request.getVolume() != null) order.setVolume(request.getVolume());
+            
+            order = orderRepository.save(order);
+            
+            // 3. 根据业务类型获取可选服务
+            List<ServiceConfig> availableServices = serviceConfigRepository
+                .findByBusinessTypeAndActiveTrue(request.getBusinessType());
+            
+            // 4. 创建选定的服务项
+            List<OrderService> orderServices = new ArrayList<>();
+            BigDecimal totalAmount = BigDecimal.ZERO;
+            
+            for (String serviceCode : request.getSelectedServices()) {
+                ServiceConfig serviceConfig = availableServices.stream()
+                    .filter(sc -> serviceCode.equals(sc.getServiceCode()))
+                    .findFirst()
+                    .orElse(null);
+                
+                if (serviceConfig != null) {
+                    OrderService orderService = new OrderService();
+                    orderService.setOrderId(order.getOrderId());
+                    orderService.setServiceConfigId(serviceConfig.getServiceConfigId());
+                    orderService.setServiceCode(serviceCode);
+                    orderService.setServiceName(serviceConfig.getServiceName());
+                    orderService.setStatus(OrderService.ServiceStatus.PENDING); // 待派单状态
+                    orderService.setCreatedTime(LocalDateTime.now());
+                    orderService.setCreatedBy(request.getCustomerServiceId());
+                    
+                    // 计算服务费用
+                    BigDecimal serviceAmount = calculateServiceAmount(serviceConfig, order);
+                    orderService.setAmount(serviceAmount);
+                    orderService.setCurrency("CNY");
+                    
+                    orderServices.add(orderService);
+                    totalAmount = totalAmount.add(serviceAmount);
+                }
+            }
+            
+            // 批量保存服务项
+            orderServiceRepository.saveAll(orderServices);
+            
+            // 5. 更新订单总金额和状态
+            order.setTotalAmount(totalAmount);
+            order.setCurrency("CNY");
+            order.setOrderStatus(Order.OrderStatus.CONFIRMED); // 服务选定后确认订单
+            orderRepository.save(order);
+            
+            // 6. 准备返回数据
+            result.put("success", true);
+            result.put("message", "订单创建成功");
+            result.put("data", Map.of(
+                "orderId", order.getOrderId(),
+                "orderNo", order.getOrderNo(),
+                "totalAmount", totalAmount,
+                "serviceCount", orderServices.size(),
+                "availableServices", availableServices.stream().map(this::convertServiceConfigToDTO).collect(Collectors.toList()),
+                "selectedServices", orderServices.stream().map(this::convertOrderServiceToDTO).collect(Collectors.toList())
+            ));
+            
+            log.info("订单创建成功 - 订单ID: {}, 服务数量: {}, 总金额: {}", 
+                    order.getOrderId(), orderServices.size(), totalAmount);
+            
+            return ResponseEntity.ok(result);
+            
+        } catch (Exception e) {
+            log.error("创建订单失败", e);
+            result.put("success", false);
+            result.put("message", "创建订单失败: " + e.getMessage());
+            return ResponseEntity.status(500).body(result);
+        }
+    }
+    
+    @Operation(summary = "获取业务类型可选服务", description = "根据业务类型获取可选的服务列表")
+    @GetMapping("/services/available")
+    public ResponseEntity<List<Map<String, Object>>> getAvailableServices(@RequestParam String businessType) {
+        log.info("获取可选服务 - 业务类型: {}", businessType);
+        
+        try {
+            List<ServiceConfig> services = serviceConfigRepository.findByBusinessTypeAndActiveTrue(businessType);
+            
+            List<Map<String, Object>> result = services.stream()
+                .map(this::convertServiceConfigToDTO)
+                .collect(Collectors.toList());
+            
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("获取可选服务失败", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+    
+    @Operation(summary = "获取订单的待派单服务", description = "获取订单中所有待派单的服务项")
+    @GetMapping("/orders/{orderId}/pending-services")
+    public ResponseEntity<List<Map<String, Object>>> getPendingServices(@PathVariable String orderId) {
+        log.info("获取待派单服务 - 订单ID: {}", orderId);
+        
+        try {
+            List<OrderService> pendingServices = orderServiceRepository
+                .findByOrderIdAndStatus(orderId, OrderService.ServiceStatus.PENDING);
+            
+            List<Map<String, Object>> result = pendingServices.stream()
+                .map(this::convertOrderServiceToDTO)
+                .collect(Collectors.toList());
+            
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("获取待派单服务失败", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+    
+    @Operation(summary = "获取可用操作人员", description = "根据服务类型获取可以执行该服务的操作人员")
+    @GetMapping("/services/{serviceCode}/available-staff")
+    public ResponseEntity<List<Map<String, Object>>> getAvailableStaff(@PathVariable String serviceCode) {
+        log.info("获取可用操作人员 - 服务代码: {}", serviceCode);
+        
+        try {
+            // 查找操作角色的所有员工
+            List<Staff> operationStaff = staffRepository.findByRoleTypeAndActiveTrue(Staff.RoleType.OPERATION);
+            
+            // TODO: 可以在这里添加更复杂的逻辑，比如根据服务类型过滤有权限的操作人员
+            
+            List<Map<String, Object>> result = operationStaff.stream()
+                .map(staff -> {
+                    Map<String, Object> staffInfo = new HashMap<>();
+                    staffInfo.put("staffId", staff.getStaffId());
+                    staffInfo.put("staffName", staff.getStaffName());
+                    staffInfo.put("departmentId", staff.getDepartmentId());
+                    staffInfo.put("roleType", staff.getRoleType());
+                    staffInfo.put("email", staff.getEmail());
+                    return staffInfo;
+                })
+                .collect(Collectors.toList());
+            
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("获取可用操作人员失败", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+    
+    // ==================== 辅助方法 ====================
+    
+    /**
+     * 生成订单ID
+     */
+    private String generateOrderId() {
+        return "ORD" + System.currentTimeMillis();
+    }
+    
+    /**
+     * 生成订单号
+     */
+    private String generateOrderNo() {
+        return "ON" + LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+    }
+    
+    /**
+     * 计算服务费用
+     */
+    private BigDecimal calculateServiceAmount(ServiceConfig serviceConfig, Order order) {
+        // 简化的费用计算逻辑，实际应该根据具体的费率规则计算
+        if (serviceConfig.getFixedPrice() != null && serviceConfig.getFixedPrice().compareTo(BigDecimal.ZERO) > 0) {
+            return serviceConfig.getFixedPrice();
+        }
+        
+        if (serviceConfig.getMinPrice() != null && serviceConfig.getMaxPrice() != null) {
+            // 取中位数作为预估价格
+            return serviceConfig.getMinPrice().add(serviceConfig.getMaxPrice()).divide(BigDecimal.valueOf(2));
+        }
+        
+        return BigDecimal.valueOf(1000); // 默认金额
+    }
+    
+    /**
+     * 转换ServiceConfig为DTO
+     */
+    private Map<String, Object> convertServiceConfigToDTO(ServiceConfig serviceConfig) {
+        Map<String, Object> dto = new HashMap<>();
+        dto.put("serviceConfigId", serviceConfig.getServiceConfigId());
+        dto.put("serviceCode", serviceConfig.getServiceCode());
+        dto.put("serviceName", serviceConfig.getServiceName());
+        dto.put("description", serviceConfig.getDescription());
+        dto.put("businessType", serviceConfig.getBusinessType());
+        dto.put("priceRange", formatPriceRange(serviceConfig));
+        dto.put("unit", serviceConfig.getUnit());
+        dto.put("active", serviceConfig.getActive());
+        return dto;
+    }
+    
+    /**
+     * 转换OrderService为DTO
+     */
+    private Map<String, Object> convertOrderServiceToDTO(OrderService orderService) {
+        Map<String, Object> dto = new HashMap<>();
+        dto.put("serviceId", orderService.getServiceId());
+        dto.put("orderId", orderService.getOrderId());
+        dto.put("serviceCode", orderService.getServiceCode());
+        dto.put("serviceName", orderService.getServiceName());
+        dto.put("status", orderService.getStatus());
+        dto.put("amount", orderService.getAmount());
+        dto.put("currency", orderService.getCurrency());
+        dto.put("operationStaffId", orderService.getOperationStaffId());
+        dto.put("operationDepartmentId", orderService.getOperationDepartmentId());
+        dto.put("internalProtocolId", orderService.getInternalProtocolId());
+        dto.put("createdTime", orderService.getCreatedTime());
+        return dto;
+    }
+    
+    /**
+     * 格式化价格范围
+     */
+    private String formatPriceRange(ServiceConfig serviceConfig) {
+        if (serviceConfig.getFixedPrice() != null && serviceConfig.getFixedPrice().compareTo(BigDecimal.ZERO) > 0) {
+            return "¥" + serviceConfig.getFixedPrice();
+        }
+        
+        if (serviceConfig.getMinPrice() != null && serviceConfig.getMaxPrice() != null) {
+            return "¥" + serviceConfig.getMinPrice() + " - ¥" + serviceConfig.getMaxPrice();
+        }
+        
+        return "面议";
+    }
+}

@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>权限配置管理 - OneOrder</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .permission-denied { opacity: 0.5; pointer-events: none; }
+        .permission-readonly { background-color: #f8f9fa !important; }
+        .json-editor { font-family: 'Courier New', monospace; font-size: 0.875rem; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <!-- 头部 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h1><i class="fas fa-shield-alt me-2"></i>权限配置管理</h1>
+                <p class="text-muted">统一管理系统权限配置，包括页面权限、功能权限和数据权限</p>
+                
+                <!-- 当前用户信息 -->
+                <div class="alert alert-info">
+                    <i class="fas fa-user me-2"></i>
+                    <strong>当前用户:</strong> <span id="currentUserDisplay" data-user-name>--</span>
+                    (<span data-user-role>--</span>) - 
+                    <span data-user-department>--</span>
+                    <button class="btn btn-sm btn-outline-primary ms-2" onclick="refreshPermissionSummary()">
+                        <i class="fas fa-sync me-1"></i>刷新权限
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- 左侧：权限配置 -->
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <ul class="nav nav-tabs card-header-tabs" role="tablist">
+                            <li class="nav-item">
+                                <a class="nav-link active" data-bs-toggle="tab" href="#pagesTab">
+                                    <i class="fas fa-file-alt me-1"></i>页面权限
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-bs-toggle="tab" href="#featuresTab">
+                                    <i class="fas fa-cogs me-1"></i>功能权限
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-bs-toggle="tab" href="#dataTab">
+                                    <i class="fas fa-database me-1"></i>数据权限
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-bs-toggle="tab" href="#configTab">
+                                    <i class="fas fa-code me-1"></i>配置管理
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="card-body">
+                        <div class="tab-content">
+                            <!-- 页面权限 -->
+                            <div class="tab-pane fade show active" id="pagesTab">
+                                <h5>页面访问权限配置</h5>
+                                <div id="pagesPermissionList"></div>
+                                <button class="btn btn-success btn-sm mt-3" onclick="addNewPermission('pages')">
+                                    <i class="fas fa-plus me-1"></i>添加页面权限
+                                </button>
+                            </div>
+                            
+                            <!-- 功能权限 -->
+                            <div class="tab-pane fade" id="featuresTab">
+                                <h5>功能操作权限配置</h5>
+                                <div id="featuresPermissionList"></div>
+                                <button class="btn btn-success btn-sm mt-3" onclick="addNewPermission('features')">
+                                    <i class="fas fa-plus me-1"></i>添加功能权限
+                                </button>
+                            </div>
+                            
+                            <!-- 数据权限 -->
+                            <div class="tab-pane fade" id="dataTab">
+                                <h5>数据访问权限配置</h5>
+                                <div id="dataPermissionList"></div>
+                                <button class="btn btn-success btn-sm mt-3" onclick="addNewPermission('data')">
+                                    <i class="fas fa-plus me-1"></i>添加数据权限
+                                </button>
+                            </div>
+                            
+                            <!-- 配置管理 -->
+                            <div class="tab-pane fade" id="configTab">
+                                <h5>权限配置 JSON</h5>
+                                <div class="mb-3">
+                                    <textarea id="configEditor" class="form-control json-editor" rows="15" placeholder="权限配置将显示在这里..."></textarea>
+                                </div>
+                                <div class="btn-group">
+                                    <button class="btn btn-primary" onclick="loadConfigToEditor()">
+                                        <i class="fas fa-download me-1"></i>加载当前配置
+                                    </button>
+                                    <button class="btn btn-success" onclick="saveConfigFromEditor()">
+                                        <i class="fas fa-save me-1"></i>保存配置
+                                    </button>
+                                    <button class="btn btn-warning" onclick="resetConfig()">
+                                        <i class="fas fa-undo me-1"></i>重置配置
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右侧：权限总览和测试 -->
+            <div class="col-md-4">
+                <!-- 当前用户权限总览 -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6><i class="fas fa-list me-2"></i>当前用户权限总览</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="permissionSummary">权限信息将显示在这里...</div>
+                    </div>
+                </div>
+                
+                <!-- 权限测试区域 -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6><i class="fas fa-flask me-2"></i>权限测试</h6>
+                    </div>
+                    <div class="card-body">
+                        <!-- 页面权限测试 -->
+                        <div class="mb-3" data-page-permission="dashboard">
+                            <i class="fas fa-tachometer-alt text-primary"></i> 仪表盘页面
+                        </div>
+                        <div class="mb-3" data-page-permission="clearing">
+                            <i class="fas fa-calculator text-warning"></i> 清分页面
+                        </div>
+                        
+                        <!-- 功能权限测试 -->
+                        <button class="btn btn-sm btn-primary me-2 mb-2" data-feature-permission="create_order">
+                            <i class="fas fa-plus"></i> 创建订单
+                        </button>
+                        <button class="btn btn-sm btn-danger me-2 mb-2" data-feature-permission="delete_order">
+                            <i class="fas fa-trash"></i> 删除订单
+                        </button>
+                        <button class="btn btn-sm btn-success me-2 mb-2" data-feature-permission="approve_workflow">
+                            <i class="fas fa-check"></i> 审批流程
+                        </button>
+                        
+                        <!-- 数据权限测试 -->
+                        <div class="mt-3">
+                            <div class="alert alert-sm alert-info" data-data-permission="own_orders">
+                                <i class="fas fa-folder"></i> 个人订单数据
+                            </div>
+                            <div class="alert alert-sm alert-warning" data-data-permission="financial_data">
+                                <i class="fas fa-money-bill"></i> 财务数据
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 权限验证 -->
+                <div class="card">
+                    <div class="card-header">
+                        <h6><i class="fas fa-check-circle me-2"></i>权限验证</h6>
+                    </div>
+                    <div class="card-body">
+                        <button class="btn btn-outline-primary btn-sm w-100 mb-2" onclick="validatePermissions()">
+                            <i class="fas fa-search me-1"></i>检查权限一致性
+                        </button>
+                        <div id="validationResults" class="mt-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加权限模态框 -->
+    <div class="modal fade" id="addPermissionModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">添加权限配置</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addPermissionForm">
+                        <input type="hidden" id="permissionType" name="type">
+                        <div class="mb-3">
+                            <label for="permissionName" class="form-label">权限名称</label>
+                            <input type="text" class="form-control" id="permissionName" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">允许的角色</label>
+                            <div class="form-check-group">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="CUSTOMER_SERVICE" id="role_cs">
+                                    <label class="form-check-label" for="role_cs">客服专员</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="SALES" id="role_sales">
+                                    <label class="form-check-label" for="role_sales">销售员</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="OPERATOR" id="role_op">
+                                    <label class="form-check-label" for="role_op">操作员</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="MANAGER" id="role_mgr">
+                                    <label class="form-check-label" for="role_mgr">经理</label>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="saveNewPermission()">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/user-state.js"></script>
+    <script src="js/global-user-manager.js"></script>
+    <script src="js/permission-manager.js"></script>
+    
+    <script>
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                loadPermissionLists();
+                refreshPermissionSummary();
+            }, 1000);
+        });
+        
+        // 加载权限列表
+        function loadPermissionLists() {
+            if (typeof PermissionManager === 'undefined') return;
+            
+            const config = PermissionManager.permissionConfig;
+            
+            // 加载页面权限
+            loadPermissionList('pages', config.pages, 'pagesPermissionList');
+            // 加载功能权限
+            loadPermissionList('features', config.features, 'featuresPermissionList');
+            // 加载数据权限
+            loadPermissionList('data', config.data, 'dataPermissionList');
+        }
+        
+        // 加载单个权限列表
+        function loadPermissionList(type, permissions, containerId) {
+            const container = document.getElementById(containerId);
+            let html = '';
+            
+            Object.keys(permissions).forEach(name => {
+                const roles = permissions[name];
+                html += `
+                    <div class="card mb-2">
+                        <div class="card-body p-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>${name}</strong>
+                                    <div class="text-muted small">
+                                        允许角色: ${roles.map(r => getRoleDisplayName(r)).join(', ')}
+                                    </div>
+                                </div>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary" onclick="editPermission('${type}', '${name}')">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger" onclick="deletePermission('${type}', '${name}')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html || '<p class="text-muted">暂无权限配置</p>';
+        }
+        
+        // 获取角色显示名称
+        function getRoleDisplayName(role) {
+            const roleNames = {
+                'CUSTOMER_SERVICE': '客服专员',
+                'SALES': '销售员',
+                'OPERATOR': '操作员',
+                'MANAGER': '经理'
+            };
+            return roleNames[role] || role;
+        }
+        
+        // 刷新权限总览
+        function refreshPermissionSummary() {
+            if (typeof PermissionManager === 'undefined') return;
+            
+            const summary = PermissionManager.getUserPermissionSummary();
+            const container = document.getElementById('permissionSummary');
+            
+            if (!summary) {
+                container.innerHTML = '<p class="text-warning">无法获取用户权限信息</p>';
+                return;
+            }
+            
+            let html = `
+                <h6>${summary.user.name} (${getRoleDisplayName(summary.user.role)})</h6>
+                <div class="mb-2">
+                    <strong>页面权限 (${summary.pages.length}):</strong><br>
+                    <small class="text-muted">${summary.pages.join(', ') || '无'}</small>
+                </div>
+                <div class="mb-2">
+                    <strong>功能权限 (${summary.features.length}):</strong><br>
+                    <small class="text-muted">${summary.features.join(', ') || '无'}</small>
+                </div>
+                <div class="mb-2">
+                    <strong>数据权限 (${summary.data.length}):</strong><br>
+                    <small class="text-muted">${summary.data.join(', ') || '无'}</small>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+        
+        // 添加新权限
+        function addNewPermission(type) {
+            document.getElementById('permissionType').value = type;
+            document.getElementById('permissionName').value = '';
+            document.querySelectorAll('#addPermissionModal input[type="checkbox"]').forEach(cb => cb.checked = false);
+            
+            new bootstrap.Modal(document.getElementById('addPermissionModal')).show();
+        }
+        
+        // 保存新权限
+        function saveNewPermission() {
+            const type = document.getElementById('permissionType').value;
+            const name = document.getElementById('permissionName').value;
+            const selectedRoles = Array.from(document.querySelectorAll('#addPermissionModal input[type="checkbox"]:checked'))
+                .map(cb => cb.value);
+            
+            if (!name || selectedRoles.length === 0) {
+                alert('请填写权限名称并选择至少一个角色');
+                return;
+            }
+            
+            PermissionManager.addPermissionConfig(type, name, selectedRoles);
+            loadPermissionLists();
+            refreshPermissionSummary();
+            
+            bootstrap.Modal.getInstance(document.getElementById('addPermissionModal')).hide();
+        }
+        
+        // 删除权限
+        function deletePermission(type, name) {
+            if (confirm(`确定要删除权限 "${name}" 吗？`)) {
+                PermissionManager.removePermissionConfig(type, name);
+                loadPermissionLists();
+                refreshPermissionSummary();
+            }
+        }
+        
+        // 编辑权限
+        function editPermission(type, name) {
+            const config = PermissionManager.permissionConfig[type][name];
+            document.getElementById('permissionType').value = type;
+            document.getElementById('permissionName').value = name;
+            
+            document.querySelectorAll('#addPermissionModal input[type="checkbox"]').forEach(cb => {
+                cb.checked = config.includes(cb.value);
+            });
+            
+            new bootstrap.Modal(document.getElementById('addPermissionModal')).show();
+        }
+        
+        // 加载配置到编辑器
+        function loadConfigToEditor() {
+            if (typeof PermissionManager === 'undefined') return;
+            
+            const config = PermissionManager.exportPermissionConfig();
+            document.getElementById('configEditor').value = config;
+        }
+        
+        // 从编辑器保存配置
+        function saveConfigFromEditor() {
+            const configText = document.getElementById('configEditor').value;
+            const success = PermissionManager.importPermissionConfig(configText);
+            
+            if (success) {
+                alert('配置保存成功');
+                loadPermissionLists();
+                refreshPermissionSummary();
+            } else {
+                alert('配置格式错误，保存失败');
+            }
+        }
+        
+        // 重置配置
+        function resetConfig() {
+            if (confirm('确定要重置所有权限配置吗？此操作不可撤销！')) {
+                location.reload();
+            }
+        }
+        
+        // 验证权限
+        function validatePermissions() {
+            if (typeof PermissionManager === 'undefined') return;
+            
+            const issues = PermissionManager.validatePermissions();
+            const container = document.getElementById('validationResults');
+            
+            if (issues.length === 0) {
+                container.innerHTML = '<div class="alert alert-success alert-sm">权限配置一致性检查通过</div>';
+            } else {
+                let html = '<div class="alert alert-warning alert-sm">发现以下问题:<ul class="mb-0 mt-2">';
+                issues.forEach(issue => {
+                    html += `<li>${issue}</li>`;
+                });
+                html += '</ul></div>';
+                container.innerHTML = html;
+            }
+        }
+        
+        // 监听权限更新事件
+        document.addEventListener('permissionUpdated', function(event) {
+            console.log('权限已更新:', event.detail);
+            refreshPermissionSummary();
+        });
+        
+        // 监听全局用户变更
+        document.addEventListener('globalUserChanged', function(event) {
+            console.log('用户已切换:', event.detail.user.name);
+            setTimeout(refreshPermissionSummary, 500);
+        });
+    </script>
+</body>
+</html>

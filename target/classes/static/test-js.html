@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>JavaScript测试页面</title>
+</head>
+<body>
+    <h1>JavaScript函数测试</h1>
+    <button onclick="testInitFunction()">测试initTestData函数</button>
+    <button onclick="initTestData()">直接调用initTestData</button>
+    <div id="result"></div>
+    
+    <script src="js/freight-order.js"></script>
+    <script>
+        function testInitFunction() {
+            const resultDiv = document.getElementById('result');
+            if (typeof initTestData === 'function') {
+                resultDiv.innerHTML = '<p style="color: green;">✅ initTestData函数已加载</p>';
+            } else {
+                resultDiv.innerHTML = '<p style="color: red;">❌ initTestData函数未找到</p>';
+            }
+            
+            // 显示所有已加载的函数
+            resultDiv.innerHTML += '<h3>已加载的函数：</h3>';
+            resultDiv.innerHTML += '<pre>' + Object.getOwnPropertyNames(window).filter(name => typeof window[name] === 'function' && name.includes('Test')).join('\n') + '</pre>';
+        }
+    </script>
+</body>
+</html>

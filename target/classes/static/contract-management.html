@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OneOrder - 内部合约管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #0056b3;
+            --secondary-color: #6c757d;
+            --success-color: #198754;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --info-color: #0dcaf0;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Microsoft YaHei', sans-serif;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color), #007bff);
+            box-shadow: 0 2px 4px rgba(0,0,0,.1);
+        }
+
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,.08);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,.12);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #fff, #f8f9fa);
+            border-bottom: 2px solid #e9ecef;
+            border-radius: 12px 12px 0 0 !important;
+            padding: 1.25rem;
+        }
+
+        .btn-group-custom {
+            gap: 0.5rem;
+        }
+
+        .status-badge {
+            font-size: 0.875rem;
+            padding: 0.375rem 0.75rem;
+            border-radius: 20px;
+        }
+
+        .table-responsive {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table th {
+            background-color: #f8f9fa;
+            border-top: none;
+            color: #495057;
+            font-weight: 600;
+        }
+
+        .nav-pills .nav-link {
+            border-radius: 20px;
+            margin-right: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-pills .nav-link.active {
+            background: linear-gradient(135deg, var(--primary-color), #007bff);
+        }
+
+        .form-control, .form-select {
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(0, 86, 179, 0.25);
+        }
+
+        .modal-content {
+            border-radius: 12px;
+            border: none;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #fff, #f8f9fa);
+            border-bottom: 2px solid #e9ecef;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .profit-sharing-type {
+            padding: 1rem;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .profit-sharing-type:hover, .profit-sharing-type.selected {
+            border-color: var(--primary-color);
+            background-color: rgba(0, 86, 179, 0.05);
+        }
+
+        .stats-card {
+            text-align: center;
+            padding: 1.5rem;
+        }
+
+        .stats-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .stats-label {
+            color: var(--secondary-color);
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#"><i class="fas fa-handshake me-2"></i>OneOrder - 内部合约管理</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="freight-order.html"><i class="fas fa-ship me-1"></i>货代管理</a>
+                <a class="nav-link" href="index.html"><i class="fas fa-calculator me-1"></i>清分系统</a>
+                <a class="nav-link active" href="#"><i class="fas fa-handshake me-1"></i>合约管理</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <!-- 统计卡片 -->
+        <div class="row mb-4">
+            <div class="col-md-2">
+                <div class="card stats-card">
+                    <div class="stats-number" id="totalMasterContracts">0</div>
+                    <div class="stats-label">主合约总数</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card stats-card">
+                    <div class="stats-number text-success" id="activeMasterContracts">0</div>
+                    <div class="stats-label">有效主合约</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card stats-card">
+                    <div class="stats-number" id="totalContractTerms">0</div>
+                    <div class="stats-label">合约条款</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card stats-card">
+                    <div class="stats-number text-info" id="totalSubsidyRules">0</div>
+                    <div class="stats-label">补贴规则</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card stats-card">
+                    <div class="stats-number text-warning" id="totalIntercompanyRules">0</div>
+                    <div class="stats-label">关联交易规则</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card stats-card">
+                    <div class="stats-number text-secondary" id="totalFundRoutingRules">0</div>
+                    <div class="stats-label">资金路由规则</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主要内容区域 -->
+        <div class="card">
+            <div class="card-header">
+                <ul class="nav nav-pills card-header-pills" id="contractTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="master-contracts-tab" data-bs-toggle="pill" 
+                                data-bs-target="#master-contracts" type="button" role="tab">
+                            <i class="fas fa-file-contract me-2"></i>内部主合约
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="contract-terms-tab" data-bs-toggle="pill" 
+                                data-bs-target="#contract-terms" type="button" role="tab">
+                            <i class="fas fa-list-alt me-2"></i>合约条款
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="intercompany-rules-tab" data-bs-toggle="pill" 
+                                data-bs-target="#intercompany-rules" type="button" role="tab">
+                            <i class="fas fa-exchange-alt me-2"></i>关联交易规则
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="subsidy-rules-tab" data-bs-toggle="pill" 
+                                data-bs-target="#subsidy-rules" type="button" role="tab">
+                            <i class="fas fa-gift me-2"></i>考核补贴规则
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="retention-rules-tab" data-bs-toggle="pill" 
+                                data-bs-target="#retention-rules" type="button" role="tab">
+                            <i class="fas fa-money-bill-wave me-2"></i>收付款借抬头规则
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="fund-routing-tab" data-bs-toggle="pill" 
+                                data-bs-target="#fund-routing" type="button" role="tab">
+                            <i class="fas fa-route me-2"></i>资金路由规则
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="card-body">
+                <div class="tab-content" id="contractTabsContent">
+                    <!-- 内部主合约管理 -->
+                    <div class="tab-pane fade show active" id="master-contracts" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">内部主合约管理</h5>
+                            <div class="btn-group-custom d-flex">
+                                <button class="btn btn-primary" onclick="showCreateMasterContractModal()">
+                                    <i class="fas fa-plus me-1"></i>新建主合约
+                                </button>
+                                <button class="btn btn-outline-secondary" onclick="refreshMasterContracts()">
+                                    <i class="fas fa-sync me-1"></i>刷新
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 搜索筛选 -->
+                        <div class="row mb-3">
+                            <div class="col-md-3">
+                                <label class="form-label">销售核算单元</label>
+                                <select class="form-select" id="filterSalesCostCenter">
+                                    <option value="">全部</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">交付核算单元</label>
+                                <select class="form-select" id="filterDeliveryCostCenter">
+                                    <option value="">全部</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">合约状态</label>
+                                <select class="form-select" id="filterContractStatus">
+                                    <option value="">全部</option>
+                                    <option value="true">有效</option>
+                                    <option value="false">无效</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">合约类型</label>
+                                <select class="form-select" id="filterContractType">
+                                    <option value="">全部</option>
+                                    <option value="true">长期合约</option>
+                                    <option value="false">短期合约</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button class="btn btn-outline-primary w-100" onclick="filterMasterContracts()">
+                                    <i class="fas fa-search me-1"></i>搜索
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 主合约列表 -->
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>合约ID</th>
+                                        <th>销售核算单元</th>
+                                        <th>交付核算单元</th>
+                                        <th>对等合约</th>
+                                        <th>合约类型</th>
+                                        <th>生效时间</th>
+                                        <th>到期时间</th>
+                                        <th>状态</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="masterContractsTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- 分页 -->
+                        <nav aria-label="主合约分页">
+                            <ul class="pagination justify-content-center" id="masterContractsPagination">
+                            </ul>
+                        </nav>
+                    </div>
+
+                    <!-- 合约条款管理 -->
+                    <div class="tab-pane fade" id="contract-terms" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">合约条款管理</h5>
+                            <div class="btn-group-custom d-flex">
+                                <button class="btn btn-primary" onclick="showCreateContractTermsModal()">
+                                    <i class="fas fa-plus me-1"></i>新建条款
+                                </button>
+                                <button class="btn btn-outline-secondary" onclick="refreshContractTerms()">
+                                    <i class="fas fa-sync me-1"></i>刷新
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 条款列表 -->
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>条款ID</th>
+                                        <th>分润模型</th>
+                                        <th>销售分润比例</th>
+                                        <th>交付分润比例</th>
+                                        <th>适用服务</th>
+                                        <th>适用客户</th>
+                                        <th>创建时间</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="contractTermsTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 其他标签页内容类似... -->
+                    <div class="tab-pane fade" id="intercompany-rules" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">法人间关联交易规则</h5>
+                            <button class="btn btn-primary" onclick="showCreateIntercompanyRuleModal()">
+                                <i class="fas fa-plus me-1"></i>新建规则
+                            </button>
+                        </div>
+                        <div id="intercompanyRulesContent">
+                            <!-- 关联交易规则内容 -->
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="subsidy-rules" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">考核补贴规则</h5>
+                            <button class="btn btn-primary" onclick="showCreateSubsidyRuleModal()">
+                                <i class="fas fa-plus me-1"></i>新建补贴规则
+                            </button>
+                        </div>
+                        <div id="subsidyRulesContent">
+                            <!-- 补贴规则内容 -->
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="retention-rules" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">收付款借抬头规则</h5>
+                            <button class="btn btn-primary" onclick="showCreateRetentionRuleModal()">
+                                <i class="fas fa-plus me-1"></i>新建借抬头规则
+                            </button>
+                        </div>
+                        <div id="retentionRulesContent">
+                            <!-- 借抬头规则内容 -->
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="fund-routing" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">资金路由规则</h5>
+                            <button class="btn btn-primary" onclick="showCreateFundRoutingRuleModal()">
+                                <i class="fas fa-plus me-1"></i>新建路由规则
+                            </button>
+                        </div>
+                        <div id="fundRoutingContent">
+                            <!-- 资金路由规则内容 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 创建主合约模态框 -->
+    <div class="modal fade" id="createMasterContractModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">新建内部主合约</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="createMasterContractForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">合约名称 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="contractName" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">生效时间 <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="executionDate" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <label class="form-label">销售核算单元 <span class="text-danger">*</span></label>
+                                <select class="form-select" id="salesCostCenter" multiple required>
+                                    <!-- 动态加载选项 -->
+                                </select>
+                                <div class="form-text">按住Ctrl键可多选</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">交付核算单元 <span class="text-danger">*</span></label>
+                                <select class="form-select" id="deliveryCostCenter" multiple required>
+                                    <!-- 动态加载选项 -->
+                                </select>
+                                <div class="form-text">按住Ctrl键可多选</div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="isLongTermContract">
+                                    <label class="form-check-label" for="isLongTermContract">
+                                        长期合约
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6" id="expirationDateDiv">
+                                <label class="form-label">到期时间</label>
+                                <input type="date" class="form-control" id="expirationDate">
+                            </div>
+                        </div>
+
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="isReciprocalContract">
+                                    <label class="form-check-label" for="isReciprocalContract">
+                                        对等合约
+                                    </label>
+                                </div>
+                                <div class="form-text">勾选则认为合同的甲乙方调换，所有条款依然成立</div>
+                            </div>
+                        </div>
+
+                        <div class="mt-3">
+                            <label class="form-label">交付责任条款</label>
+                            <textarea class="form-control" id="liabilityClause" rows="3"></textarea>
+                        </div>
+
+                        <div class="mt-3">
+                            <label class="form-label">免责条款</label>
+                            <textarea class="form-control" id="exemptionClause" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="createMasterContract()">创建合约</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 创建合约条款模态框 -->
+    <div class="modal fade" id="createContractTermsModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">新建合约条款</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="createContractTermsForm">
+                        <!-- 基础信息 -->
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">基础信息</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label class="form-label">适用服务 <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="applicableServices" multiple required>
+                                            <!-- 动态加载服务选项 -->
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">适用客户</label>
+                                        <select class="form-select" id="applicableCustomers" multiple>
+                                            <!-- 动态加载客户选项 -->
+                                        </select>
+                                        <div class="form-text">不选则表示所有客户均适用</div>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <label class="form-label">适用甲方条件</label>
+                                    <textarea class="form-control" id="applicableConditions" rows="2" 
+                                             placeholder="写入条件表达式"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 分润模型选择 -->
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">分润模型 <span class="text-danger">*</span></h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="profit-sharing-type" onclick="selectProfitSharingType('BUY_SELL_PRICE')">
+                                            <h6><i class="fas fa-exchange-alt me-2"></i>买卖价</h6>
+                                            <p class="text-muted mb-0">基于买卖价差的分润模式</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="profit-sharing-type" onclick="selectProfitSharingType('COST_PLUS_FEE')">
+                                            <h6><i class="fas fa-plus me-2"></i>成本+操作费</h6>
+                                            <p class="text-muted mb-0">成本加固定操作费模式</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-md-6">
+                                        <div class="profit-sharing-type" onclick="selectProfitSharingType('RATIO_SHARING')">
+                                            <h6><i class="fas fa-percent me-2"></i>按比例分润</h6>
+                                            <p class="text-muted mb-0">按固定比例分配利润</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="profit-sharing-type" onclick="selectProfitSharingType('CUSTOM')">
+                                            <h6><i class="fas fa-code me-2"></i>自定义</h6>
+                                            <p class="text-muted mb-0">自定义分润计算脚本</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="profitSharingType" required>
+                            </div>
+                        </div>
+
+                        <!-- 分润配置 -->
+                        <div class="card mb-3" id="profitSharingConfig" style="display: none;">
+                            <div class="card-header">
+                                <h6 class="mb-0">分润配置</h6>
+                            </div>
+                            <div class="card-body">
+                                <!-- 按比例分润配置 -->
+                                <div id="ratioSharingConfig" style="display: none;">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label class="form-label">销售部门分润比例 (%)</label>
+                                            <input type="number" class="form-control" id="salesProfitRatio" 
+                                                   min="0" max="100" step="0.01" onchange="updateDeliveryRatio()">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">交付部门分润比例 (%)</label>
+                                            <input type="number" class="form-control" id="deliveryProfitRatio" 
+                                                   min="0" max="100" step="0.01" readonly>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 成本+操作费配置 -->
+                                <div id="costPlusFeeConfig" style="display: none;">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <label class="form-label">操作费币种</label>
+                                            <select class="form-select" id="operatingFeeCurrency">
+                                                <option value="CNY">CNY</option>
+                                                <option value="USD">USD</option>
+                                                <option value="EUR">EUR</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">计量单位</label>
+                                            <select class="form-select" id="unitOfMeasurement">
+                                                <option value="票">票</option>
+                                                <option value="柜">柜</option>
+                                                <option value="吨">吨</option>
+                                                <option value="立方米">立方米</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">操作费单价</label>
+                                            <input type="number" class="form-control" id="unitPrice" 
+                                                   min="0" step="0.01">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">票票最小值</label>
+                                            <input type="number" class="form-control" id="minimumPerOrder" 
+                                                   min="0" step="0.01">
+                                        </div>
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col-md-3">
+                                            <label class="form-label">票票最大值</label>
+                                            <input type="number" class="form-control" id="maximumPerOrder" 
+                                                   min="0" step="0.01">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 自定义脚本配置 -->
+                                <div id="customScriptConfig" style="display: none;">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label class="form-label">脚本对象</label>
+                                            <select class="form-select" id="deptTypeForScript">
+                                                <option value="SALES">销售部门</option>
+                                                <option value="DELIVERY">交付部门</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check mt-4">
+                                                <input class="form-check-input" type="checkbox" id="costPriceDisclosure">
+                                                <label class="form-check-label" for="costPriceDisclosure">
+                                                    成本、售价相互公开
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3">
+                                        <label class="form-label">分润计算脚本</label>
+                                        <textarea class="form-control" id="calculationScript" rows="6" 
+                                                 placeholder="请输入JavaScript格式的分润计算脚本"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="createContractTerms()">创建条款</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast 通知 -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="successToast" class="toast" role="alert">
+            <div class="toast-header text-success">
+                <i class="fas fa-check-circle me-2"></i>
+                <strong class="me-auto">成功</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body" id="successToastBody">
+            </div>
+        </div>
+        
+        <div id="errorToast" class="toast" role="alert">
+            <div class="toast-header text-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong class="me-auto">错误</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body" id="errorToastBody">
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/contract-management.js"></script>
+</body>
+</html>

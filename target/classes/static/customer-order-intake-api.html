@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客服接单管理 - OneOrder系统 (连接API版)</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #0066cc;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .step-indicator::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 25px;
+            right: 25px;
+            height: 2px;
+            background-color: #dee2e6;
+            z-index: 1;
+        }
+
+        .step {
+            background: white;
+            border: 2px solid #dee2e6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 2;
+            font-weight: bold;
+            color: #6c757d;
+        }
+
+        .step.active {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+
+        .step.completed {
+            background-color: var(--success-color);
+            border-color: var(--success-color);
+            color: white;
+        }
+
+        .business-type-card, .service-item, .customer-item {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+        }
+
+        .business-type-card:hover, .service-item:hover, .customer-item:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 2px 8px rgba(0,102,204,0.1);
+        }
+
+        .business-type-card.selected, .service-item.selected, .customer-item.selected {
+            border-color: var(--primary-color);
+            background-color: #f8f9ff;
+        }
+
+        .price-badge {
+            background-color: #e3f2fd;
+            color: #1976d2;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .customer-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 0 0 6px 6px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-box-seam"></i> OneOrder - 客服接单管理 (API版)
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text">客服: <strong id="current-staff">张客服 (CS001)</strong></span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid py-4">
+        <!-- 步骤指示器 -->
+        <div class="row mb-4">
+            <div class="col-md-8 mx-auto">
+                <div class="step-indicator">
+                    <div class="text-center">
+                        <div class="step active" id="step-1">1</div>
+                        <div class="mt-2 small">选择客户</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="step" id="step-2">2</div>
+                        <div class="mt-2 small">业务类型</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="step" id="step-3">3</div>
+                        <div class="mt-2 small">选择服务</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="step" id="step-4">4</div>
+                        <div class="mt-2 small">确认订单</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- 左侧主要操作区域 -->
+            <div class="col-md-8">
+                <!-- 步骤1: 客户选择 -->
+                <div class="card mb-4" id="customer-selection-panel">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-person-search"></i> 第1步：选择客户
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="position-relative">
+                            <input type="text" class="form-control" id="customer-search-input" 
+                                   placeholder="输入客户名称或代码搜索..." autocomplete="off">
+                            <div class="customer-dropdown" id="customer-dropdown">
+                                <!-- 动态生成 -->
+                            </div>
+                        </div>
+                        <div class="mt-3" id="selected-customer-info" style="display: none;">
+                            <div class="alert alert-info">
+                                <i class="bi bi-check-circle"></i> 
+                                已选择客户: <strong id="selected-customer-name"></strong>
+                                <span class="badge bg-primary ms-2" id="selected-customer-code"></span>
+                            </div>
+                            <button class="btn btn-primary" onclick="nextStep()">下一步：选择业务类型</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 步骤2: 业务类型选择 -->
+                <div class="card mb-4" id="business-type-panel" style="display: none;">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-diagram-3"></i> 第2步：选择业务类型
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row" id="business-types-container">
+                            <!-- 动态生成 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 步骤3: 服务选择 -->
+                <div class="card mb-4" id="service-selection-panel" style="display: none;">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-list-check"></i> 第3步：选择服务项目
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                <span id="required-services-info"></span>
+                            </div>
+                        </div>
+                        <div id="available-services-container">
+                            <!-- 动态生成 -->
+                        </div>
+                        <div class="mt-3">
+                            <button class="btn btn-primary" onclick="nextStep()" id="continue-to-confirm" disabled>
+                                下一步：确认订单
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 步骤4: 订单确认 -->
+                <div class="card" id="order-confirmation-panel" style="display: none;">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-clipboard-check"></i> 第4步：确认订单信息
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>基本信息</h6>
+                                <table class="table table-sm">
+                                    <tr><td>客户:</td><td><span id="preview-customer"></span></td></tr>
+                                    <tr><td>业务类型:</td><td><span id="preview-business-type"></span></td></tr>
+                                    <tr><td>负责客服:</td><td><span id="preview-staff">张客服</span></td></tr>
+                                    <tr><td>服务数量:</td><td><span id="preview-service-count">0</span>项</td></tr>
+                                    <tr><td>预估金额:</td><td class="price-badge"><span id="preview-total-amount">¥0</span></td></tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>选择的服务项目</h6>
+                                <div id="preview-services-list"></div>
+                            </div>
+                        </div>
+                        <div class="text-center mt-4">
+                            <button class="btn btn-success btn-lg" id="create-order-btn" onclick="createOrder()">
+                                <i class="bi bi-check-circle"></i> 创建订单
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧订单摘要 -->
+            <div class="col-md-4">
+                <div class="card sticky-top" style="top: 20px;">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="bi bi-file-text"></i> 订单摘要
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <small class="text-muted">客户</small>
+                            <div id="summary-customer">未选择</div>
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted">业务类型</small>
+                            <div id="summary-business-type">未选择</div>
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted">选择的服务</small>
+                            <div id="summary-services">0 项服务</div>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-bold">预估总金额</span>
+                            <span class="price-badge" id="summary-total-amount">¥0.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 成功创建订单模态框 -->
+    <div class="modal fade" id="success-modal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-check-circle-fill text-success"></i> 订单创建成功
+                    </h5>
+                </div>
+                <div class="modal-body">
+                    <p>订单已成功创建，系统已自动将您设置为订单负责人。</p>
+                    <div class="alert alert-info">
+                        <strong>订单编号:</strong> <span id="created-order-no"></span><br>
+                        <strong>订单ID:</strong> <span id="created-order-id"></span><br>
+                        <strong>总金额:</strong> ¥<span id="created-total-amount"></span>
+                    </div>
+                    <p>接下来您可以：</p>
+                    <ul>
+                        <li>前往派单管理界面分配操作人员</li>
+                        <li>查看订单详情和执行进度</li>
+                        <li>继续创建新的订单</li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="resetForm()">继续接单</button>
+                    <a href="freight-order.html#assignment" class="btn btn-primary">去派单管理</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // API基础路径
+        const API_BASE = '/api/api/customer-intake';
+        
+        // 全局状态
+        const appState = {
+            currentStep: 1,
+            selectedCustomer: null,
+            selectedBusinessType: null,
+            selectedServices: [],
+            availableServices: [],
+            staffId: 'CS001'
+        };
+
+        // 初始化应用
+        async function initApp() {
+            await loadBusinessTypes();
+            setupCustomerSearch();
+            updateStepIndicator();
+            updateOrderSummary();
+        }
+
+        // 客户搜索
+        function setupCustomerSearch() {
+            const searchInput = document.getElementById('customer-search-input');
+            const dropdown = document.getElementById('customer-dropdown');
+            let searchTimeout;
+
+            searchInput.addEventListener('input', function() {
+                const query = this.value.trim();
+                
+                clearTimeout(searchTimeout);
+                if (query.length >= 2) {
+                    searchTimeout = setTimeout(() => searchCustomers(query), 300);
+                } else {
+                    dropdown.style.display = 'none';
+                }
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.position-relative')) {
+                    dropdown.style.display = 'none';
+                }
+            });
+        }
+
+        // 搜索客户
+        async function searchCustomers(query) {
+            try {
+                const response = await fetch(`${API_BASE}/customers/search?query=${encodeURIComponent(query)}`);
+                const result = await response.json();
+                
+                if (result.code === 200) {
+                    renderCustomerDropdown(result.data.customers);
+                } else {
+                    console.error('搜索客户失败:', result.message);
+                }
+            } catch (error) {
+                console.error('搜索客户错误:', error);
+            }
+        }
+
+        // 渲染客户下拉列表
+        function renderCustomerDropdown(customers) {
+            const dropdown = document.getElementById('customer-dropdown');
+            
+            if (customers.length === 0) {
+                dropdown.innerHTML = '<div class="p-3 text-muted">未找到匹配的客户</div>';
+            } else {
+                dropdown.innerHTML = customers.map(customer => `
+                    <div class="customer-item p-2" onclick="selectCustomer('${customer.id}', '${customer.name}', '${customer.code}')">
+                        <div class="fw-bold">${customer.name}</div>
+                        <div class="small text-muted">${customer.code} · ${customer.type} · ${customer.location}</div>
+                    </div>
+                `).join('');
+            }
+            
+            dropdown.style.display = 'block';
+        }
+
+        // 选择客户
+        function selectCustomer(id, name, code) {
+            appState.selectedCustomer = { id, name, code };
+            
+            document.getElementById('customer-search-input').value = name;
+            document.getElementById('customer-dropdown').style.display = 'none';
+            document.getElementById('selected-customer-info').style.display = 'block';
+            document.getElementById('selected-customer-name').textContent = name;
+            document.getElementById('selected-customer-code').textContent = code;
+            
+            updateOrderSummary();
+        }
+
+        // 加载业务类型
+        async function loadBusinessTypes() {
+            try {
+                const response = await fetch(`${API_BASE}/business-types`);
+                const result = await response.json();
+                
+                if (result.code === 200) {
+                    renderBusinessTypes(result.data.businessTypes);
+                } else {
+                    console.error('加载业务类型失败:', result.message);
+                }
+            } catch (error) {
+                console.error('加载业务类型错误:', error);
+            }
+        }
+
+        // 渲染业务类型
+        function renderBusinessTypes(businessTypes) {
+            const container = document.getElementById('business-types-container');
+            container.innerHTML = businessTypes.map(type => `
+                <div class="col-md-4">
+                    <div class="business-type-card" onclick="selectBusinessType('${type.code}', '${type.name}')">
+                        <div class="text-center">
+                            <i class="${type.icon}" style="font-size: 2rem; color: ${type.color};"></i>
+                            <h6 class="mt-2 mb-1">${type.name}</h6>
+                            <small class="text-muted">${type.description}</small>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 选择业务类型
+        async function selectBusinessType(code, name) {
+            appState.selectedBusinessType = { code, name };
+            
+            // 更新选中状态
+            document.querySelectorAll('.business-type-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+            
+            // 加载该业务类型的服务
+            await loadAvailableServices(code);
+            updateOrderSummary();
+            
+            // 延迟进入下一步
+            setTimeout(() => nextStep(), 500);
+        }
+
+        // 加载可用服务
+        async function loadAvailableServices(businessType) {
+            try {
+                const response = await fetch(`${API_BASE}/services/available/${businessType}`);
+                const result = await response.json();
+                
+                if (result.code === 200) {
+                    appState.availableServices = result.data.services;
+                    renderAvailableServices(result.data.services, result.data.requiredCount);
+                } else {
+                    console.error('加载可用服务失败:', result.message);
+                }
+            } catch (error) {
+                console.error('加载可用服务错误:', error);
+            }
+        }
+
+        // 渲染可用服务
+        function renderAvailableServices(services, requiredCount) {
+            const container = document.getElementById('available-services-container');
+            const requiredInfo = document.getElementById('required-services-info');
+            
+            requiredInfo.textContent = `该业务类型共有 ${services.length} 个服务项目，其中 ${requiredCount} 个为必选服务`;
+            
+            container.innerHTML = services.map(service => `
+                <div class="service-item" onclick="toggleService('${service.code}')">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="service-${service.code}" ${service.required ? 'checked' : ''}>
+                        <label class="form-check-label" for="service-${service.code}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="fw-bold">
+                                        ${service.name} 
+                                        ${service.required ? '<span class="badge bg-danger ms-1">必选</span>' : '<span class="badge bg-secondary ms-1">可选</span>'}
+                                    </div>
+                                    <div class="small text-muted">${service.description}</div>
+                                </div>
+                                <div class="price-badge">¥${service.price}</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            `).join('');
+
+            // 自动选择必选服务
+            appState.selectedServices = services.filter(s => s.required);
+            updateOrderSummary();
+            checkCanContinue();
+        }
+
+        // 切换服务选择
+        function toggleService(serviceCode) {
+            const checkbox = document.getElementById(`service-${serviceCode}`);
+            const service = appState.availableServices.find(s => s.code === serviceCode);
+            
+            if (!checkbox.checked && service.required) {
+                alert('必选服务不能取消选择');
+                checkbox.checked = true;
+                return;
+            }
+            
+            if (checkbox.checked) {
+                if (!appState.selectedServices.find(s => s.code === serviceCode)) {
+                    appState.selectedServices.push(service);
+                }
+            } else {
+                appState.selectedServices = appState.selectedServices.filter(s => s.code !== serviceCode);
+            }
+            
+            updateOrderSummary();
+            checkCanContinue();
+        }
+
+        // 检查是否可以继续
+        function checkCanContinue() {
+            const requiredServices = appState.availableServices.filter(s => s.required);
+            const hasAllRequired = requiredServices.every(req => 
+                appState.selectedServices.find(sel => sel.code === req.code)
+            );
+            
+            document.getElementById('continue-to-confirm').disabled = !hasAllRequired;
+        }
+
+        // 下一步
+        function nextStep() {
+            if (appState.currentStep < 4) {
+                appState.currentStep++;
+                updateStepIndicator();
+                showCurrentPanel();
+                
+                if (appState.currentStep === 4) {
+                    renderOrderPreview();
+                }
+            }
+        }
+
+        // 更新步骤指示器
+        function updateStepIndicator() {
+            for (let i = 1; i <= 4; i++) {
+                const step = document.getElementById(`step-${i}`);
+                if (i < appState.currentStep) {
+                    step.className = 'step completed';
+                } else if (i === appState.currentStep) {
+                    step.className = 'step active';
+                } else {
+                    step.className = 'step';
+                }
+            }
+        }
+
+        // 显示当前面板
+        function showCurrentPanel() {
+            const panels = ['customer-selection-panel', 'business-type-panel', 'service-selection-panel', 'order-confirmation-panel'];
+            panels.forEach((panel, index) => {
+                document.getElementById(panel).style.display = index === appState.currentStep - 1 ? 'block' : 'none';
+            });
+        }
+
+        // 渲染订单预览
+        function renderOrderPreview() {
+            document.getElementById('preview-customer').textContent = appState.selectedCustomer.name;
+            document.getElementById('preview-business-type').textContent = appState.selectedBusinessType.name;
+            document.getElementById('preview-service-count').textContent = appState.selectedServices.length;
+            
+            const totalAmount = appState.selectedServices.reduce((sum, service) => sum + service.price, 0);
+            document.getElementById('preview-total-amount').textContent = `¥${totalAmount}`;
+            
+            const servicesList = document.getElementById('preview-services-list');
+            servicesList.innerHTML = appState.selectedServices.map(service => `
+                <div class="d-flex justify-content-between align-items-center py-1">
+                    <span>${service.name} ${service.required ? '(必选)' : ''}</span>
+                    <span class="price-badge">¥${service.price}</span>
+                </div>
+            `).join('');
+        }
+
+        // 更新订单摘要
+        function updateOrderSummary() {
+            document.getElementById('summary-customer').textContent = 
+                appState.selectedCustomer ? appState.selectedCustomer.name : '未选择';
+            
+            document.getElementById('summary-business-type').textContent = 
+                appState.selectedBusinessType ? appState.selectedBusinessType.name : '未选择';
+            
+            document.getElementById('summary-services').textContent = 
+                `${appState.selectedServices.length} 项服务`;
+            
+            const totalAmount = appState.selectedServices.reduce((sum, service) => sum + service.price, 0);
+            document.getElementById('summary-total-amount').textContent = `¥${totalAmount.toFixed(2)}`;
+        }
+
+        // 创建订单
+        async function createOrder() {
+            const button = document.getElementById('create-order-btn');
+            button.disabled = true;
+            button.innerHTML = '<i class="bi bi-hourglass-split"></i> 创建中...';
+            
+            try {
+                const orderData = {
+                    customerId: appState.selectedCustomer.id,
+                    businessType: appState.selectedBusinessType.code,
+                    staffId: appState.staffId,
+                    selectedServices: appState.selectedServices.map(s => s.code)
+                };
+
+                const response = await fetch(`${API_BASE}/orders/create`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(orderData)
+                });
+
+                const result = await response.json();
+                
+                if (result.code === 200) {
+                    // 显示成功信息
+                    document.getElementById('created-order-no').textContent = result.data.orderNo;
+                    document.getElementById('created-order-id').textContent = result.data.orderId;
+                    document.getElementById('created-total-amount').textContent = result.data.totalAmount;
+                    
+                    const modal = new bootstrap.Modal(document.getElementById('success-modal'));
+                    modal.show();
+                } else {
+                    alert('创建订单失败: ' + result.message);
+                }
+                
+            } catch (error) {
+                console.error('创建订单错误:', error);
+                alert('创建订单失败: ' + error.message);
+            } finally {
+                button.disabled = false;
+                button.innerHTML = '<i class="bi bi-check-circle"></i> 创建订单';
+            }
+        }
+
+        // 重置表单
+        function resetForm() {
+            appState.currentStep = 1;
+            appState.selectedCustomer = null;
+            appState.selectedBusinessType = null;
+            appState.selectedServices = [];
+            appState.availableServices = [];
+            
+            document.getElementById('customer-search-input').value = '';
+            document.getElementById('selected-customer-info').style.display = 'none';
+            
+            updateStepIndicator();
+            showCurrentPanel();
+            updateOrderSummary();
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>

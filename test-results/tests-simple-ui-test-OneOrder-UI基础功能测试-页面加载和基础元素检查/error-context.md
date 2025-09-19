@@ -1,0 +1,197 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - navigation [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - heading " OneOrder" [level=4] [ref=e7]:
+            - generic [ref=e8]: 
+            - text: OneOrder
+          - generic [ref=e9]: 货代订单管理系统
+        - list [ref=e10]:
+          - listitem [ref=e11]:
+            - link " 仪表盘" [ref=e12] [cursor=pointer]:
+              - /url: "#dashboard"
+              - generic [ref=e13] [cursor=pointer]: 
+              - text: 仪表盘
+          - listitem [ref=e14]:
+            - link " 订单管理" [ref=e15] [cursor=pointer]:
+              - /url: "#orders"
+              - generic [ref=e16] [cursor=pointer]: 
+              - text: 订单管理
+          - listitem [ref=e17]:
+            - link " 服务配置管理 " [ref=e18] [cursor=pointer]:
+              - /url: service-config.html
+              - generic [ref=e19] [cursor=pointer]: 
+              - text: 服务配置管理
+              - generic [ref=e20] [cursor=pointer]: 
+          - listitem [ref=e21]:
+            - link " 服务总览" [ref=e22] [cursor=pointer]:
+              - /url: "#services"
+              - generic [ref=e23] [cursor=pointer]: 
+              - text: 服务总览
+          - listitem [ref=e24]:
+            - link " 内部协议" [ref=e25] [cursor=pointer]:
+              - /url: "#protocols"
+              - generic [ref=e26] [cursor=pointer]: 
+              - text: 内部协议
+          - listitem [ref=e27]:
+            - link " 任务管理" [ref=e28] [cursor=pointer]:
+              - /url: "#tasks"
+              - generic [ref=e29] [cursor=pointer]: 
+              - text: 任务管理
+          - listitem [ref=e30]:
+            - link " 清分管理" [ref=e31] [cursor=pointer]:
+              - /url: "#clearing"
+              - generic [ref=e32] [cursor=pointer]: 
+              - text: 清分管理
+          - listitem [ref=e33]:
+            - link " 财务报表" [ref=e34] [cursor=pointer]:
+              - /url: "#reports"
+              - generic [ref=e35] [cursor=pointer]: 
+              - text: 财务报表
+          - listitem [ref=e36]:
+            - link " 客户管理" [ref=e37] [cursor=pointer]:
+              - /url: "#customers"
+              - generic [ref=e38] [cursor=pointer]: 
+              - text: 客户管理
+    - main [ref=e39]:
+      - generic [ref=e40]:
+        - generic [ref=e41]:
+          - heading " 货代业务仪表盘" [level=1] [ref=e42]:
+            - generic [ref=e43]: 
+            - text: 货代业务仪表盘
+          - button "+ 新建订单" [ref=e45] [cursor=pointer]:
+            - generic [ref=e46] [cursor=pointer]: +
+            - text: 新建订单
+        - generic [ref=e47]:
+          - generic [ref=e50] [cursor=pointer]:
+            - generic [ref=e51] [cursor=pointer]: 
+            - heading "海运业务" [level=5] [ref=e52] [cursor=pointer]
+            - heading "8" [level=3] [ref=e53] [cursor=pointer]
+            - paragraph [ref=e54] [cursor=pointer]: 本月订单
+          - generic [ref=e57] [cursor=pointer]:
+            - generic [ref=e58] [cursor=pointer]: 
+            - heading "空运业务" [level=5] [ref=e59] [cursor=pointer]
+            - heading "5" [level=3] [ref=e60] [cursor=pointer]
+            - paragraph [ref=e61] [cursor=pointer]: 本月订单
+          - generic [ref=e64] [cursor=pointer]:
+            - generic [ref=e65] [cursor=pointer]: 
+            - heading "陆运业务" [level=5] [ref=e66] [cursor=pointer]
+            - heading "2" [level=3] [ref=e67] [cursor=pointer]
+            - paragraph [ref=e68] [cursor=pointer]: 本月订单
+          - generic [ref=e71] [cursor=pointer]:
+            - generic [ref=e72] [cursor=pointer]: 
+            - heading "铁运业务" [level=5] [ref=e73] [cursor=pointer]
+            - heading "5" [level=3] [ref=e74] [cursor=pointer]
+            - paragraph [ref=e75] [cursor=pointer]: 本月订单
+        - generic [ref=e76]:
+          - generic [ref=e77]:
+            - heading " 最近订单" [level=5] [ref=e78]:
+              - generic [ref=e79]: 
+              - text: 最近订单
+            - button " 刷新" [ref=e80] [cursor=pointer]:
+              - generic [ref=e81] [cursor=pointer]: 
+              - text: 刷新
+          - table [ref=e84]:
+            - rowgroup [ref=e85]:
+              - row "订单号 客户 服务类型 起始地 目的地 金额 状态 操作" [ref=e86]:
+                - cell "订单号" [ref=e87]
+                - cell "客户" [ref=e88]
+                - cell "服务类型" [ref=e89]
+                - cell "起始地" [ref=e90]
+                - cell "目的地" [ref=e91]
+                - cell "金额" [ref=e92]
+                - cell "状态" [ref=e93]
+                - cell "操作" [ref=e94]
+            - rowgroup [ref=e95]:
+              - row "ORD2025742484 小米科技 铁运 上海 釜山 ¥18,870 待确认  " [ref=e96]:
+                - cell "ORD2025742484" [ref=e97]:
+                  - code [ref=e98]: ORD2025742484
+                - cell "小米科技" [ref=e99]
+                - cell "铁运" [ref=e100]:
+                  - generic [ref=e101]: 铁运
+                - cell "上海" [ref=e102]
+                - cell "釜山" [ref=e103]
+                - cell "¥18,870" [ref=e104]:
+                  - strong [ref=e105]: ¥18,870
+                - cell "待确认" [ref=e106]:
+                  - generic [ref=e107]: 待确认
+                - cell " " [ref=e108]:
+                  - button "" [ref=e109] [cursor=pointer]:
+                    - generic [ref=e110] [cursor=pointer]: 
+                  - button "" [disabled]:
+                    - generic: 
+              - row "ORD2025742490 海康威视 海运 广州 汉堡 ¥14,781 已送达  " [ref=e111]:
+                - cell "ORD2025742490" [ref=e112]:
+                  - code [ref=e113]: ORD2025742490
+                - cell "海康威视" [ref=e114]
+                - cell "海运" [ref=e115]:
+                  - generic [ref=e116]: 海运
+                - cell "广州" [ref=e117]
+                - cell "汉堡" [ref=e118]
+                - cell "¥14,781" [ref=e119]:
+                  - strong [ref=e120]: ¥14,781
+                - cell "已送达" [ref=e121]:
+                  - generic [ref=e122]: 已送达
+                - cell " " [ref=e123]:
+                  - button "" [ref=e124] [cursor=pointer]:
+                    - generic [ref=e125] [cursor=pointer]: 
+                  - button "" [disabled]:
+                    - generic: 
+              - row "ORD2025742494 海康威视 陆运 青岛 鹿特丹 ¥39,626 已送达  " [ref=e126]:
+                - cell "ORD2025742494" [ref=e127]:
+                  - code [ref=e128]: ORD2025742494
+                - cell "海康威视" [ref=e129]
+                - cell "陆运" [ref=e130]:
+                  - generic [ref=e131]: 陆运
+                - cell "青岛" [ref=e132]
+                - cell "鹿特丹" [ref=e133]
+                - cell "¥39,626" [ref=e134]:
+                  - strong [ref=e135]: ¥39,626
+                - cell "已送达" [ref=e136]:
+                  - generic [ref=e137]: 已送达
+                - cell " " [ref=e138]:
+                  - button "" [ref=e139] [cursor=pointer]:
+                    - generic [ref=e140] [cursor=pointer]: 
+                  - button "" [disabled]:
+                    - generic: 
+              - row "ORD2025742485 海康威视 铁运 大连 釜山 ¥18,544 已确认  " [ref=e141]:
+                - cell "ORD2025742485" [ref=e142]:
+                  - code [ref=e143]: ORD2025742485
+                - cell "海康威视" [ref=e144]
+                - cell "铁运" [ref=e145]:
+                  - generic [ref=e146]: 铁运
+                - cell "大连" [ref=e147]
+                - cell "釜山" [ref=e148]
+                - cell "¥18,544" [ref=e149]:
+                  - strong [ref=e150]: ¥18,544
+                - cell "已确认" [ref=e151]:
+                  - generic [ref=e152]: 已确认
+                - cell " " [ref=e153]:
+                  - button "" [ref=e154] [cursor=pointer]:
+                    - generic [ref=e155] [cursor=pointer]: 
+                  - button "" [disabled]:
+                    - generic: 
+              - row "ORD2025742483 阿里巴巴集团 陆运 广州 东京 ¥34,625 已送达  " [ref=e156]:
+                - cell "ORD2025742483" [ref=e157]:
+                  - code [ref=e158]: ORD2025742483
+                - cell "阿里巴巴集团" [ref=e159]
+                - cell "陆运" [ref=e160]:
+                  - generic [ref=e161]: 陆运
+                - cell "广州" [ref=e162]
+                - cell "东京" [ref=e163]
+                - cell "¥34,625" [ref=e164]:
+                  - strong [ref=e165]: ¥34,625
+                - cell "已送达" [ref=e166]:
+                  - generic [ref=e167]: 已送达
+                - cell " " [ref=e168]:
+                  - button "" [ref=e169] [cursor=pointer]:
+                    - generic [ref=e170] [cursor=pointer]: 
+                  - button "" [disabled]:
+                    - generic: 
+      - text:  + +                        +                                                      +   
+  - text:  
+```

@@ -1,0 +1,791 @@
+package com.oneorder.clearing.service;
+
+import com.oneorder.clearing.dto.*;
+import com.oneorder.clearing.entity.*;
+import com.oneorder.clearing.repository.*;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+
+/**
+ * 增强分润计算引擎
+ * 集成内部合约管理的智能分润计算和关联交易处理
+ */
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class EnhancedProfitSharingEngine {
+
+    private final OrderRepository orderRepository;
+    private final OrderServiceRepository orderServiceRepository;
+    private final InternalProtocolRepository internalProtocolRepository;
+    private final AccountingEntryRepository accountingEntryRepository;
+    private final ClearingResultRepository clearingResultRepository;
+    
+    // 内部合约相关Repository（需要创建）
+    private final ContractTermsRepository contractTermsRepository;
+    private final IntercompanyTransactionRuleRepository intercompanyTransactionRuleRepository;
+    private final AssessmentSubsidyRuleRepository assessmentSubsidyRuleRepository;
+    private final ReceiptPaymentRetentionRuleRepository retentionRuleRepository;
+    private final FundRoutingRuleRepository fundRoutingRuleRepository;
+
+    private final ScriptEngineManager scriptEngineManager = new ScriptEngineManager();
+
+    // ==================== 核心分润计算 ====================
+
+    /**
+     * 执行增强分润计算
+     * 集成内部合约管理的完整分润逻辑
+     */
+    @Transactional
+    public EnhancedProfitSharingResult calculateEnhancedProfitSharing(EnhancedProfitSharingRequest request) {
+        log.info("开始增强分润计算 - 订单: {}", request.getOrderId());
+        
+        try {
+            // 1. 获取订单和服务信息
+            Order order = getOrderWithServices(request.getOrderId());
+            List<OrderService> services = orderServiceRepository.findByOrderId(request.getOrderId());
+            
+            // 2. 执行各服务项的分润计算
+            List<ServiceProfitSharingResult> serviceResults = new ArrayList<>();
+            BigDecimal totalRevenue = BigDecimal.ZERO;
+            BigDecimal totalCost = BigDecimal.ZERO;
+            BigDecimal totalSalesProfit = BigDecimal.ZERO;
+            BigDecimal totalDeliveryProfit = BigDecimal.ZERO;
+            BigDecimal totalManagementFee = BigDecimal.ZERO;
+            
+            for (OrderService service : services) {
+                ServiceProfitSharingResult serviceResult = calculateServiceProfitSharing(order, service, request);
+                serviceResults.add(serviceResult);
+                
+                // 累加总计
+                totalRevenue = totalRevenue.add(serviceResult.getServiceRevenue());
+                totalCost = totalCost.add(serviceResult.getServiceCost());
+                totalSalesProfit = totalSalesProfit.add(serviceResult.getSalesProfit());
+                totalDeliveryProfit = totalDeliveryProfit.add(serviceResult.getDeliveryProfit());
+                totalManagementFee = totalManagementFee.add(serviceResult.getManagementFee());
+            }
+            
+            // 3. 计算关联交易调整
+            IntercompanyAdjustmentResult intercompanyAdjustment = calculateIntercompanyAdjustments(order, serviceResults);
+            
+            // 4. 计算考核补贴
+            List<SubsidyCalculationResult> subsidies = calculateSubsidies(order, serviceResults);
+            
+            // 5. 计算收付款借抬头
+            RetentionCalculationResult retentions = calculateRetentions(order, totalRevenue, totalCost);
+            
+            // 6. 生成会计分录
+            List<AccountingEntry> accountingEntries = generateAccountingEntries(order, serviceResults, 
+                intercompanyAdjustment, subsidies, retentions);
+            
+            // 7. 保存分录
+            accountingEntryRepository.saveAll(accountingEntries);
+            
+            // 8. 生成清分结果
+            ClearingResult clearingResult = createClearingResult(order, serviceResults, 
+                totalRevenue, totalCost, totalSalesProfit, totalDeliveryProfit, totalManagementFee);
+            clearingResultRepository.save(clearingResult);
+            
+            log.info("增强分润计算完成 - 订单: {}, 总毛利: {}", request.getOrderId(), 
+                totalRevenue.subtract(totalCost));
+            
+            return EnhancedProfitSharingResult.builder()
+                .orderId(request.getOrderId())
+                .success(true)
+                .totalRevenue(totalRevenue)
+                .totalCost(totalCost)
+                .grossProfit(totalRevenue.subtract(totalCost))
+                .totalSalesProfit(totalSalesProfit)
+                .totalDeliveryProfit(totalDeliveryProfit)
+                .totalManagementFee(totalManagementFee)
+                .serviceResults(serviceResults)
+                .intercompanyAdjustment(intercompanyAdjustment)
+                .subsidies(subsidies)
+                .retentions(retentions)
+                .clearingResultId(clearingResult.getId())
+                .accountingEntryCount(accountingEntries.size())
+                .calculatedAt(LocalDateTime.now())
+                .build();
+                
+        } catch (Exception e) {
+            log.error("增强分润计算失败 - 订单: {}, 错误: {}", request.getOrderId(), e.getMessage(), e);
+            return EnhancedProfitSharingResult.builder()
+                .orderId(request.getOrderId())
+                .success(false)
+                .errorMessage("分润计算失败: " + e.getMessage())
+                .calculatedAt(LocalDateTime.now())
+                .build();
+        }
+    }
+
+    /**
+     * 计算单个服务的分润
+     */
+    private ServiceProfitSharingResult calculateServiceProfitSharing(Order order, OrderService service, 
+                                                                   EnhancedProfitSharingRequest request) {
+        log.debug("计算服务分润 - 服务: {}", service.getServiceCode());
+        
+        try {
+            // 获取合约条款
+            ContractTerms contractTerms = getContractTermsForService(service);
+            if (contractTerms == null) {
+                throw new RuntimeException("未找到适用的合约条款: " + service.getServiceCode());
+            }
+            
+            // 获取服务的收入和成本
+            BigDecimal serviceRevenue = getServiceRevenue(service, request);
+            BigDecimal serviceCost = getServiceCost(service, request);
+            BigDecimal grossProfit = serviceRevenue.subtract(serviceCost);
+            
+            // 根据分润模型计算
+            ProfitSharingCalculation calculation = calculateByProfitSharingType(
+                contractTerms, serviceRevenue, serviceCost, grossProfit);
+            
+            return ServiceProfitSharingResult.builder()
+                .serviceCode(service.getServiceCode())
+                .contractTermsId(contractTerms.getTermsId())
+                .profitSharingType(contractTerms.getProfitSharingType())
+                .serviceRevenue(serviceRevenue)
+                .serviceCost(serviceCost)
+                .grossProfit(grossProfit)
+                .salesProfit(calculation.getSalesProfit())
+                .deliveryProfit(calculation.getDeliveryProfit())
+                .managementFee(calculation.getManagementFee())
+                .operatingFee(calculation.getOperatingFee())
+                .calculationDetails(calculation.getDetails())
+                .calculationNotes(calculation.getNotes())
+                .build();
+                
+        } catch (Exception e) {
+            log.error("计算服务分润失败 - 服务: {}, 错误: {}", service.getServiceCode(), e.getMessage());
+            return ServiceProfitSharingResult.builder()
+                .serviceCode(service.getServiceCode())
+                .success(false)
+                .errorMessage("分润计算失败: " + e.getMessage())
+                .build();
+        }
+    }
+
+    /**
+     * 根据分润模型类型计算分润
+     */
+    private ProfitSharingCalculation calculateByProfitSharingType(ContractTerms contractTerms, 
+                                                                BigDecimal revenue, BigDecimal cost, BigDecimal grossProfit) {
+        
+        ProfitSharingCalculation calculation = new ProfitSharingCalculation();
+        List<String> notes = new ArrayList<>();
+        Map<String, Object> details = new HashMap<>();
+        
+        switch (contractTerms.getProfitSharingType()) {
+            case "BUY_SELL_PRICE":
+                calculation = calculateBuySellPrice(contractTerms, revenue, cost, grossProfit);
+                notes.add("采用买卖价分润模式");
+                break;
+                
+            case "COST_PLUS_FEE":
+                calculation = calculateCostPlusFee(contractTerms, revenue, cost);
+                notes.add("采用成本+操作费分润模式");
+                break;
+                
+            case "RATIO_SHARING":
+                calculation = calculateRatioSharing(contractTerms, revenue, cost, grossProfit);
+                notes.add("采用按比例分润模式");
+                details.put("salesRatio", contractTerms.getSalesProfitRatio());
+                details.put("deliveryRatio", contractTerms.getDeliveryProfitRatio());
+                break;
+                
+            case "CUSTOM":
+                calculation = calculateCustomScript(contractTerms, revenue, cost, grossProfit);
+                notes.add("采用自定义脚本分润模式");
+                break;
+                
+            default:
+                throw new RuntimeException("不支持的分润模型: " + contractTerms.getProfitSharingType());
+        }
+        
+        calculation.setNotes(notes);
+        calculation.setDetails(details);
+        return calculation;
+    }
+
+    /**
+     * 买卖价分润计算
+     */
+    private ProfitSharingCalculation calculateBuySellPrice(ContractTerms contractTerms, 
+                                                         BigDecimal revenue, BigDecimal cost, BigDecimal grossProfit) {
+        // 买卖价模式：销售方获得毛利，交付方获得操作费
+        BigDecimal operatingFee = calculateOperatingFee(contractTerms, revenue);
+        BigDecimal salesProfit = grossProfit.subtract(operatingFee);
+        BigDecimal deliveryProfit = operatingFee;
+        BigDecimal managementFee = BigDecimal.ZERO;
+        
+        return ProfitSharingCalculation.builder()
+            .salesProfit(salesProfit.max(BigDecimal.ZERO))
+            .deliveryProfit(deliveryProfit)
+            .managementFee(managementFee)
+            .operatingFee(operatingFee)
+            .build();
+    }
+
+    /**
+     * 成本+操作费分润计算
+     */
+    private ProfitSharingCalculation calculateCostPlusFee(ContractTerms contractTerms, 
+                                                        BigDecimal revenue, BigDecimal cost) {
+        // 成本+操作费模式：交付方获得成本+操作费，销售方获得剩余
+        BigDecimal operatingFee = calculateOperatingFee(contractTerms, revenue);
+        BigDecimal deliveryProfit = cost.add(operatingFee);
+        BigDecimal salesProfit = revenue.subtract(deliveryProfit);
+        BigDecimal managementFee = BigDecimal.ZERO;
+        
+        return ProfitSharingCalculation.builder()
+            .salesProfit(salesProfit.max(BigDecimal.ZERO))
+            .deliveryProfit(deliveryProfit)
+            .managementFee(managementFee)
+            .operatingFee(operatingFee)
+            .build();
+    }
+
+    /**
+     * 按比例分润计算
+     */
+    private ProfitSharingCalculation calculateRatioSharing(ContractTerms contractTerms, 
+                                                         BigDecimal revenue, BigDecimal cost, BigDecimal grossProfit) {
+        // 按比例分润：根据设定比例分配毛利
+        BigDecimal salesRatio = contractTerms.getSalesProfitRatio().divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+        BigDecimal deliveryRatio = contractTerms.getDeliveryProfitRatio().divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+        
+        BigDecimal salesProfit = grossProfit.multiply(salesRatio).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal deliveryProfit = grossProfit.multiply(deliveryRatio).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal managementFee = BigDecimal.ZERO;
+        
+        return ProfitSharingCalculation.builder()
+            .salesProfit(salesProfit)
+            .deliveryProfit(deliveryProfit)
+            .managementFee(managementFee)
+            .operatingFee(BigDecimal.ZERO)
+            .build();
+    }
+
+    /**
+     * 自定义脚本分润计算
+     */
+    private ProfitSharingCalculation calculateCustomScript(ContractTerms contractTerms, 
+                                                         BigDecimal revenue, BigDecimal cost, BigDecimal grossProfit) {
+        try {
+            ScriptEngine engine = scriptEngineManager.getEngineByName("javascript");
+            
+            // 设置脚本变量
+            engine.put("revenue", revenue.doubleValue());
+            engine.put("cost", cost.doubleValue());
+            engine.put("grossProfit", grossProfit.doubleValue());
+            
+            // 执行脚本
+            String script = contractTerms.getCalculationScript();
+            Object result = engine.eval(script);
+            
+            // 解析结果（假设脚本返回JSON格式）
+            Map<String, Object> scriptResult = parseScriptResult(result);
+            
+            return ProfitSharingCalculation.builder()
+                .salesProfit(new BigDecimal(scriptResult.get("salesProfit").toString()))
+                .deliveryProfit(new BigDecimal(scriptResult.get("deliveryProfit").toString()))
+                .managementFee(new BigDecimal(scriptResult.getOrDefault("managementFee", "0").toString()))
+                .operatingFee(new BigDecimal(scriptResult.getOrDefault("operatingFee", "0").toString()))
+                .build();
+                
+        } catch (ScriptException | NumberFormatException e) {
+            log.error("自定义脚本执行失败: {}", e.getMessage());
+            throw new RuntimeException("自定义分润脚本执行失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 计算操作费
+     */
+    private BigDecimal calculateOperatingFee(ContractTerms contractTerms, BigDecimal revenue) {
+        if (contractTerms.getUnitPrice() == null) {
+            return BigDecimal.ZERO;
+        }
+        
+        // 简化计算：假设按单票计算
+        BigDecimal operatingFee = contractTerms.getUnitPrice();
+        
+        // 应用最小值和最大值限制
+        if (contractTerms.getMinimumPerOrder() != null) {
+            operatingFee = operatingFee.max(contractTerms.getMinimumPerOrder());
+        }
+        if (contractTerms.getMaximumPerOrder() != null) {
+            operatingFee = operatingFee.min(contractTerms.getMaximumPerOrder());
+        }
+        
+        return operatingFee;
+    }
+
+    // ==================== 关联交易处理 ====================
+
+    /**
+     * 计算关联交易调整
+     */
+    private IntercompanyAdjustmentResult calculateIntercompanyAdjustments(Order order, 
+                                                                        List<ServiceProfitSharingResult> serviceResults) {
+        log.debug("计算关联交易调整 - 订单: {}", order.getOrderId());
+        
+        List<IntercompanyAdjustmentItem> adjustments = new ArrayList<>();
+        BigDecimal totalAdjustment = BigDecimal.ZERO;
+        
+        for (ServiceProfitSharingResult serviceResult : serviceResults) {
+            // 查找适用的关联交易规则
+            List<IntercompanyTransactionRule> rules = findIntercompanyRules(order, serviceResult);
+            
+            for (IntercompanyTransactionRule rule : rules) {
+                IntercompanyAdjustmentItem adjustment = calculateSingleIntercompanyAdjustment(
+                    order, serviceResult, rule);
+                adjustments.add(adjustment);
+                totalAdjustment = totalAdjustment.add(adjustment.getAdjustmentAmount());
+            }
+        }
+        
+        return IntercompanyAdjustmentResult.builder()
+            .orderId(order.getOrderId())
+            .totalAdjustment(totalAdjustment)
+            .adjustments(adjustments)
+            .calculatedAt(LocalDateTime.now())
+            .build();
+    }
+
+    /**
+     * 计算单个关联交易调整
+     */
+    private IntercompanyAdjustmentItem calculateSingleIntercompanyAdjustment(Order order, 
+                                                                           ServiceProfitSharingResult serviceResult,
+                                                                           IntercompanyTransactionRule rule) {
+        BigDecimal adjustmentAmount = BigDecimal.ZERO;
+        String adjustmentReason = "";
+        
+        switch (rule.getTransactionMode()) {
+            case "RATIO_RETENTION":
+                adjustmentAmount = calculateRatioRetentionAdjustment(serviceResult, rule);
+                adjustmentReason = "按比例留存调整";
+                break;
+                
+            case "COST_RATIO_MARKUP":
+                adjustmentAmount = calculateCostRatioMarkupAdjustment(serviceResult, rule);
+                adjustmentReason = "成本按比例加成调整";
+                break;
+                
+            case "COST_FIXED_MARKUP":
+                adjustmentAmount = calculateCostFixedMarkupAdjustment(serviceResult, rule);
+                adjustmentReason = "成本+固定金额加成调整";
+                break;
+        }
+        
+        return IntercompanyAdjustmentItem.builder()
+            .serviceCode(serviceResult.getServiceCode())
+            .ruleId(rule.getRuleId())
+            .salesEntityId(rule.getSalesEntityId())
+            .deliveryEntityId(rule.getDeliveryEntityId())
+            .transactionMode(rule.getTransactionMode())
+            .adjustmentAmount(adjustmentAmount)
+            .adjustmentReason(adjustmentReason)
+            .build();
+    }
+
+    // ==================== 考核补贴计算 ====================
+
+    /**
+     * 计算考核补贴
+     */
+    private List<SubsidyCalculationResult> calculateSubsidies(Order order, 
+                                                            List<ServiceProfitSharingResult> serviceResults) {
+        log.debug("计算考核补贴 - 订单: {}", order.getOrderId());
+        
+        List<SubsidyCalculationResult> subsidies = new ArrayList<>();
+        
+        // 查找适用的补贴规则
+        List<AssessmentSubsidyRule> rules = findApplicableSubsidyRules(order, serviceResults);
+        
+        for (AssessmentSubsidyRule rule : rules) {
+            for (ServiceProfitSharingResult serviceResult : serviceResults) {
+                if (isSubsidyRuleApplicable(rule, serviceResult)) {
+                    SubsidyCalculationResult subsidy = calculateSingleSubsidy(order, serviceResult, rule);
+                    subsidies.add(subsidy);
+                }
+            }
+        }
+        
+        return subsidies;
+    }
+
+    /**
+     * 计算单个补贴
+     */
+    private SubsidyCalculationResult calculateSingleSubsidy(Order order, ServiceProfitSharingResult serviceResult,
+                                                          AssessmentSubsidyRule rule) {
+        BigDecimal subsidyAmount = BigDecimal.ZERO;
+        String calculationMethod = "";
+        
+        switch (rule.getSubsidyMode()) {
+            case "PROFIT_MARKUP":
+                subsidyAmount = calculateProfitMarkupSubsidy(serviceResult, rule);
+                calculationMethod = "毛利加成补贴";
+                break;
+                
+            case "FIXED_SUBSIDY":
+                subsidyAmount = calculateFixedSubsidy(serviceResult, rule);
+                calculationMethod = "定额补贴";
+                break;
+        }
+        
+        // 应用最小值和最大值限制
+        if (rule.getMinimumSubsidyPerOrder() != null) {
+            subsidyAmount = subsidyAmount.max(rule.getMinimumSubsidyPerOrder());
+        }
+        if (rule.getMaximumSubsidyPerOrder() != null) {
+            subsidyAmount = subsidyAmount.min(rule.getMaximumSubsidyPerOrder());
+        }
+        
+        return SubsidyCalculationResult.builder()
+            .orderId(order.getOrderId())
+            .serviceCode(serviceResult.getServiceCode())
+            .ruleId(rule.getRuleId())
+            .ruleName(rule.getRuleNameCn())
+            .subsidyAmount(subsidyAmount)
+            .subsidyCostCenterType(rule.getSubsidyCostCenterType())
+            .calculationMethod(calculationMethod)
+            .currency(rule.getSubsidyCurrency())
+            .build();
+    }
+
+    // ==================== 收付款借抬头计算 ====================
+
+    /**
+     * 计算收付款借抬头
+     */
+    private RetentionCalculationResult calculateRetentions(Order order, BigDecimal totalRevenue, BigDecimal totalCost) {
+        log.debug("计算收付款借抬头 - 订单: {}", order.getOrderId());
+        
+        // 查找适用的借抬头规则
+        List<ReceiptPaymentRetentionRule> rules = findApplicableRetentionRules(order);
+        
+        BigDecimal totalReceiptRetention = BigDecimal.ZERO;
+        BigDecimal totalPaymentRetention = BigDecimal.ZERO;
+        List<RetentionCalculationItem> retentionItems = new ArrayList<>();
+        
+        for (ReceiptPaymentRetentionRule rule : rules) {
+            RetentionCalculationItem item = calculateSingleRetention(order, rule, totalRevenue, totalCost);
+            retentionItems.add(item);
+            
+            totalReceiptRetention = totalReceiptRetention.add(item.getReceiptRetentionAmount());
+            totalPaymentRetention = totalPaymentRetention.add(item.getPaymentRetentionAmount());
+        }
+        
+        return RetentionCalculationResult.builder()
+            .orderId(order.getOrderId())
+            .totalReceiptRetention(totalReceiptRetention)
+            .totalPaymentRetention(totalPaymentRetention)
+            .retentionItems(retentionItems)
+            .calculatedAt(LocalDateTime.now())
+            .build();
+    }
+
+    // ==================== 会计分录生成 ====================
+
+    /**
+     * 生成会计分录
+     */
+    private List<AccountingEntry> generateAccountingEntries(Order order,
+                                                          List<ServiceProfitSharingResult> serviceResults,
+                                                          IntercompanyAdjustmentResult intercompanyAdjustment,
+                                                          List<SubsidyCalculationResult> subsidies,
+                                                          RetentionCalculationResult retentions) {
+        log.debug("生成会计分录 - 订单: {}", order.getOrderId());
+        
+        List<AccountingEntry> entries = new ArrayList<>();
+        
+        // 1. 生成基础分润分录
+        entries.addAll(generateBasicProfitSharingEntries(order, serviceResults));
+        
+        // 2. 生成关联交易调整分录
+        entries.addAll(generateIntercompanyAdjustmentEntries(order, intercompanyAdjustment));
+        
+        // 3. 生成补贴分录
+        entries.addAll(generateSubsidyEntries(order, subsidies));
+        
+        // 4. 生成借抬头分录
+        entries.addAll(generateRetentionEntries(order, retentions));
+        
+        return entries;
+    }
+
+    /**
+     * 生成基础分润分录
+     */
+    private List<AccountingEntry> generateBasicProfitSharingEntries(Order order,
+                                                                  List<ServiceProfitSharingResult> serviceResults) {
+        List<AccountingEntry> entries = new ArrayList<>();
+        
+        for (ServiceProfitSharingResult result : serviceResults) {
+            // 销售部门收入分录
+            if (result.getSalesProfit().compareTo(BigDecimal.ZERO) > 0) {
+                AccountingEntry salesEntry = createAccountingEntry(
+                    order, "SALES_PROFIT", result.getSalesProfit(), 
+                    "销售分润 - " + result.getServiceCode());
+                entries.add(salesEntry);
+            }
+            
+            // 交付部门收入分录
+            if (result.getDeliveryProfit().compareTo(BigDecimal.ZERO) > 0) {
+                AccountingEntry deliveryEntry = createAccountingEntry(
+                    order, "DELIVERY_PROFIT", result.getDeliveryProfit(),
+                    "交付分润 - " + result.getServiceCode());
+                entries.add(deliveryEntry);
+            }
+            
+            // 管理费分录
+            if (result.getManagementFee().compareTo(BigDecimal.ZERO) > 0) {
+                AccountingEntry managementEntry = createAccountingEntry(
+                    order, "MANAGEMENT_FEE", result.getManagementFee(),
+                    "管理费 - " + result.getServiceCode());
+                entries.add(managementEntry);
+            }
+        }
+        
+        return entries;
+    }
+
+    /**
+     * 创建会计分录
+     */
+    private AccountingEntry createAccountingEntry(Order order, String entryType, 
+                                                BigDecimal amount, String description) {
+        AccountingEntry entry = new AccountingEntry();
+        entry.setOrderId(order.getOrderId());
+        entry.setEntryType(entryType);
+        entry.setAmount(amount);
+        entry.setDescription(description);
+        entry.setCurrency("CNY"); // 默认人民币
+        entry.setCreatedTime(LocalDateTime.now());
+        return entry;
+    }
+
+    // ==================== 辅助方法 ====================
+
+    private Order getOrderWithServices(String orderId) {
+        return orderRepository.findById(orderId)
+            .orElseThrow(() -> new RuntimeException("订单不存在: " + orderId));
+    }
+
+    private ContractTerms getContractTermsForService(OrderService service) {
+        if (service.getContractTermsId() != null) {
+            return contractTermsRepository.findById(service.getContractTermsId()).orElse(null);
+        }
+        
+        // 如果没有直接关联，尝试查找适用的条款
+        return contractTermsRepository.findApplicableTerms(service.getServiceCode())
+            .stream().findFirst().orElse(null);
+    }
+
+    private BigDecimal getServiceRevenue(OrderService service, EnhancedProfitSharingRequest request) {
+        // 从请求中获取或从服务中获取收入金额
+        return request.getServiceRevenues() != null ? 
+            request.getServiceRevenues().getOrDefault(service.getServiceCode(), BigDecimal.ZERO) :
+            service.getServiceAmount() != null ? service.getServiceAmount() : BigDecimal.ZERO;
+    }
+
+    private BigDecimal getServiceCost(OrderService service, EnhancedProfitSharingRequest request) {
+        // 从请求中获取或从服务中获取成本金额
+        return request.getServiceCosts() != null ? 
+            request.getServiceCosts().getOrDefault(service.getServiceCode(), BigDecimal.ZERO) :
+            BigDecimal.ZERO; // 默认为0，实际应该从成本系统获取
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> parseScriptResult(Object result) {
+        if (result instanceof Map) {
+            return (Map<String, Object>) result;
+        }
+        // 简化处理，实际应该解析JSON字符串
+        return new HashMap<>();
+    }
+
+    private List<IntercompanyTransactionRule> findIntercompanyRules(Order order, ServiceProfitSharingResult serviceResult) {
+        // 查找适用的关联交易规则
+        return intercompanyTransactionRuleRepository.findApplicableRules(
+            order.getSalesDepartmentId(), 
+            serviceResult.getServiceCode());
+    }
+
+    private List<AssessmentSubsidyRule> findApplicableSubsidyRules(Order order, 
+                                                                 List<ServiceProfitSharingResult> serviceResults) {
+        return assessmentSubsidyRuleRepository.findApplicableRules(
+            order.getBusinessType(),
+            serviceResults.stream().map(ServiceProfitSharingResult::getServiceCode).collect(Collectors.toList()));
+    }
+
+    private List<ReceiptPaymentRetentionRule> findApplicableRetentionRules(Order order) {
+        return retentionRuleRepository.findApplicableRules(order.getSalesStaffId());
+    }
+
+    private boolean isSubsidyRuleApplicable(AssessmentSubsidyRule rule, ServiceProfitSharingResult serviceResult) {
+        // 检查规则是否适用于该服务
+        List<String> applicableServices = parseJsonList(rule.getApplicableServices());
+        return applicableServices.isEmpty() || applicableServices.contains(serviceResult.getServiceCode());
+    }
+
+    private List<String> parseJsonList(String jsonString) {
+        // 简化处理，实际应该使用JSON解析器
+        if (jsonString == null || jsonString.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
+        return Arrays.asList(jsonString.replace("[", "").replace("]", "").replace("\"", "").split(","));
+    }
+
+    // 其他计算方法的占位符实现...
+    private BigDecimal calculateRatioRetentionAdjustment(ServiceProfitSharingResult serviceResult, 
+                                                       IntercompanyTransactionRule rule) {
+        return serviceResult.getGrossProfit().multiply(rule.getSalesProfitRetentionRatio().divide(BigDecimal.valueOf(100)));
+    }
+
+    private BigDecimal calculateCostRatioMarkupAdjustment(ServiceProfitSharingResult serviceResult, 
+                                                        IntercompanyTransactionRule rule) {
+        return serviceResult.getServiceCost().multiply(rule.getCostMarkupRatio().divide(BigDecimal.valueOf(100)));
+    }
+
+    private BigDecimal calculateCostFixedMarkupAdjustment(ServiceProfitSharingResult serviceResult, 
+                                                        IntercompanyTransactionRule rule) {
+        return rule.getFixedMarkupAmount();
+    }
+
+    private BigDecimal calculateProfitMarkupSubsidy(ServiceProfitSharingResult serviceResult, 
+                                                  AssessmentSubsidyRule rule) {
+        BigDecimal baseAmount = "TOTAL_PROFIT".equals(rule.getMarkupBase()) ? 
+            serviceResult.getGrossProfit() : serviceResult.getSalesProfit();
+        return baseAmount.multiply(rule.getMarkupCoefficient());
+    }
+
+    private BigDecimal calculateFixedSubsidy(ServiceProfitSharingResult serviceResult, 
+                                           AssessmentSubsidyRule rule) {
+        return rule.getUnitSubsidyAmount();
+    }
+
+    private RetentionCalculationItem calculateSingleRetention(Order order, ReceiptPaymentRetentionRule rule,
+                                                            BigDecimal totalRevenue, BigDecimal totalCost) {
+        BigDecimal receiptRetention = BigDecimal.ZERO;
+        BigDecimal paymentRetention = BigDecimal.ZERO;
+        
+        // 计算收款留存
+        if (rule.getReceiptRetentionMode() != null) {
+            switch (rule.getReceiptRetentionMode()) {
+                case "RATIO_RETENTION":
+                    receiptRetention = totalRevenue.multiply(rule.getReceiptRetentionRatio().divide(BigDecimal.valueOf(100)));
+                    break;
+                case "FIXED_AMOUNT_RETENTION":
+                    receiptRetention = rule.getReceiptRetentionAmount();
+                    break;
+            }
+        }
+        
+        // 计算付款留存
+        if (rule.getPaymentRetentionMode() != null) {
+            switch (rule.getPaymentRetentionMode()) {
+                case "RATIO_RETENTION":
+                    paymentRetention = totalCost.multiply(rule.getPaymentRetentionRatio().divide(BigDecimal.valueOf(100)));
+                    break;
+                case "FIXED_AMOUNT_RETENTION":
+                    paymentRetention = rule.getPaymentRetentionAmount();
+                    break;
+            }
+        }
+        
+        return RetentionCalculationItem.builder()
+            .ruleId(rule.getRuleId())
+            .receiptRetentionAmount(receiptRetention)
+            .paymentRetentionAmount(paymentRetention)
+            .build();
+    }
+
+    private List<AccountingEntry> generateIntercompanyAdjustmentEntries(Order order, IntercompanyAdjustmentResult adjustment) {
+        List<AccountingEntry> entries = new ArrayList<>();
+        
+        for (IntercompanyAdjustmentItem item : adjustment.getAdjustments()) {
+            AccountingEntry entry = createAccountingEntry(
+                order, "INTERCOMPANY_ADJUSTMENT", item.getAdjustmentAmount(),
+                "关联交易调整 - " + item.getAdjustmentReason());
+            entries.add(entry);
+        }
+        
+        return entries;
+    }
+
+    private List<AccountingEntry> generateSubsidyEntries(Order order, List<SubsidyCalculationResult> subsidies) {
+        List<AccountingEntry> entries = new ArrayList<>();
+        
+        for (SubsidyCalculationResult subsidy : subsidies) {
+            AccountingEntry entry = createAccountingEntry(
+                order, "SUBSIDY", subsidy.getSubsidyAmount(),
+                "考核补贴 - " + subsidy.getRuleName());
+            entries.add(entry);
+        }
+        
+        return entries;
+    }
+
+    private List<AccountingEntry> generateRetentionEntries(Order order, RetentionCalculationResult retentions) {
+        List<AccountingEntry> entries = new ArrayList<>();
+        
+        if (retentions.getTotalReceiptRetention().compareTo(BigDecimal.ZERO) > 0) {
+            AccountingEntry receiptEntry = createAccountingEntry(
+                order, "RECEIPT_RETENTION", retentions.getTotalReceiptRetention(),
+                "收款借抬头");
+            entries.add(receiptEntry);
+        }
+        
+        if (retentions.getTotalPaymentRetention().compareTo(BigDecimal.ZERO) > 0) {
+            AccountingEntry paymentEntry = createAccountingEntry(
+                order, "PAYMENT_RETENTION", retentions.getTotalPaymentRetention(),
+                "付款借抬头");
+            entries.add(paymentEntry);
+        }
+        
+        return entries;
+    }
+
+    private ClearingResult createClearingResult(Order order, List<ServiceProfitSharingResult> serviceResults,
+                                              BigDecimal totalRevenue, BigDecimal totalCost,
+                                              BigDecimal totalSalesProfit, BigDecimal totalDeliveryProfit,
+                                              BigDecimal totalManagementFee) {
+        ClearingResult result = new ClearingResult();
+        result.setOrderId(order.getOrderId());
+        result.setTotalAmount(totalRevenue);
+        result.setStatus("COMPLETED");
+        result.setCreatedTime(LocalDateTime.now());
+        // 设置其他必要字段...
+        return result;
+    }
+
+    // 内部数据类
+    @lombok.Data
+    @lombok.Builder
+    @lombok.AllArgsConstructor
+    @lombok.NoArgsConstructor
+    public static class ProfitSharingCalculation {
+        private BigDecimal salesProfit;
+        private BigDecimal deliveryProfit;
+        private BigDecimal managementFee;
+        private BigDecimal operatingFee;
+        private List<String> notes;
+        private Map<String, Object> details;
+    }
+}

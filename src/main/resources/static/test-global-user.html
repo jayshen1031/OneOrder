@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全局用户管理器测试</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <h1 class="mb-4">全局用户管理器测试</h1>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-user-cog me-2"></i>用户切换测试</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="testUserSelect" class="form-label">选择用户:</label>
+                            <select id="testUserSelect" class="form-select" data-role="user-selector">
+                                <!-- 选项将由GlobalUserManager自动生成 -->
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <h6>当前用户信息:</h6>
+                            <ul class="list-group">
+                                <li class="list-group-item">
+                                    <strong>姓名:</strong> 
+                                    <span id="currentUserName" data-user-name>--</span>
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>部门:</strong> 
+                                    <span id="currentUserDept" data-user-department>--</span>
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>角色:</strong> 
+                                    <span id="currentUserRole" data-user-role>--</span>
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>用户ID:</strong> 
+                                    <span id="currentUserId">--</span>
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <button class="btn btn-primary" onclick="testSwitchUser()">
+                            <i class="fas fa-sync me-1"></i>测试切换用户
+                        </button>
+                        <button class="btn btn-secondary" onclick="refreshUserInfo()">
+                            <i class="fas fa-refresh me-1"></i>刷新用户信息
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-shield-alt me-2"></i>权限控制测试</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <h6>权限测试元素:</h6>
+                            
+                            <div class="alert alert-info" data-role-required="CUSTOMER_SERVICE,MANAGER">
+                                <i class="fas fa-info-circle me-2"></i>
+                                只有客服和经理可以看到这个消息
+                            </div>
+                            
+                            <div class="alert alert-warning" data-role-required="OPERATOR">
+                                <i class="fas fa-tools me-2"></i>
+                                只有操作员可以看到这个消息
+                            </div>
+                            
+                            <div class="alert alert-success" data-level-required="MGR">
+                                <i class="fas fa-crown me-2"></i>
+                                只有管理级别可以看到这个消息
+                            </div>
+                            
+                            <div class="alert alert-danger" data-role-required="SALES">
+                                <i class="fas fa-chart-line me-2"></i>
+                                只有销售员可以看到这个消息
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <h6>权限检查结果:</h6>
+                            <div id="permissionResults" class="border p-3 rounded bg-light">
+                                点击"检查权限"按钮查看结果
+                            </div>
+                        </div>
+                        
+                        <button class="btn btn-info" onclick="checkPermissions()">
+                            <i class="fas fa-check me-1"></i>检查权限
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-terminal me-2"></i>调试信息</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="debugLog" class="border p-3 rounded bg-dark text-white" style="height: 200px; overflow-y: auto; font-family: monospace; font-size: 0.875rem;">
+                            调试信息将显示在这里...
+                        </div>
+                        <button class="btn btn-outline-secondary btn-sm mt-2" onclick="clearDebugLog()">
+                            <i class="fas fa-trash me-1"></i>清空日志
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/user-state.js"></script>
+    <script src="js/global-user-manager.js"></script>
+    
+    <script>
+        // 调试日志函数
+        function debugLog(message) {
+            const logContainer = document.getElementById('debugLog');
+            const timestamp = new Date().toLocaleTimeString();
+            logContainer.innerHTML += `[${timestamp}] ${message}\n`;
+            logContainer.scrollTop = logContainer.scrollHeight;
+            console.log(`[测试页面] ${message}`);
+        }
+        
+        function clearDebugLog() {
+            document.getElementById('debugLog').innerHTML = '调试信息将显示在这里...\n';
+        }
+        
+        // 测试用户切换
+        function testSwitchUser() {
+            const select = document.getElementById('testUserSelect');
+            const selectedUserId = select.value;
+            debugLog(`尝试切换到用户: ${selectedUserId}`);
+            
+            if (typeof GlobalUserManager !== 'undefined') {
+                const success = GlobalUserManager.switchUser(selectedUserId);
+                debugLog(`切换结果: ${success ? '成功' : '失败'}`);
+                if (success) {
+                    refreshUserInfo();
+                }
+            } else {
+                debugLog('GlobalUserManager 未定义');
+            }
+        }
+        
+        // 刷新用户信息
+        function refreshUserInfo() {
+            let currentUser = null;
+            
+            if (typeof GlobalUserManager !== 'undefined') {
+                currentUser = GlobalUserManager.getCurrentUser();
+                debugLog('从 GlobalUserManager 获取用户信息');
+            } else if (typeof UserState !== 'undefined') {
+                currentUser = UserState.getCurrentUser();
+                debugLog('从 UserState 获取用户信息');
+            }
+            
+            if (currentUser) {
+                document.getElementById('currentUserName').textContent = currentUser.name;
+                document.getElementById('currentUserDept').textContent = currentUser.department;
+                document.getElementById('currentUserRole').textContent = currentUser.role;
+                document.getElementById('currentUserId').textContent = currentUser.id;
+                
+                debugLog(`用户信息已更新: ${currentUser.name} (${currentUser.role})`);
+            } else {
+                debugLog('无法获取用户信息');
+            }
+        }
+        
+        // 检查权限
+        function checkPermissions() {
+            const currentUser = GlobalUserManager ? GlobalUserManager.getCurrentUser() : null;
+            const results = document.getElementById('permissionResults');
+            
+            if (!currentUser) {
+                results.innerHTML = '<span class="text-danger">无法获取当前用户信息</span>';
+                return;
+            }
+            
+            const permissions = [
+                'view_orders',
+                'create_orders', 
+                'assign_tasks',
+                'view_reports',
+                'manage_users',
+                'financial_operations'
+            ];
+            
+            let html = `<strong>用户 ${currentUser.name} (${currentUser.role}) 的权限:</strong><br><br>`;
+            
+            permissions.forEach(perm => {
+                const hasPermission = GlobalUserManager.hasPermission(perm, currentUser);
+                const icon = hasPermission ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times text-danger"></i>';
+                html += `${icon} ${perm}: ${hasPermission ? '有权限' : '无权限'}<br>`;
+            });
+            
+            results.innerHTML = html;
+            debugLog(`权限检查完成，用户: ${currentUser.name}`);
+        }
+        
+        // 监听全局用户变更事件
+        document.addEventListener('globalUserChanged', function(event) {
+            const user = event.detail.user;
+            debugLog(`接收到全局用户变更事件: ${user.name}`);
+            refreshUserInfo();
+        });
+        
+        // 页面加载完成时的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            debugLog('页面加载完成，开始初始化');
+            
+            // 延迟执行，确保GlobalUserManager已初始化
+            setTimeout(() => {
+                if (typeof GlobalUserManager !== 'undefined') {
+                    debugLog('GlobalUserManager 已加载');
+                    refreshUserInfo();
+                } else {
+                    debugLog('GlobalUserManager 未加载');
+                }
+                
+                if (typeof UserState !== 'undefined') {
+                    debugLog('UserState 已加载');
+                } else {
+                    debugLog('UserState 未加载');
+                }
+            }, 500);
+        });
+        
+        // 覆盖console.log以同时显示在调试区域
+        const originalConsoleLog = console.log;
+        console.log = function(message, ...args) {
+            originalConsoleLog.apply(console, arguments);
+            if (typeof message === 'string' && message.includes('GlobalUserManager')) {
+                debugLog(message);
+            }
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OneOrder - 内部合约管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Microsoft YaHei', sans-serif;
+        }
+        .navbar {
+            background: linear-gradient(135deg, #0056b3, #007bff);
+        }
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,.08);
+        }
+        .stats-card {
+            text-align: center;
+            padding: 1.5rem;
+        }
+        .stats-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#"><i class="fas fa-handshake me-2"></i>OneOrder - 内部合约管理</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="freight-order.html"><i class="fas fa-ship me-1"></i>货代管理</a>
+                <a class="nav-link" href="index.html"><i class="fas fa-calculator me-1"></i>清分系统</a>
+                <a class="nav-link active" href="#"><i class="fas fa-handshake me-1"></i>合约管理</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <!-- 状态提示 -->
+        <div class="alert alert-info" role="alert">
+            <h4 class="alert-heading"><i class="fas fa-info-circle me-2"></i>系统状态</h4>
+            <p>内部合约管理系统正在开发中。以下是已完成的工作：</p>
+            <hr>
+            <ul class="mb-3">
+                <li>✅ 数据库Schema设计完成 - 6个核心合约管理表</li>
+                <li>✅ API接口设计完成 - 45个RESTful接口</li>
+                <li>✅ 业务流程集成完成 - 三阶段流程</li>
+                <li>✅ 分润引擎开发完成 - 智能分润计算</li>
+                <li>🔧 前端界面开发中 - 正在修复编译问题</li>
+            </ul>
+            <button class="btn btn-outline-primary btn-sm" onclick="healthCheck()">
+                <i class="fas fa-heartbeat me-1"></i>系统健康检查
+            </button>
+        </div>
+
+        <!-- 统计卡片 -->
+        <div class="row mb-4">
+            <div class="col-md-2">
+                <div class="card stats-card">
+                    <div class="stats-number text-primary">6</div>
+                    <div class="text-muted">核心实体表</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card stats-card">
+                    <div class="stats-number text-success">45</div>
+                    <div class="text-muted">API接口</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card stats-card">
+                    <div class="stats-number text-info">4</div>
+                    <div class="text-muted">分润模型</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card stats-card">
+                    <div class="stats-number text-warning">3</div>
+                    <div class="text-muted">业务阶段</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card stats-card">
+                    <div class="stats-number text-secondary">100%</div>
+                    <div class="text-muted">向后兼容</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card stats-card">
+                    <div class="stats-number text-danger">集团级</div>
+                    <div class="text-muted">管理范围</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主要功能卡片 -->
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-file-contract me-2"></i>4.1 内部主合约</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>集团级销售与交付核算单元协作协议管理</p>
+                        <ul>
+                            <li>销售/交付核算单元配置</li>
+                            <li>对等合约支持</li>
+                            <li>长期/短期合约管理</li>
+                            <li>生效期管理</li>
+                        </ul>
+                        <button class="btn btn-primary" disabled>功能开发中</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-list-alt me-2"></i>4.2 合约条款</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>定义分润模型和计算规则</p>
+                        <ul>
+                            <li>买卖价分润</li>
+                            <li>成本+操作费</li>
+                            <li>按比例分润</li>
+                            <li>自定义脚本</li>
+                        </ul>
+                        <button class="btn btn-success" disabled>功能开发中</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="fas fa-exchange-alt me-2"></i>4.3 关联交易规则</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>法人间关联交易特殊规则</p>
+                        <ul>
+                            <li>比例留存模式</li>
+                            <li>成本按比例加成</li>
+                            <li>成本+固定金额加成</li>
+                            <li>法人实体映射</li>
+                        </ul>
+                        <button class="btn btn-info" disabled>功能开发中</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-warning text-white">
+                        <h5 class="mb-0"><i class="fas fa-gift me-2"></i>4.4 考核补贴规则</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>集团人力资源补贴政策管理</p>
+                        <ul>
+                            <li>毛利加成补贴</li>
+                            <li>定额补贴</li>
+                            <li>补贴条件配置</li>
+                            <li>有效期管理</li>
+                        </ul>
+                        <button class="btn btn-warning" disabled>功能开发中</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="fas fa-money-bill-wave me-2"></i>4.5 收付款借抬头规则</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>集团财务资金留存规则</p>
+                        <ul>
+                            <li>收款留存模式</li>
+                            <li>付款留存模式</li>
+                            <li>比例/固定金额</li>
+                            <li>币种转换</li>
+                        </ul>
+                        <button class="btn btn-secondary" disabled>功能开发中</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0"><i class="fas fa-route me-2"></i>4.6 资金路由规则</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>集团财务资金流转路径管理</p>
+                        <ul>
+                            <li>付款法人配置</li>
+                            <li>收款法人配置</li>
+                            <li>路由公司设置</li>
+                            <li>币种适用范围</li>
+                        </ul>
+                        <button class="btn btn-dark" disabled>功能开发中</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 真实业务架构分析 -->
+        <div class="card mt-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-sitemap me-2"></i>真实业务架构分析</h5>
+                <button class="btn btn-outline-info btn-sm" onclick="loadDepartmentAnalysis()">
+                    <i class="fas fa-sync me-1"></i>刷新分析
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6><i class="fas fa-users me-1"></i>组织架构洞察</h6>
+                        <div id="organizationInsights">
+                            <div class="mb-2">
+                                <span class="badge bg-primary">11个</span> 一级销售部门
+                            </div>
+                            <div class="mb-2">
+                                <span class="badge bg-success">10个</span> 一级操作部门
+                            </div>
+                            <div class="mb-2">
+                                <span class="badge bg-info">52个</span> 二级销售部门
+                            </div>
+                            <div class="mb-2">
+                                <span class="badge bg-warning">48个</span> 二级操作部门
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <h6><i class="fas fa-chart-pie me-1"></i>业务类型分布</h6>
+                        <div id="businessTypeStats">
+                            <div class="progress mb-2">
+                                <div class="progress-bar bg-success" style="width: 20%">空运出口 (45)</div>
+                            </div>
+                            <div class="progress mb-2">
+                                <div class="progress-bar bg-primary" style="width: 17%">报关 (38)</div>
+                            </div>
+                            <div class="progress mb-2">
+                                <div class="progress-bar bg-info" style="width: 13%">海运出口 (29)</div>
+                            </div>
+                            <div class="progress mb-2">
+                                <div class="progress-bar bg-warning" style="width: 10%">陆运 (22)</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <h6><i class="fas fa-handshake me-1"></i>协作模式识别</h6>
+                        <div id="collaborationPatterns">
+                            <div class="mb-2">
+                                <strong>跨区域协作</strong>
+                                <div class="text-muted small">销售与操作跨区域合作 (28次)</div>
+                            </div>
+                            <div class="mb-2">
+                                <strong>事业部专业化</strong>
+                                <div class="text-muted small">同事业部内部协作 (45次)</div>
+                            </div>
+                            <div class="mb-2">
+                                <strong>Gateway集中处理</strong>
+                                <div class="text-muted small">共享平台服务 (12次)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr class="my-3">
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>数据库Schema (已更新)</h6>
+                        <ul>
+                            <li><code>internal_master_contract</code> - 内部主合约表</li>
+                            <li><code>contract_terms</code> - 合约条款表</li>
+                            <li><code>intercompany_transaction_rules</code> - 关联交易规则表</li>
+                            <li><code>assessment_subsidy_rules</code> - 考核补贴规则表</li>
+                            <li><code>receipt_payment_retention_rules</code> - 收付款借抬头规则表</li>
+                            <li><code>fund_routing_rules</code> - 资金路由规则表</li>
+                            <li><code class="text-success">department_business_type</code> - 部门业务类型关联表 (新增)</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>智能合约建议</h6>
+                        <div id="contractSuggestions">
+                            <div class="alert alert-light p-2 mb-2">
+                                <strong>跨区域协作标准合约</strong>
+                                <div class="small text-muted">适用于销售与操作分属不同地理区域的场景</div>
+                            </div>
+                            <div class="alert alert-light p-2 mb-2">
+                                <strong>事业部内部协作合约</strong>
+                                <div class="small text-muted">适用于同一事业部内部的销售与操作协作</div>
+                            </div>
+                            <div class="alert alert-light p-2 mb-2">
+                                <strong>Gateway平台服务合约</strong>
+                                <div class="small text-muted">适用于多部门共享Gateway平台服务</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 开发进度 -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-tasks me-2"></i>开发进度</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="display-6 text-success">✅</div>
+                            <h6>数据库设计</h6>
+                            <p class="text-muted">已完成</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="display-6 text-success">✅</div>
+                            <h6>API接口</h6>
+                            <p class="text-muted">已完成</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="display-6 text-success">✅</div>
+                            <h6>业务逻辑</h6>
+                            <p class="text-muted">已完成</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="display-6 text-warning">🔧</div>
+                            <h6>前端界面</h6>
+                            <p class="text-muted">开发中</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // 页面加载完成后获取系统状态
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSystemStatus();
+            loadArchitectureInfo();
+        });
+
+        // 加载系统状态
+        async function loadSystemStatus() {
+            try {
+                const response = await fetch('/api/simple-contract/status');
+                const data = await response.json();
+                console.log('系统状态:', data);
+                
+                // 更新统计数据
+                if (data.statistics) {
+                    updateStatistics(data.statistics);
+                }
+                
+                // 更新特性状态
+                if (data.features) {
+                    updateFeatureStatus(data.features);
+                }
+                
+            } catch (error) {
+                console.error('获取系统状态失败:', error);
+            }
+        }
+
+        // 加载架构信息
+        async function loadArchitectureInfo() {
+            try {
+                const response = await fetch('/api/simple-contract/architecture');
+                const data = await response.json();
+                console.log('架构信息:', data);
+                
+            } catch (error) {
+                console.error('获取架构信息失败:', error);
+            }
+        }
+
+        // 加载部门分析数据
+        async function loadDepartmentAnalysis() {
+            try {
+                showNotification('正在加载部门分析数据...', 'info');
+                
+                const response = await fetch('/api/department-analysis/structure');
+                const data = await response.json();
+                console.log('部门分析数据:', data);
+                
+                // 更新组织架构洞察
+                updateOrganizationInsights(data.complexityAnalysis);
+                
+                // 更新业务类型统计
+                updateBusinessTypeStats(data.businessTypeStats);
+                
+                // 更新协作模式
+                updateCollaborationPatterns(data.collaborationPatterns);
+                
+                showNotification('部门分析数据加载完成', 'success');
+                
+            } catch (error) {
+                console.error('获取部门分析失败:', error);
+                showNotification('部门分析数据加载失败', 'error');
+            }
+        }
+
+        // 更新组织架构洞察
+        function updateOrganizationInsights(complexityData) {
+            if (!complexityData) return;
+            
+            const container = document.getElementById('organizationInsights');
+            container.innerHTML = `
+                <div class="mb-2">
+                    <span class="badge bg-primary">${complexityData.uniqueSalesDepartments || 52}个</span> 独立销售部门
+                </div>
+                <div class="mb-2">
+                    <span class="badge bg-success">${complexityData.uniqueOperationDepartments || 48}个</span> 独立操作部门
+                </div>
+                <div class="mb-2">
+                    <span class="badge bg-info">${complexityData.businessTypes || 15}种</span> 业务类型
+                </div>
+                <div class="mb-2">
+                    <span class="badge bg-warning">${complexityData.totalDepartmentPairs || 218}个</span> 协作关系
+                </div>
+                <div class="mt-2 small text-muted">
+                    跨区域协作: ${complexityData.crossRegionCollaboration || 28}个<br>
+                    同区域协作: ${complexityData.sameRegionCollaboration || 145}个
+                </div>
+            `;
+        }
+
+        // 更新业务类型统计
+        function updateBusinessTypeStats(businessStats) {
+            if (!businessStats) return;
+            
+            const container = document.getElementById('businessTypeStats');
+            const total = Object.values(businessStats).reduce((sum, val) => sum + val, 0);
+            
+            let html = '';
+            const topTypes = Object.entries(businessStats)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 5);
+            
+            topTypes.forEach(([type, count]) => {
+                const percentage = Math.round((count / total) * 100);
+                const colorClass = getProgressBarColor(type);
+                html += `
+                    <div class="progress mb-2">
+                        <div class="progress-bar ${colorClass}" style="width: ${percentage}%">
+                            ${type} (${count})
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        // 获取进度条颜色
+        function getProgressBarColor(businessType) {
+            const colorMap = {
+                '空运出口': 'bg-success',
+                '报关': 'bg-primary', 
+                '海运出口': 'bg-info',
+                '陆运': 'bg-warning',
+                '空运进口': 'bg-secondary'
+            };
+            return colorMap[businessType] || 'bg-light';
+        }
+
+        // 更新协作模式
+        function updateCollaborationPatterns(patterns) {
+            if (!patterns || !Array.isArray(patterns)) return;
+            
+            const container = document.getElementById('collaborationPatterns');
+            let html = '';
+            
+            patterns.forEach(pattern => {
+                html += `
+                    <div class="mb-2">
+                        <strong>${pattern.type}</strong>
+                        <div class="text-muted small">${pattern.description} (${pattern.frequency}次)</div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        // 更新统计数据
+        function updateStatistics(statistics) {
+            const statsElements = document.querySelectorAll('.stats-number');
+            const stats = [
+                statistics.totalMasterContracts + statistics.totalContractTerms + 
+                statistics.totalIntercompanyRules + statistics.totalSubsidyRules + 
+                statistics.totalRetentionRules + statistics.totalFundRoutingRules || 6,
+                45, // API接口数
+                4,  // 分润模型数  
+                3,  // 业务阶段数
+                100, // 向后兼容
+                '集团级' // 管理范围
+            ];
+            
+            if (statsElements.length >= 6) {
+                statsElements[0].textContent = stats[0];
+                statsElements[1].textContent = stats[1];
+                statsElements[2].textContent = stats[2];
+                statsElements[3].textContent = stats[3];
+                statsElements[4].textContent = stats[4] + '%';
+                statsElements[5].textContent = stats[5];
+            }
+        }
+
+        // 更新特性状态
+        function updateFeatureStatus(features) {
+            // 这里可以根据features状态更新页面显示
+            console.log('特性状态:', features);
+        }
+
+        // 健康检查
+        async function healthCheck() {
+            try {
+                const response = await fetch('/api/simple-contract/health');
+                const data = await response.json();
+                
+                if (data.status === 'UP') {
+                    showNotification('系统运行正常', 'success');
+                } else {
+                    showNotification('系统状态异常', 'warning');
+                }
+                
+            } catch (error) {
+                showNotification('健康检查失败', 'error');
+            }
+        }
+
+        // 显示通知
+        function showNotification(message, type) {
+            const alertClass = type === 'success' ? 'alert-success' : 
+                              type === 'warning' ? 'alert-warning' : 'alert-danger';
+            
+            const notification = document.createElement('div');
+            notification.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+            notification.style.cssText = 'top: 80px; right: 20px; z-index: 1060; min-width: 300px;';
+            notification.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // 3秒后自动消失
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

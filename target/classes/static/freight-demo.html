@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>货代业务演示 - OneOrder财务清分系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .timeline {
+            position: relative;
+            padding: 20px 0;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 30px;
+            height: 100%;
+            width: 2px;
+            background: #dee2e6;
+        }
+        .timeline-item {
+            position: relative;
+            padding-left: 70px;
+            margin-bottom: 20px;
+        }
+        .timeline-marker {
+            position: absolute;
+            left: 24px;
+            top: 0;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #007bff;
+            border: 3px solid white;
+            box-shadow: 0 0 0 2px #007bff;
+        }
+        .timeline-marker.success {
+            background: #28a745;
+            box-shadow: 0 0 0 2px #28a745;
+        }
+        .api-result {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            padding: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .order-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .order-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+                    <div class="container-fluid">
+                        <a class="navbar-brand" href="#">
+                            <i class="fas fa-ship me-2"></i>OneOrder货代业务演示
+                        </a>
+                    </div>
+                </nav>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-8">
+                <div class="p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3><i class="fas fa-boxes me-2"></i>货代订单管理</h3>
+                        <div>
+                            <button class="btn btn-success me-2" onclick="createSampleOrders()">
+                                <i class="fas fa-plus me-1"></i>创建演示数据
+                            </button>
+                            <button class="btn btn-info" onclick="loadOrders()">
+                                <i class="fas fa-refresh me-1"></i>刷新订单
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="orders-container">
+                        <div class="text-center p-4">
+                            <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
+                            <p>加载订单数据中...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="p-4 bg-light" style="min-height: 100vh;">
+                    <h5><i class="fas fa-cog me-2"></i>操作面板</h5>
+                    <div id="action-panel" class="mt-3">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            选择一个订单查看详情和执行操作
+                        </div>
+                    </div>
+                    
+                    <h5 class="mt-4"><i class="fas fa-terminal me-2"></i>API响应</h5>
+                    <div id="api-result" class="api-result mt-3" style="height: 300px;">
+                        等待API调用...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentOrderId = null;
+        const API_BASE = '/api/freight-orders';
+        
+        // 页面加载时获取订单列表
+        document.addEventListener('DOMContentLoaded', function() {
+            loadOrders();
+        });
+
+        // 创建演示订单
+        async function createSampleOrders() {
+            showLoading('创建演示数据中...');
+            try {
+                const response = await fetch(`${API_BASE}/demo/create-sample`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                const data = await response.json();
+                showApiResult('创建演示数据成功', data);
+                loadOrders();
+            } catch (error) {
+                showApiResult('创建演示数据失败', error.message);
+            }
+        }
+
+        // 加载订单列表
+        async function loadOrders() {
+            showLoading('加载订单中...');
+            try {
+                const response = await fetch(`${API_BASE}`);
+                const orders = await response.json();
+                displayOrders(orders);
+                showApiResult('获取订单列表', orders);
+            } catch (error) {
+                showError('加载订单失败: ' + error.message);
+            }
+        }
+
+        // 显示订单列表
+        function displayOrders(orders) {
+            const container = document.getElementById('orders-container');
+            if (orders.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center p-4">
+                        <i class="fas fa-inbox fa-2x mb-3 text-muted"></i>
+                        <p>暂无订单数据</p>
+                        <button class="btn btn-primary" onclick="createSampleOrders()">创建演示数据</button>
+                    </div>
+                `;
+                return;
+            }
+
+            const html = orders.map(order => `
+                <div class="card order-card mb-3" onclick="selectOrder('${order.orderId}')">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="card-title mb-2">
+                                    <i class="fas fa-file-alt me-2"></i>${order.orderNo}
+                                </h6>
+                                <p class="card-text text-muted mb-2">
+                                    <small>
+                                        <i class="fas fa-user me-1"></i>${order.customerName} |
+                                        <i class="fas fa-route me-1"></i>${order.portOfLoading} → ${order.portOfDischarge}
+                                    </small>
+                                </p>
+                                <p class="card-text mb-0">
+                                    <small class="text-muted">
+                                        <i class="fas fa-dollar-sign me-1"></i>${order.totalAmount} ${order.currency} |
+                                        <i class="fas fa-calendar me-1"></i>${formatDate(order.orderDate)}
+                                    </small>
+                                </p>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge status-badge ${getStatusColor(order.orderStatus)} mb-2">${getStatusText(order.orderStatus)}</span>
+                                <br>
+                                <small class="text-muted">${order.clearingMode}</small>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-info">
+                                <i class="fas fa-arrow-right me-1"></i>${order.nextAction}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            container.innerHTML = html;
+        }
+
+        // 选择订单
+        async function selectOrder(orderId) {
+            currentOrderId = orderId;
+            
+            // 高亮选中的订单
+            document.querySelectorAll('.order-card').forEach(card => {
+                card.classList.remove('border-primary');
+            });
+            event.currentTarget.classList.add('border-primary');
+
+            // 获取订单详情
+            try {
+                const response = await fetch(`${API_BASE}/${orderId}`);
+                const order = await response.json();
+                displayOrderActions(order);
+                showApiResult('获取订单详情', order);
+            } catch (error) {
+                showApiResult('获取订单详情失败', error.message);
+            }
+        }
+
+        // 显示订单操作面板
+        function displayOrderActions(order) {
+            const panel = document.getElementById('action-panel');
+            const actions = getAvailableActions(order.orderStatus);
+            
+            let html = `
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">订单: ${order.orderNo}</h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-2"><strong>状态:</strong> <span class="badge ${getStatusColor(order.orderStatus)}">${getStatusText(order.orderStatus)}</span></p>
+                        <p class="mb-3"><strong>下一步:</strong> ${order.nextAction}</p>
+                        
+                        <div class="d-grid gap-2">
+            `;
+            
+            actions.forEach(action => {
+                html += `<button class="btn ${action.class}" onclick="${action.func}('${order.orderId}')">${action.text}</button>`;
+            });
+            
+            html += `
+                        </div>
+                        
+                        <hr>
+                        <button class="btn btn-sm btn-outline-info w-100" onclick="showTimeline('${order.orderId}')">
+                            <i class="fas fa-clock me-1"></i>查看时间轴
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            panel.innerHTML = html;
+        }
+
+        // 获取可用操作
+        function getAvailableActions(status) {
+            const actions = [];
+            
+            switch(status) {
+                case 'CONFIRMED':
+                    actions.push({text: '订舱确认', class: 'btn-primary', func: 'showBookingForm'});
+                    break;
+                case 'BOOKING_CONFIRMED':
+                    actions.push({text: '报关完成', class: 'btn-success', func: 'showCustomsForm'});
+                    break;
+                case 'CUSTOMS_CLEARED':
+                    actions.push({text: '开船通知', class: 'btn-info', func: 'showShippingForm'});
+                    break;
+                case 'IN_TRANSIT':
+                    actions.push({text: '到港通知', class: 'btn-warning', func: 'notifyArrival'});
+                    break;
+                case 'ARRIVED':
+                    actions.push({text: '提货完成', class: 'btn-success', func: 'showDeliveryForm'});
+                    break;
+                case 'DELIVERED':
+                    actions.push({text: '费用确认(触发清分)', class: 'btn-danger', func: 'showCostForm'});
+                    break;
+            }
+            
+            return actions;
+        }
+
+        // 订舱确认
+        function showBookingForm(orderId) {
+            const html = `
+                <div class="mb-3">
+                    <label class="form-label">船名</label>
+                    <input type="text" class="form-control" id="vessel" value="MAERSK DENVER" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">航次</label>
+                    <input type="text" class="form-control" id="voyage" value="25E" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">预计开船时间</label>
+                    <input type="datetime-local" class="form-control" id="etd" value="2025-09-15T10:00" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">预计到港时间</label>
+                    <input type="datetime-local" class="form-control" id="eta" value="2025-09-30T08:00" />
+                </div>
+                <button class="btn btn-primary w-100" onclick="confirmBooking('${orderId}')">确认订舱</button>
+            `;
+            showForm('订舱确认', html);
+        }
+
+        async function confirmBooking(orderId) {
+            const data = {
+                vessel: document.getElementById('vessel').value,
+                voyage: document.getElementById('voyage').value,
+                etd: document.getElementById('etd').value + ':00',
+                eta: document.getElementById('eta').value + ':00'
+            };
+            
+            await executeAction(`${API_BASE}/${orderId}/booking`, data, '订舱确认');
+        }
+
+        // 报关完成
+        function showCustomsForm(orderId) {
+            const html = `
+                <div class="mb-3">
+                    <label class="form-label">报关单号</label>
+                    <input type="text" class="form-control" id="declarationNo" value="CUSTOMS${Date.now()}" />
+                </div>
+                <button class="btn btn-success w-100" onclick="completeCustoms('${orderId}')">完成报关</button>
+            `;
+            showForm('报关完成', html);
+        }
+
+        async function completeCustoms(orderId) {
+            const data = {
+                declarationNo: document.getElementById('declarationNo').value
+            };
+            await executeAction(`${API_BASE}/${orderId}/customs`, data, '报关完成');
+        }
+
+        // 开船通知
+        function showShippingForm(orderId) {
+            const html = `
+                <div class="mb-3">
+                    <label class="form-label">实际开船时间</label>
+                    <input type="datetime-local" class="form-control" id="actualETD" value="2025-09-15T10:00" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">预计到港时间</label>
+                    <input type="datetime-local" class="form-control" id="actualETA" value="2025-09-30T08:00" />
+                </div>
+                <button class="btn btn-info w-100" onclick="startShipping('${orderId}')">发送开船通知</button>
+            `;
+            showForm('开船通知', html);
+        }
+
+        async function startShipping(orderId) {
+            const data = {
+                etd: document.getElementById('actualETD').value + ':00',
+                eta: document.getElementById('actualETA').value + ':00'
+            };
+            await executeAction(`${API_BASE}/${orderId}/shipping`, data, '开船通知');
+        }
+
+        // 到港通知
+        async function notifyArrival(orderId) {
+            await executeAction(`${API_BASE}/${orderId}/arrival`, {}, '到港通知');
+        }
+
+        // 提货完成
+        function showDeliveryForm(orderId) {
+            const html = `
+                <div class="mb-3">
+                    <label class="form-label">收货人</label>
+                    <input type="text" class="form-control" id="receiverName" value="张三" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">提货时间</label>
+                    <input type="datetime-local" class="form-control" id="deliveryTime" value="${new Date().toISOString().slice(0,16)}" />
+                </div>
+                <button class="btn btn-success w-100" onclick="completeDelivery('${orderId}')">确认提货</button>
+            `;
+            showForm('提货完成', html);
+        }
+
+        async function completeDelivery(orderId) {
+            const data = {
+                deliveryTime: document.getElementById('deliveryTime').value + ':00',
+                receiverName: document.getElementById('receiverName').value
+            };
+            await executeAction(`${API_BASE}/${orderId}/delivery`, data, '提货完成');
+        }
+
+        // 费用确认
+        function showCostForm(orderId) {
+            const html = `
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    费用确认后将自动触发财务清分流程
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">总收入 (USD)</label>
+                    <input type="number" class="form-control" id="totalRevenue" value="15000" step="0.01" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">总成本 (USD)</label>
+                    <input type="number" class="form-control" id="totalCost" value="10500" step="0.01" />
+                </div>
+                <button class="btn btn-danger w-100" onclick="confirmCosts('${orderId}')">确认费用并启动清分</button>
+            `;
+            showForm('费用确认', html);
+        }
+
+        async function confirmCosts(orderId) {
+            const data = {
+                totalRevenue: parseFloat(document.getElementById('totalRevenue').value),
+                totalCost: parseFloat(document.getElementById('totalCost').value)
+            };
+            await executeAction(`${API_BASE}/${orderId}/costs`, data, '费用确认');
+        }
+
+        // 查看时间轴
+        async function showTimeline(orderId) {
+            try {
+                const response = await fetch(`${API_BASE}/${orderId}/timeline`);
+                const timeline = await response.json();
+                showApiResult('订单时间轴', timeline);
+            } catch (error) {
+                showApiResult('获取时间轴失败', error.message);
+            }
+        }
+
+        // 执行操作
+        async function executeAction(url, data, action) {
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                showApiResult(`${action}成功`, result);
+                
+                // 刷新订单列表和当前订单详情
+                loadOrders();
+                if (currentOrderId) {
+                    selectOrder(currentOrderId);
+                }
+            } catch (error) {
+                showApiResult(`${action}失败`, error.message);
+            }
+        }
+
+        // 显示表单
+        function showForm(title, html) {
+            const panel = document.getElementById('action-panel');
+            panel.innerHTML = `
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">${title}</h6>
+                    </div>
+                    <div class="card-body">
+                        ${html}
+                    </div>
+                </div>
+            `;
+        }
+
+        // 显示API结果
+        function showApiResult(title, data) {
+            const result = document.getElementById('api-result');
+            const formattedData = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+            result.textContent = `[${new Date().toLocaleTimeString()}] ${title}\n\n${formattedData}`;
+            result.scrollTop = 0;
+        }
+
+        // 显示加载状态
+        function showLoading(message) {
+            const container = document.getElementById('orders-container');
+            container.innerHTML = `
+                <div class="text-center p-4">
+                    <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+
+        // 显示错误
+        function showError(message) {
+            const container = document.getElementById('orders-container');
+            container.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>${message}
+                </div>
+            `;
+        }
+
+        // 工具函数
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString('zh-CN');
+        }
+
+        function getStatusColor(status) {
+            const colors = {
+                'CONFIRMED': 'bg-info',
+                'BOOKING_CONFIRMED': 'bg-primary', 
+                'CUSTOMS_CLEARED': 'bg-success',
+                'IN_TRANSIT': 'bg-warning',
+                'ARRIVED': 'bg-info',
+                'DELIVERED': 'bg-success',
+                'COST_CONFIRMED': 'bg-danger',
+                'COMPLETED': 'bg-dark'
+            };
+            return colors[status] || 'bg-secondary';
+        }
+
+        function getStatusText(status) {
+            const texts = {
+                'CONFIRMED': '已确认',
+                'BOOKING_CONFIRMED': '已订舱',
+                'CUSTOMS_CLEARED': '已报关',
+                'IN_TRANSIT': '运输中',
+                'ARRIVED': '已到港',
+                'DELIVERED': '已提货',
+                'COST_CONFIRMED': '费用已确认',
+                'COMPLETED': '已完成'
+            };
+            return texts[status] || status;
+        }
+    </script>
+</body>
+</html>

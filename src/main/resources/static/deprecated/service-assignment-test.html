@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>接派单功能测试</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .test-card {
+            margin-bottom: 20px;
+            border-left: 4px solid #007bff;
+        }
+        .test-success {
+            border-left-color: #28a745;
+        }
+        .test-error {
+            border-left-color: #dc3545;
+        }
+        .test-warning {
+            border-left-color: #ffc107;
+        }
+        .api-result {
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .test-log {
+            height: 200px;
+            overflow-y: auto;
+            background-color: #000;
+            color: #00ff00;
+            font-family: monospace;
+            padding: 10px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h2><i class="fas fa-vial"></i> OneOrder接派单功能测试</h2>
+                <p class="text-muted">测试接派单流程的各个API端点和功能模块</p>
+                
+                <div class="d-flex gap-2 mb-4">
+                    <button class="btn btn-primary" onclick="runAllTests()">
+                        <i class="fas fa-play"></i> 运行全部测试
+                    </button>
+                    <button class="btn btn-success" onclick="testDatabaseConnection()">
+                        <i class="fas fa-database"></i> 测试数据库连接
+                    </button>
+                    <button class="btn btn-info" onclick="clearTestLog()">
+                        <i class="fas fa-broom"></i> 清除日志
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- 测试项列表 -->
+            <div class="col-md-8">
+                <!-- 测试1: 获取订单服务项目 -->
+                <div class="card test-card" id="test1">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">测试1: 获取订单服务项目</h6>
+                        <button class="btn btn-sm btn-outline-primary" onclick="runSingleTest('test1', 'getOrderServices')">
+                            <i class="fas fa-play"></i> 运行
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>测试目标:</strong> 验证 /api/service-assignment/services/{orderId} 端点</p>
+                        <p><strong>预期结果:</strong> 返回订单的服务项目列表</p>
+                        <div class="api-result" id="test1-result">等待测试...</div>
+                    </div>
+                </div>
+
+                <!-- 测试2: 获取可用操作人员 -->
+                <div class="card test-card" id="test2">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">测试2: 获取可用操作人员</h6>
+                        <button class="btn btn-sm btn-outline-primary" onclick="runSingleTest('test2', 'getAvailableOperators')">
+                            <i class="fas fa-play"></i> 运行
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>测试目标:</strong> 验证 /api/service-assignment/available-operators 端点</p>
+                        <p><strong>预期结果:</strong> 返回可用的操作人员列表</p>
+                        <div class="api-result" id="test2-result">等待测试...</div>
+                    </div>
+                </div>
+
+                <!-- 测试3: 执行服务派单 -->
+                <div class="card test-card" id="test3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">测试3: 执行服务派单</h6>
+                        <button class="btn btn-sm btn-outline-primary" onclick="runSingleTest('test3', 'assignService')">
+                            <i class="fas fa-play"></i> 运行
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>测试目标:</strong> 验证 /api/service-assignment/assign 端点</p>
+                        <p><strong>预期结果:</strong> 成功创建服务派单</p>
+                        <div class="api-result" id="test3-result">等待测试...</div>
+                    </div>
+                </div>
+
+                <!-- 测试4: 批量派单 -->
+                <div class="card test-card" id="test4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">测试4: 批量派单</h6>
+                        <button class="btn btn-sm btn-outline-primary" onclick="runSingleTest('test4', 'batchAssignServices')">
+                            <i class="fas fa-play"></i> 运行
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>测试目标:</strong> 验证 /api/service-assignment/batch-assign 端点</p>
+                        <p><strong>预期结果:</strong> 成功批量创建服务派单</p>
+                        <div class="api-result" id="test4-result">等待测试...</div>
+                    </div>
+                </div>
+
+                <!-- 测试5: 获取派单状态 -->
+                <div class="card test-card" id="test5">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">测试5: 获取派单状态</h6>
+                        <button class="btn btn-sm btn-outline-primary" onclick="runSingleTest('test5', 'getAssignmentStatus')">
+                            <i class="fas fa-play"></i> 运行
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>测试目标:</strong> 验证 /api/service-assignment/status/{orderId} 端点</p>
+                        <p><strong>预期结果:</strong> 返回订单的派单状态统计</p>
+                        <div class="api-result" id="test5-result">等待测试...</div>
+                    </div>
+                </div>
+
+                <!-- 测试6: 操作人员确认接单 -->
+                <div class="card test-card" id="test6">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">测试6: 操作人员确认接单</h6>
+                        <button class="btn btn-sm btn-outline-primary" onclick="runSingleTest('test6', 'confirmAssignment')">
+                            <i class="fas fa-play"></i> 运行
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>测试目标:</strong> 验证 /api/service-assignment/confirm 端点</p>
+                        <p><strong>预期结果:</strong> 成功确认或拒绝接单</p>
+                        <div class="api-result" id="test6-result">等待测试...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 测试日志和状态 -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-list-alt"></i> 测试状态总览</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <h4 class="text-success" id="passedCount">0</h4>
+                                <small>通过</small>
+                            </div>
+                            <div class="col-4">
+                                <h4 class="text-danger" id="failedCount">0</h4>
+                                <small>失败</small>
+                            </div>
+                            <div class="col-4">
+                                <h4 class="text-warning" id="pendingCount">6</h4>
+                                <small>待测试</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-terminal"></i> 测试日志</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="test-log" id="testLog">
+OneOrder接派单功能测试控制台<br>
+等待测试开始...<br>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-info-circle"></i> 测试说明</h6>
+                    </div>
+                    <div class="card-body">
+                        <small>
+                            <p><strong>测试范围:</strong></p>
+                            <ul>
+                                <li>API端点可用性</li>
+                                <li>响应数据格式</li>
+                                <li>业务逻辑正确性</li>
+                                <li>错误处理机制</li>
+                            </ul>
+                            <p><strong>测试数据:</strong></p>
+                            <ul>
+                                <li>订单ID: HCBD20250916001</li>
+                                <li>操作人员: OP001, OP002</li>
+                                <li>服务类型: MBL处理, 内装</li>
+                            </ul>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const BASE_URL = 'http://localhost:8081/api';
+        let testResults = {
+            passed: 0,
+            failed: 0,
+            pending: 6
+        };
+
+        // 测试用例数据
+        const testData = {
+            orderId: 'HCBD20250916001',
+            operatorId: 'OP001',
+            serviceCode: 'MBL_PROCESSING',
+            assignmentId: 'ASG001'
+        };
+
+        function logMessage(message, type = 'info') {
+            const log = document.getElementById('testLog');
+            const timestamp = new Date().toLocaleTimeString();
+            const color = {
+                'info': '#00ff00',
+                'success': '#00ff00',
+                'error': '#ff0000',
+                'warning': '#ffff00'
+            }[type] || '#00ff00';
+            
+            log.innerHTML += `<span style="color: ${color}">[${timestamp}] ${message}</span><br>`;
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function updateTestStatus(testId, status) {
+            const testCard = document.getElementById(testId);
+            testCard.classList.remove('test-success', 'test-error', 'test-warning');
+            
+            if (status === 'success') {
+                testCard.classList.add('test-success');
+                testResults.passed++;
+                testResults.pending--;
+            } else if (status === 'error') {
+                testCard.classList.add('test-error');
+                testResults.failed++;
+                testResults.pending--;
+            } else if (status === 'warning') {
+                testCard.classList.add('test-warning');
+            }
+
+            // 更新状态计数
+            document.getElementById('passedCount').textContent = testResults.passed;
+            document.getElementById('failedCount').textContent = testResults.failed;
+            document.getElementById('pendingCount').textContent = testResults.pending;
+        }
+
+        async function runSingleTest(testId, testFunction) {
+            logMessage(`开始运行测试: ${testId}`, 'info');
+            try {
+                const result = await window[testFunction]();
+                document.getElementById(`${testId}-result`).innerHTML = JSON.stringify(result, null, 2);
+                
+                if (result && (result.code === 200 || result.success)) {
+                    updateTestStatus(testId, 'success');
+                    logMessage(`测试 ${testId} 通过`, 'success');
+                } else {
+                    updateTestStatus(testId, 'warning');
+                    logMessage(`测试 ${testId} 有警告: ${result.message || '未知问题'}`, 'warning');
+                }
+            } catch (error) {
+                document.getElementById(`${testId}-result`).innerHTML = `错误: ${error.message}`;
+                updateTestStatus(testId, 'error');
+                logMessage(`测试 ${testId} 失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function runAllTests() {
+            logMessage('开始运行全部测试...', 'info');
+            
+            // 重置状态
+            testResults = { passed: 0, failed: 0, pending: 6 };
+            
+            const tests = [
+                { id: 'test1', func: 'getOrderServices' },
+                { id: 'test2', func: 'getAvailableOperators' },
+                { id: 'test3', func: 'assignService' },
+                { id: 'test4', func: 'batchAssignServices' },
+                { id: 'test5', func: 'getAssignmentStatus' },
+                { id: 'test6', func: 'confirmAssignment' }
+            ];
+
+            for (const test of tests) {
+                await runSingleTest(test.id, test.func);
+                // 测试间隔500ms
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+
+            logMessage('全部测试完成!', 'success');
+        }
+
+        // 具体的测试函数
+
+        async function getOrderServices() {
+            const response = await fetch(`${BASE_URL}/api/service-assignment/services/${testData.orderId}`);
+            return await response.json();
+        }
+
+        async function getAvailableOperators() {
+            const response = await fetch(`${BASE_URL}/api/service-assignment/available-operators`);
+            return await response.json();
+        }
+
+        async function assignService() {
+            const response = await fetch(`${BASE_URL}/api/service-assignment/assign`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    orderId: testData.orderId,
+                    serviceCode: testData.serviceCode,
+                    operatorId: testData.operatorId,
+                    notes: '测试派单'
+                })
+            });
+            return await response.json();
+        }
+
+        async function batchAssignServices() {
+            const response = await fetch(`${BASE_URL}/api/service-assignment/batch-assign`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    orderId: testData.orderId,
+                    assignments: [
+                        {
+                            serviceCode: 'MBL_PROCESSING',
+                            operatorId: 'OP001',
+                            notes: '批量测试1'
+                        },
+                        {
+                            serviceCode: 'CONTAINER_LOADING',
+                            operatorId: 'OP003',
+                            notes: '批量测试2'
+                        }
+                    ]
+                })
+            });
+            return await response.json();
+        }
+
+        async function getAssignmentStatus() {
+            const response = await fetch(`${BASE_URL}/api/service-assignment/status/${testData.orderId}`);
+            return await response.json();
+        }
+
+        async function confirmAssignment() {
+            const response = await fetch(`${BASE_URL}/api/service-assignment/confirm`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    assignmentId: testData.assignmentId,
+                    operatorId: testData.operatorId,
+                    action: 'CONFIRM',
+                    notes: '测试确认接单'
+                })
+            });
+            return await response.json();
+        }
+
+        async function testDatabaseConnection() {
+            logMessage('测试数据库连接...', 'info');
+            try {
+                // 这里可以添加实际的数据库连接测试
+                logMessage('数据库连接测试需要后端支持', 'warning');
+            } catch (error) {
+                logMessage(`数据库连接失败: ${error.message}`, 'error');
+            }
+        }
+
+        function clearTestLog() {
+            document.getElementById('testLog').innerHTML = 'OneOrder接派单功能测试控制台<br>日志已清除...<br>';
+        }
+
+        // 页面加载时的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            logMessage('接派单功能测试页面已加载', 'info');
+            logMessage('点击"运行全部测试"开始测试', 'info');
+        });
+    </script>
+</body>
+</html>

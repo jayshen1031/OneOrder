@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Syntax Test</title>
+</head>
+<body>
+    <div id="test"></div>
+    <script>
+        const order = { orderId: 'test', orderStatus: 'PENDING' };
+        const clearingDisabled = order.orderStatus !== 'COMPLETED' ? 'disabled' : '';
+        
+        const html = `
+            <button onclick="test('${order.orderId}')" title="测试" ${clearingDisabled}>
+                测试按钮
+            </button>
+        `;
+        
+        document.getElementById('test').innerHTML = html;
+        console.log('测试成功');
+    </script>
+</body>
+</html>

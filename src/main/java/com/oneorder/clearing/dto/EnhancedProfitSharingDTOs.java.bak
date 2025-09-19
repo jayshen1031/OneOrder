@@ -1,0 +1,551 @@
+package com.oneorder.clearing.dto;
+
+import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import lombok.Builder;
+
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * 增强分润计算请求
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class EnhancedProfitSharingRequest {
+    @NotBlank(message = "订单ID不能为空")
+    private String orderId;
+    
+    // 服务收入映射 <serviceCode, revenue>
+    private Map<String, BigDecimal> serviceRevenues;
+    
+    // 服务成本映射 <serviceCode, cost>
+    private Map<String, BigDecimal> serviceCosts;
+    
+    // 额外费用映射 <feeType, amount>
+    private Map<String, BigDecimal> additionalFees;
+    
+    // 计算选项
+    private Boolean includeIntercompanyAdjustment = true; // 是否包含关联交易调整
+    private Boolean includeSubsidies = true; // 是否包含考核补贴
+    private Boolean includeRetentions = true; // 是否包含收付款借抬头
+    
+    // 强制重新计算（忽略缓存）
+    private Boolean forceRecalculate = false;
+    
+    // 计算说明
+    private String calculationReason;
+    
+    // 操作人员
+    private String operatorId;
+}
+
+/**
+ * 增强分润计算结果
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class EnhancedProfitSharingResult {
+    private String orderId;
+    private Boolean success;
+    private String errorMessage;
+    
+    // 总计数据
+    private BigDecimal totalRevenue;
+    private BigDecimal totalCost;
+    private BigDecimal grossProfit;
+    private BigDecimal totalSalesProfit;
+    private BigDecimal totalDeliveryProfit;
+    private BigDecimal totalManagementFee;
+    
+    // 各服务项分润结果
+    private List<ServiceProfitSharingResult> serviceResults;
+    
+    // 关联交易调整
+    private IntercompanyAdjustmentResult intercompanyAdjustment;
+    
+    // 考核补贴
+    private List<SubsidyCalculationResult> subsidies;
+    
+    // 收付款借抬头
+    private RetentionCalculationResult retentions;
+    
+    // 资金路由建议
+    private List<FundRoutingRecommendation> fundRoutingRecommendations;
+    
+    // 清分结果ID
+    private Long clearingResultId;
+    
+    // 会计分录数量
+    private Integer accountingEntryCount;
+    
+    // 计算时间
+    private LocalDateTime calculatedAt;
+    
+    // 计算耗时（毫秒）
+    private Long calculationDuration;
+    
+    // 计算详情和说明
+    private List<String> calculationNotes;
+    private Map<String, Object> calculationDetails;
+}
+
+/**
+ * 单个服务分润结果
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ServiceProfitSharingResult {
+    private String serviceCode;
+    private String serviceName;
+    private String contractTermsId;
+    private String profitSharingType;
+    
+    // 基础财务数据
+    private BigDecimal serviceRevenue;
+    private BigDecimal serviceCost;
+    private BigDecimal grossProfit;
+    
+    // 分润结果
+    private BigDecimal salesProfit;
+    private BigDecimal deliveryProfit;
+    private BigDecimal managementFee;
+    private BigDecimal operatingFee;
+    
+    // 分润比例
+    private BigDecimal salesProfitRatio;
+    private BigDecimal deliveryProfitRatio;
+    
+    // 计算状态
+    private Boolean success = true;
+    private String errorMessage;
+    
+    // 计算详情
+    private Map<String, Object> calculationDetails;
+    private List<String> calculationNotes;
+    
+    // 部门信息
+    private String salesDepartmentId;
+    private String salesDepartmentName;
+    private String deliveryDepartmentId;
+    private String deliveryDepartmentName;
+}
+
+/**
+ * 关联交易调整结果
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class IntercompanyAdjustmentResult {
+    private String orderId;
+    private BigDecimal totalAdjustment;
+    private List<IntercompanyAdjustmentItem> adjustments;
+    private LocalDateTime calculatedAt;
+}
+
+/**
+ * 关联交易调整项
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class IntercompanyAdjustmentItem {
+    private String serviceCode;
+    private String ruleId;
+    private String salesEntityId;
+    private String salesEntityName;
+    private String deliveryEntityId;
+    private String deliveryEntityName;
+    private String transactionMode; // RATIO_RETENTION, COST_RATIO_MARKUP, COST_FIXED_MARKUP
+    private BigDecimal adjustmentAmount;
+    private String adjustmentReason;
+    private String currency = "CNY";
+}
+
+/**
+ * 考核补贴计算结果
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class SubsidyCalculationResult {
+    private String orderId;
+    private String serviceCode;
+    private String ruleId;
+    private String ruleName;
+    private String subsidyCostCenterType; // SALES, DELIVERY
+    private BigDecimal subsidyAmount;
+    private String calculationMethod; // PROFIT_MARKUP, FIXED_SUBSIDY
+    private String currency;
+    
+    // 补贴基数和系数（用于审计）
+    private BigDecimal baseAmount;
+    private BigDecimal coefficient;
+    
+    // 限制信息
+    private BigDecimal minimumAmount;
+    private BigDecimal maximumAmount;
+    private Boolean isLimited; // 是否受到最小/最大值限制
+}
+
+/**
+ * 收付款借抬头计算结果
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class RetentionCalculationResult {
+    private String orderId;
+    private BigDecimal totalReceiptRetention;
+    private BigDecimal totalPaymentRetention;
+    private List<RetentionCalculationItem> retentionItems;
+    private LocalDateTime calculatedAt;
+}
+
+/**
+ * 收付款借抬头计算项
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class RetentionCalculationItem {
+    private String ruleId;
+    private String entityId;
+    private String entityName;
+    private BigDecimal receiptRetentionAmount;
+    private BigDecimal paymentRetentionAmount;
+    private String receiptRetentionMode;
+    private String paymentRetentionMode;
+    private String currency = "CNY";
+}
+
+/**
+ * 资金路由推荐
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class FundRoutingRecommendation {
+    private String payingEntityId;
+    private String payingEntityName;
+    private String receivingEntityId;
+    private String receivingEntityName;
+    private String currency;
+    private BigDecimal amount;
+    private List<String> routingPath;
+    private Integer routingSteps;
+    private BigDecimal estimatedCost;
+    private String recommendationReason;
+}
+
+// ==================== 批量和高级功能 DTOs ====================
+
+/**
+ * 批量分润计算请求
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class BatchProfitSharingRequest {
+    @NotNull(message = "订单ID列表不能为空")
+    private List<String> orderIds;
+    
+    // 统一计算参数
+    private Boolean includeIntercompanyAdjustment = true;
+    private Boolean includeSubsidies = true;
+    private Boolean includeRetentions = true;
+    private Boolean forceRecalculate = false;
+    
+    // 批次信息
+    private String batchId;
+    private String batchDescription;
+    private String operatorId;
+    
+    // 并发控制
+    private Integer maxConcurrency = 5;
+}
+
+/**
+ * 批量分润计算结果
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class BatchProfitSharingResult {
+    private String batchId;
+    private Integer totalOrders;
+    private Integer successOrders;
+    private Integer failureOrders;
+    private List<EnhancedProfitSharingResult> orderResults;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
+    private Long totalDuration; // 毫秒
+    
+    // 批次统计
+    private BigDecimal totalRevenue;
+    private BigDecimal totalCost;
+    private BigDecimal totalGrossProfit;
+    private BigDecimal totalSalesProfit;
+    private BigDecimal totalDeliveryProfit;
+    
+    // 错误信息
+    private List<String> errorMessages;
+}
+
+/**
+ * 分润计算预览请求
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ProfitSharingPreviewRequest {
+    @NotBlank(message = "订单ID不能为空")
+    private String orderId;
+    
+    // 模拟参数
+    private Map<String, BigDecimal> simulatedRevenues;
+    private Map<String, BigDecimal> simulatedCosts;
+    
+    // 替代合约条款（用于测试不同方案）
+    private String alternativeContractTermsId;
+    
+    // 预览模式
+    private String previewMode = "FULL"; // FULL, BASIC, SUMMARY
+}
+
+/**
+ * 分润计算预览结果
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ProfitSharingPreviewResult {
+    private String orderId;
+    private Boolean success;
+    private String errorMessage;
+    
+    // 当前方案
+    private EnhancedProfitSharingResult currentPlan;
+    
+    // 替代方案（如果有）
+    private EnhancedProfitSharingResult alternativePlan;
+    
+    // 对比分析
+    private ProfitSharingComparison comparison;
+    
+    // 建议
+    private List<String> recommendations;
+}
+
+/**
+ * 分润方案对比
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ProfitSharingComparison {
+    // 收入对比
+    private BigDecimal revenueDifference;
+    private BigDecimal revenueChangePercentage;
+    
+    // 成本对比
+    private BigDecimal costDifference;
+    private BigDecimal costChangePercentage;
+    
+    // 毛利对比
+    private BigDecimal grossProfitDifference;
+    private BigDecimal grossProfitChangePercentage;
+    
+    // 分润对比
+    private BigDecimal salesProfitDifference;
+    private BigDecimal deliveryProfitDifference;
+    
+    // 对比说明
+    private List<String> comparisonNotes;
+    
+    // 推荐选择
+    private String recommendedPlan; // CURRENT, ALTERNATIVE
+    private String recommendationReason;
+}
+
+// ==================== 审计和监控 DTOs ====================
+
+/**
+ * 分润计算审计记录
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ProfitSharingAuditRecord {
+    private Long auditId;
+    private String orderId;
+    private String operatorId;
+    private String operatorName;
+    private String operation; // CALCULATE, RECALCULATE, PREVIEW, ADJUST
+    private String previousState;
+    private String newState;
+    private String changeReason;
+    private LocalDateTime operationTime;
+    private String ipAddress;
+    private Map<String, Object> operationDetails;
+}
+
+/**
+ * 分润计算性能监控
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ProfitSharingPerformanceMetrics {
+    private LocalDateTime measurementTime;
+    private Long averageCalculationTime; // 毫秒
+    private Long maxCalculationTime;
+    private Long minCalculationTime;
+    private Integer totalCalculations;
+    private Integer successfulCalculations;
+    private Integer failedCalculations;
+    private Double successRate;
+    
+    // 性能瓶颈分析
+    private Map<String, Long> performanceBreakdown;
+    private List<String> performanceIssues;
+    private List<String> optimizationSuggestions;
+}
+
+// ==================== 规则验证和测试 DTOs ====================
+
+/**
+ * 合约规则验证请求
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ContractRuleValidationRequest {
+    private String contractTermsId;
+    private String serviceCode;
+    private BigDecimal testRevenue;
+    private BigDecimal testCost;
+    private Map<String, Object> testParameters;
+}
+
+/**
+ * 合约规则验证结果
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ContractRuleValidationResult {
+    private String contractTermsId;
+    private Boolean isValid;
+    private List<String> validationErrors;
+    private List<String> validationWarnings;
+    private Map<String, Object> testResults;
+    private List<String> suggestions;
+}
+
+/**
+ * 分润引擎健康检查结果
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ProfitSharingEngineHealthCheck {
+    private Boolean isHealthy;
+    private LocalDateTime checkTime;
+    private String version;
+    private List<String> healthIssues;
+    private Map<String, String> systemStatus;
+    
+    // 依赖系统状态
+    private Boolean databaseConnected;
+    private Boolean cacheAvailable;
+    private Boolean scriptEngineWorking;
+    
+    // 运行统计
+    private Integer activeCalculations;
+    private Integer queuedCalculations;
+    private Double systemLoad;
+}
+
+// ==================== 异常和错误处理 DTOs ====================
+
+/**
+ * 分润计算异常详情
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ProfitSharingException {
+    private String orderId;
+    private String serviceCode;
+    private String errorCode;
+    private String errorMessage;
+    private String errorCategory; // VALIDATION, CALCULATION, SYSTEM, BUSINESS
+    private LocalDateTime errorTime;
+    private String stackTrace;
+    private Map<String, Object> errorContext;
+    private List<String> troubleshootingSteps;
+    private Boolean isRetryable;
+}
+
+/**
+ * 分润计算重试请求
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ProfitSharingRetryRequest {
+    @NotBlank(message = "订单ID不能为空")
+    private String orderId;
+    
+    private String retryReason;
+    private Map<String, Object> retryParameters;
+    private Integer maxRetries = 3;
+    private Long retryDelayMillis = 1000L;
+}
+
+/**
+ * 分润计算重试结果
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ProfitSharingRetryResult {
+    private String orderId;
+    private Boolean retrySuccess;
+    private Integer attemptCount;
+    private EnhancedProfitSharingResult finalResult;
+    private List<String> retryLog;
+    private LocalDateTime lastAttemptTime;
+}

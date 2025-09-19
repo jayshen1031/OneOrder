@@ -1,0 +1,115 @@
+server:
+  port: 8081
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: oneorder-clearing-system
+    
+  # 数据库配置
+  datasource:
+    url: jdbc:postgresql://localhost:5433/oneorder_clearing
+    username: oneorder
+    password: oneorder123
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      
+  # JPA配置
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        use_sql_comments: true
+        
+  # Redis配置
+  redis:
+    host: localhost
+    port: 6379
+    password: 
+    database: 0
+    timeout: 6000ms
+    jedis:
+      pool:
+        max-active: 10
+        max-idle: 10
+        min-idle: 1
+        max-wait: -1ms
+        
+  # RabbitMQ配置
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    virtual-host: /
+    
+  # 缓存配置
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000 # 1小时
+      cache-null-values: false
+
+# 日志配置
+logging:
+  level:
+    com.oneorder: DEBUG
+    org.springframework.web: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/oneorder-clearing.log
+
+# API文档配置
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+# 业务配置
+clearing:
+  # 默认清分模式：star(星式) | chain(链式)
+  default-mode: star
+  
+  # 默认分润规则
+  profit-sharing:
+    default-rate: 0.5 # 五五开
+    
+  # 借抬头配置
+  transit-entity:
+    default-retention-rate: 0.03 # 3%
+    
+  # 过账配置
+  cross-border:
+    enable-netting: true # 启用净额抵消
+    netting-threshold: 10000 # 净额阈值
+    
+  # 规则引擎配置
+  rule-engine:
+    rules-path: classpath:rules/
+    enable-cache: true
+    cache-ttl: 3600 # 1小时
+
+# 监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always

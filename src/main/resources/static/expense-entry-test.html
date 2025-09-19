@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OneOrder - 录费模块测试</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .test-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+        }
+        .test-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+            margin-bottom: 1.5rem;
+        }
+        .test-result {
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-family: 'Courier New', monospace;
+        }
+        .status-success { background-color: #d4edda; border-left: 4px solid #28a745; }
+        .status-failed { background-color: #f8d7da; border-left: 4px solid #dc3545; }
+        .status-pending { background-color: #fff3cd; border-left: 4px solid #ffc107; }
+        .btn-test { border-radius: 25px; padding: 0.5rem 1.5rem; }
+    </style>
+</head>
+<body>
+    <div class="test-header">
+        <div class="container">
+            <h2><i class="fas fa-vial me-2"></i>OneOrder录费模块测试中心</h2>
+            <p class="mb-0">测试录费相关API接口和功能</p>
+        </div>
+    </div>
+
+    <div class="container mt-4">
+        <!-- 测试控制面板 -->
+        <div class="test-card">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0"><i class="fas fa-play-circle me-2"></i>测试控制面板</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <button class="btn btn-primary btn-test w-100" onclick="runAllTests()">
+                            <i class="fas fa-rocket me-1"></i>运行全部测试
+                        </button>
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-success btn-test w-100" onclick="testBasicApis()">
+                            <i class="fas fa-check me-1"></i>基础API测试
+                        </button>
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-info btn-test w-100" onclick="testExpenseFlow()">
+                            <i class="fas fa-flow me-1"></i>录费流程测试
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 测试结果区域 -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="test-card">
+                    <div class="card-header bg-transparent">
+                        <h6 class="mb-0"><i class="fas fa-list me-2"></i>基础数据API测试</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="basicApiTests">
+                            <div class="test-item" data-test="fee-codes">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>费用科目列表</span>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="testSingleApi('fee-codes')">
+                                        测试
+                                    </button>
+                                </div>
+                                <div id="result-fee-codes" class="test-result" style="display: none;"></div>
+                            </div>
+                            
+                            <div class="test-item mt-3" data-test="service-codes">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>服务项目列表</span>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="testSingleApi('service-codes')">
+                                        测试
+                                    </button>
+                                </div>
+                                <div id="result-service-codes" class="test-result" style="display: none;"></div>
+                            </div>
+                            
+                            <div class="test-item mt-3" data-test="legal-entities">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>法人实体列表</span>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="testSingleApi('legal-entities')">
+                                        测试
+                                    </button>
+                                </div>
+                                <div id="result-legal-entities" class="test-result" style="display: none;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="test-card">
+                    <div class="card-header bg-transparent">
+                        <h6 class="mb-0"><i class="fas fa-cogs me-2"></i>录费功能API测试</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="expenseApiTests">
+                            <div class="test-item" data-test="validate-fee-service">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>费用科目校验</span>
+                                    <button class="btn btn-sm btn-outline-success" onclick="testValidation()">
+                                        测试
+                                    </button>
+                                </div>
+                                <div id="result-validation" class="test-result" style="display: none;"></div>
+                            </div>
+                            
+                            <div class="test-item mt-3" data-test="suggest-service">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>智能服务推荐</span>
+                                    <button class="btn btn-sm btn-outline-success" onclick="testSuggestion()">
+                                        测试
+                                    </button>
+                                </div>
+                                <div id="result-suggestion" class="test-result" style="display: none;"></div>
+                            </div>
+                            
+                            <div class="test-item mt-3" data-test="add-entry">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>添加费用明细</span>
+                                    <button class="btn btn-sm btn-outline-success" onclick="testAddEntry()">
+                                        测试
+                                    </button>
+                                </div>
+                                <div id="result-add-entry" class="test-result" style="display: none;"></div>
+                            </div>
+                            
+                            <div class="test-item mt-3" data-test="order-entries">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>查询订单费用明细</span>
+                                    <button class="btn btn-sm btn-outline-success" onclick="testOrderEntries()">
+                                        测试
+                                    </button>
+                                </div>
+                                <div id="result-order-entries" class="test-result" style="display: none;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 综合测试结果 -->
+        <div class="test-card">
+            <div class="card-header bg-transparent">
+                <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>测试结果统计</h6>
+            </div>
+            <div class="card-body">
+                <div id="testSummary">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="h4 text-primary" id="totalTests">0</div>
+                            <div class="text-muted">总测试数</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="h4 text-success" id="passedTests">0</div>
+                            <div class="text-muted">通过</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="h4 text-danger" id="failedTests">0</div>
+                            <div class="text-muted">失败</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="h4 text-warning" id="pendingTests">0</div>
+                            <div class="text-muted">未测试</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 快速访问链接 -->
+        <div class="test-card">
+            <div class="card-header bg-transparent">
+                <h6 class="mb-0"><i class="fas fa-link me-2"></i>快速访问</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <a href="expense-entry.html" class="btn btn-outline-primary w-100 mb-2">
+                            <i class="fas fa-file-invoice-dollar me-1"></i>录费管理页面
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <a href="freight-order.html" class="btn btn-outline-info w-100 mb-2">
+                            <i class="fas fa-ship me-1"></i>货代订单管理
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 全局变量
+        let testResults = {
+            total: 0,
+            passed: 0,
+            failed: 0,
+            pending: 0
+        };
+
+        // 运行全部测试
+        async function runAllTests() {
+            console.log('开始运行全部测试...');
+            resetTestResults();
+            
+            await testBasicApis();
+            await delay(1000);
+            await testExpenseFlow();
+            
+            updateTestSummary();
+            console.log('全部测试完成');
+        }
+
+        // 基础API测试
+        async function testBasicApis() {
+            await testSingleApi('fee-codes');
+            await delay(500);
+            await testSingleApi('service-codes');
+            await delay(500);
+            await testSingleApi('legal-entities');
+        }
+
+        // 录费流程测试
+        async function testExpenseFlow() {
+            await testValidation();
+            await delay(500);
+            await testSuggestion();
+            await delay(500);
+            await testAddEntry();
+            await delay(500);
+            await testOrderEntries();
+        }
+
+        // 单个API测试
+        async function testSingleApi(endpoint) {
+            const resultId = `result-${endpoint}`;
+            const resultDiv = document.getElementById(resultId);
+            
+            showResult(resultId, '测试中...', 'pending');
+            testResults.total++;
+            testResults.pending++;
+            
+            try {
+                const response = await fetch(`/api/expense-entries/${endpoint}`);
+                const data = await response.json();
+                
+                if (response.ok && data.code === 200) {
+                    showResult(resultId, `✅ 成功: ${JSON.stringify(data, null, 2)}`, 'success');
+                    testResults.passed++;
+                    testResults.pending--;
+                } else {
+                    showResult(resultId, `❌ 失败: ${JSON.stringify(data, null, 2)}`, 'failed');
+                    testResults.failed++;
+                    testResults.pending--;
+                }
+            } catch (error) {
+                showResult(resultId, `❌ 网络错误: ${error.message}`, 'failed');
+                testResults.failed++;
+                testResults.pending--;
+            }
+            
+            updateTestSummary();
+        }
+
+        // 测试费用科目校验
+        async function testValidation() {
+            const resultId = 'result-validation';
+            showResult(resultId, '测试中...', 'pending');
+            testResults.total++;
+            testResults.pending++;
+            
+            try {
+                const testData = {
+                    feeCode: 'FCL001',
+                    serviceCode: 'MBL_PROCESSING',
+                    supplierType: 'SHIPPING_COMPANY'
+                };
+                
+                const response = await fetch('/api/expense-entries/validate-fee-service', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.code === 200) {
+                    showResult(resultId, `✅ 校验成功: ${JSON.stringify(data, null, 2)}`, 'success');
+                    testResults.passed++;
+                    testResults.pending--;
+                } else {
+                    showResult(resultId, `❌ 校验失败: ${JSON.stringify(data, null, 2)}`, 'failed');
+                    testResults.failed++;
+                    testResults.pending--;
+                }
+            } catch (error) {
+                showResult(resultId, `❌ 网络错误: ${error.message}`, 'failed');
+                testResults.failed++;
+                testResults.pending--;
+            }
+            
+            updateTestSummary();
+        }
+
+        // 测试智能推荐
+        async function testSuggestion() {
+            const resultId = 'result-suggestion';
+            showResult(resultId, '测试中...', 'pending');
+            testResults.total++;
+            testResults.pending++;
+            
+            try {
+                const response = await fetch('/api/expense-entries/suggest-service?orderId=HCBD20250916001&feeCode=FCL001');
+                const data = await response.json();
+                
+                if (response.ok && data.code === 200) {
+                    showResult(resultId, `✅ 推荐成功: ${JSON.stringify(data, null, 2)}`, 'success');
+                    testResults.passed++;
+                    testResults.pending--;
+                } else {
+                    showResult(resultId, `❌ 推荐失败: ${JSON.stringify(data, null, 2)}`, 'failed');
+                    testResults.failed++;
+                    testResults.pending--;
+                }
+            } catch (error) {
+                showResult(resultId, `❌ 网络错误: ${error.message}`, 'failed');
+                testResults.failed++;
+                testResults.pending--;
+            }
+            
+            updateTestSummary();
+        }
+
+        // 测试添加费用明细
+        async function testAddEntry() {
+            const resultId = 'result-add-entry';
+            showResult(resultId, '测试中...', 'pending');
+            testResults.total++;
+            testResults.pending++;
+            
+            try {
+                const testData = {
+                    orderId: 'HCBD20250916001',
+                    serviceCode: 'MBL_PROCESSING',
+                    feeCode: 'FCL001',
+                    entryType: 'RECEIVABLE',
+                    counterpartEntity: '测试客户公司',
+                    ourEntityId: 'HCBD_SHANGHAI',
+                    amount: 15000.00,
+                    currency: 'CNY'
+                };
+                
+                const response = await fetch('/api/expense-entries', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.code === 200) {
+                    showResult(resultId, `✅ 添加成功: ${JSON.stringify(data, null, 2)}`, 'success');
+                    testResults.passed++;
+                    testResults.pending--;
+                } else {
+                    showResult(resultId, `❌ 添加失败: ${JSON.stringify(data, null, 2)}`, 'failed');
+                    testResults.failed++;
+                    testResults.pending--;
+                }
+            } catch (error) {
+                showResult(resultId, `❌ 网络错误: ${error.message}`, 'failed');
+                testResults.failed++;
+                testResults.pending--;
+            }
+            
+            updateTestSummary();
+        }
+
+        // 测试查询订单费用明细
+        async function testOrderEntries() {
+            const resultId = 'result-order-entries';
+            showResult(resultId, '测试中...', 'pending');
+            testResults.total++;
+            testResults.pending++;
+            
+            try {
+                const response = await fetch('/api/expense-entries/order/HCBD20250916001');
+                const data = await response.json();
+                
+                if (response.ok && data.code === 200) {
+                    showResult(resultId, `✅ 查询成功: ${JSON.stringify(data, null, 2)}`, 'success');
+                    testResults.passed++;
+                    testResults.pending--;
+                } else {
+                    showResult(resultId, `❌ 查询失败: ${JSON.stringify(data, null, 2)}`, 'failed');
+                    testResults.failed++;
+                    testResults.pending--;
+                }
+            } catch (error) {
+                showResult(resultId, `❌ 网络错误: ${error.message}`, 'failed');
+                testResults.failed++;
+                testResults.pending--;
+            }
+            
+            updateTestSummary();
+        }
+
+        // 显示测试结果
+        function showResult(resultId, message, status) {
+            const resultDiv = document.getElementById(resultId);
+            resultDiv.style.display = 'block';
+            resultDiv.className = `test-result status-${status}`;
+            resultDiv.innerHTML = `<pre>${message}</pre>`;
+        }
+
+        // 更新测试统计
+        function updateTestSummary() {
+            document.getElementById('totalTests').textContent = testResults.total;
+            document.getElementById('passedTests').textContent = testResults.passed;
+            document.getElementById('failedTests').textContent = testResults.failed;
+            document.getElementById('pendingTests').textContent = testResults.pending;
+        }
+
+        // 重置测试结果
+        function resetTestResults() {
+            testResults = { total: 0, passed: 0, failed: 0, pending: 0 };
+            
+            // 隐藏所有结果显示
+            const resultDivs = document.querySelectorAll('.test-result');
+            resultDivs.forEach(div => {
+                div.style.display = 'none';
+            });
+            
+            updateTestSummary();
+        }
+
+        // 延迟函数
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('录费模块测试页面初始化完成');
+            updateTestSummary();
+        });
+    </script>
+</body>
+</html>

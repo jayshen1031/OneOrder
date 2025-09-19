@@ -1,0 +1,472 @@
+package com.oneorder.clearing.dto;
+
+import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import lombok.Builder;
+
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.DecimalMax;
+import javax.validation.constraints.DecimalMin;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * 法人间关联交易规则DTO
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class IntercompanyTransactionRuleDTO {
+    private String ruleId;
+    private String correspondingTermsId;
+    private String salesEntityId;
+    private String salesEntityName;
+    private String deliveryEntityId;
+    private String deliveryEntityName;
+    private String transactionMode; // RATIO_RETENTION, COST_RATIO_MARKUP, COST_FIXED_MARKUP
+    private BigDecimal salesProfitRetentionRatio;
+    private BigDecimal deliveryProfitRetentionRatio;
+    private BigDecimal costMarkupRatio;
+    private BigDecimal fixedMarkupAmount;
+    private String fixedMarkupCurrency;
+    private LocalDateTime createdTime;
+}
+
+/**
+ * 考核补贴规则DTO
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class AssessmentSubsidyRuleDTO {
+    private String ruleId;
+    private String ruleNameCn;
+    private String ruleNameEn;
+    private String applicableCostCenters;
+    private String applicableServices;
+    private String subsidyConditions;
+    private String subsidyCostCenterType; // SALES, DELIVERY
+    private String subsidyMode; // PROFIT_MARKUP, FIXED_SUBSIDY
+    private String markupBase; // TOTAL_PROFIT, DEPT_PROFIT
+    private BigDecimal markupCoefficient;
+    private Boolean excludeNegativeProfit;
+    private String subsidyCurrency;
+    private String unitOfMeasurement;
+    private BigDecimal unitSubsidyAmount;
+    private BigDecimal minimumSubsidyPerOrder;
+    private BigDecimal maximumSubsidyPerOrder;
+    private Boolean isCommissionCalculated;
+    private LocalDate validFrom;
+    private LocalDate validTo;
+    private LocalDateTime createdTime;
+    private LocalDateTime updatedTime;
+    
+    // 解析后的列表
+    private List<String> applicableCostCentersList;
+    private List<String> applicableServicesList;
+    
+    // 状态信息
+    private Boolean isCurrentlyValid;
+    private Integer daysUntilExpiration;
+}
+
+/**
+ * 收付款借抬头规则DTO
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ReceiptPaymentRetentionRuleDTO {
+    private String ruleId;
+    private String applicableEntities;
+    private String receiptRetentionMode; // RATIO_RETENTION, FIXED_AMOUNT_RETENTION
+    private BigDecimal receiptRetentionRatio;
+    private BigDecimal receiptRetentionAmount;
+    private String receiptRetentionCurrency;
+    private Boolean convertToReceiptCurrency;
+    private BigDecimal receiptRetentionRatioLimit;
+    private Boolean noRetentionIfBusinessParticipant;
+    private String paymentRetentionMode;
+    private BigDecimal paymentRetentionRatio;
+    private BigDecimal paymentRetentionAmount;
+    private String paymentRetentionCurrency;
+    private Boolean convertToPaymentCurrency;
+    private BigDecimal paymentRetentionRatioLimit;
+    private Boolean noPaymentRetentionIfBusinessParticipant;
+    private LocalDateTime createdTime;
+    private LocalDateTime updatedTime;
+    
+    // 解析后的实体列表
+    private List<String> applicableEntitiesList;
+}
+
+/**
+ * 资金路由规则DTO
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class FundRoutingRuleDTO {
+    private String ruleId;
+    private String payingEntityId;
+    private String payingEntityName;
+    private String receivingEntityId;
+    private String receivingEntityName;
+    private String currency;
+    private String routingEntity1;
+    private String routingEntity1Name;
+    private String routingEntity2;
+    private String routingEntity2Name;
+    private LocalDateTime createdTime;
+    private LocalDateTime updatedTime;
+    
+    // 路由路径信息
+    private List<String> routingPath;
+    private Integer routingSteps;
+    private Boolean isDirectRoute;
+}
+
+// ==================== 请求DTOs ====================
+
+/**
+ * 创建法人间关联交易规则请求
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+class CreateIntercompanyRuleRequest {
+    @NotBlank(message = "对应协议条款不能为空")
+    private String correspondingTermsId;
+    
+    @NotBlank(message = "销售法人不能为空")
+    private String salesEntityId;
+    
+    @NotBlank(message = "交付法人不能为空")
+    private String deliveryEntityId;
+    
+    @NotBlank(message = "关联交易模式不能为空")
+    private String transactionMode;
+    
+    private BigDecimal salesProfitRetentionRatio;
+    private BigDecimal deliveryProfitRetentionRatio;
+    private BigDecimal costMarkupRatio;
+    private BigDecimal fixedMarkupAmount;
+    private String fixedMarkupCurrency;
+}
+
+/**
+ * 创建考核补贴规则请求
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+class CreateSubsidyRuleRequest {
+    @NotBlank(message = "规则名称(中文)不能为空")
+    private String ruleNameCn;
+    
+    private String ruleNameEn;
+    
+    private String applicableCostCenters;
+    
+    @NotBlank(message = "适用服务不能为空")
+    private String applicableServices;
+    
+    private String subsidyConditions;
+    
+    @NotBlank(message = "被补贴方不能为空")
+    private String subsidyCostCenterType;
+    
+    @NotBlank(message = "补贴模式不能为空")
+    private String subsidyMode;
+    
+    private String markupBase;
+    private BigDecimal markupCoefficient;
+    private Boolean excludeNegativeProfit = true;
+    
+    @NotBlank(message = "补贴币种不能为空")
+    private String subsidyCurrency;
+    
+    private String unitOfMeasurement;
+    private BigDecimal unitSubsidyAmount;
+    private BigDecimal minimumSubsidyPerOrder;
+    private BigDecimal maximumSubsidyPerOrder;
+    private Boolean isCommissionCalculated = true;
+    
+    @NotNull(message = "有效期起始不能为空")
+    private LocalDate validFrom;
+    
+    @NotNull(message = "有效期截止不能为空")
+    private LocalDate validTo;
+}
+
+/**
+ * 更新考核补贴规则请求
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+class UpdateSubsidyRuleRequest {
+    private String ruleNameCn;
+    private String ruleNameEn;
+    private String applicableCostCenters;
+    private String applicableServices;
+    private String subsidyConditions;
+    private String subsidyCostCenterType;
+    private String subsidyMode;
+    private String markupBase;
+    private BigDecimal markupCoefficient;
+    private Boolean excludeNegativeProfit;
+    private String subsidyCurrency;
+    private String unitOfMeasurement;
+    private BigDecimal unitSubsidyAmount;
+    private BigDecimal minimumSubsidyPerOrder;
+    private BigDecimal maximumSubsidyPerOrder;
+    private Boolean isCommissionCalculated;
+    private LocalDate validFrom;
+    private LocalDate validTo;
+}
+
+/**
+ * 创建收付款借抬头规则请求
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+class CreateRetentionRuleRequest {
+    @NotBlank(message = "适用法人公司不能为空")
+    private String applicableEntities;
+    
+    private String receiptRetentionMode;
+    private BigDecimal receiptRetentionRatio;
+    private BigDecimal receiptRetentionAmount;
+    private String receiptRetentionCurrency;
+    private Boolean convertToReceiptCurrency = true;
+    private BigDecimal receiptRetentionRatioLimit;
+    private Boolean noRetentionIfBusinessParticipant = true;
+    
+    private String paymentRetentionMode;
+    private BigDecimal paymentRetentionRatio;
+    private BigDecimal paymentRetentionAmount;
+    private String paymentRetentionCurrency;
+    private Boolean convertToPaymentCurrency = true;
+    private BigDecimal paymentRetentionRatioLimit;
+    private Boolean noPaymentRetentionIfBusinessParticipant = true;
+}
+
+/**
+ * 创建资金路由规则请求
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+class CreateFundRoutingRuleRequest {
+    @NotBlank(message = "付款法人公司不能为空")
+    private String payingEntityId;
+    
+    @NotBlank(message = "收款法人公司不能为空")
+    private String receivingEntityId;
+    
+    private String currency;
+    private String routingEntity1;
+    private String routingEntity2;
+}
+
+// ==================== 业务流程DTOs ====================
+
+/**
+ * 合约匹配请求
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+class ContractMatchRequest {
+    @NotBlank(message = "订单ID不能为空")
+    private String orderId;
+    
+    private String salesDepartmentId;
+    private String deliveryDepartmentId;
+    private String serviceCode;
+    private String businessType;
+    private String customerId;
+    private List<String> serviceList;
+}
+
+/**
+ * 合约匹配结果DTO
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ContractMatchResultDTO {
+    private String orderId;
+    private Boolean matchFound;
+    private String masterContractId;
+    private String contractTermsId;
+    private String matchReason;
+    private List<ContractTermsDTO> alternativeTerms;
+    private Map<String, Object> matchDetails;
+}
+
+/**
+ * 合约应用请求
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+class ContractApplicationRequest {
+    @NotBlank(message = "订单ID不能为空")
+    private String orderId;
+    
+    @NotBlank(message = "主合约ID不能为空")
+    private String masterContractId;
+    
+    @NotBlank(message = "合约条款ID不能为空")
+    private String contractTermsId;
+    
+    private String applicationReason;
+    private Map<String, Object> customParameters;
+}
+
+/**
+ * 合约应用结果DTO
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ContractApplicationResultDTO {
+    private String orderId;
+    private Boolean applicationSuccess;
+    private String masterContractId;
+    private String contractTermsId;
+    private String applicationMessage;
+    private Map<String, Object> applicationDetails;
+    private ProfitSharingCalculationDTO profitSharingPreview;
+}
+
+/**
+ * 分润计算请求
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+class ProfitSharingCalculationRequest {
+    @NotBlank(message = "订单ID不能为空")
+    private String orderId;
+    
+    private String contractTermsId;
+    private BigDecimal totalRevenue;
+    private BigDecimal totalCost;
+    private Map<String, BigDecimal> additionalFees;
+}
+
+/**
+ * 分润计算结果DTO
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ProfitSharingCalculationDTO {
+    private String orderId;
+    private String contractTermsId;
+    private BigDecimal totalRevenue;
+    private BigDecimal totalCost;
+    private BigDecimal grossProfit;
+    private BigDecimal salesPortion;
+    private BigDecimal deliveryPortion;
+    private BigDecimal managementFee;
+    private Map<String, BigDecimal> detailedBreakdown;
+    private List<String> calculationNotes;
+    private LocalDateTime calculatedAt;
+}
+
+// ==================== 统计与报表DTOs ====================
+
+/**
+ * 合约统计DTO
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ContractStatisticsDTO {
+    private Integer totalMasterContracts;
+    private Integer activeMasterContracts;
+    private Integer totalContractTerms;
+    private Integer totalIntercompanyRules;
+    private Integer totalSubsidyRules;
+    private Integer activeSubsidyRules;
+    private Integer totalRetentionRules;
+    private Integer totalFundRoutingRules;
+    
+    private Map<String, Integer> contractsByProfitSharingType;
+    private Map<String, Integer> contractsByTransactionMode;
+    private Map<String, BigDecimal> averageProfitRatios;
+    
+    private LocalDateTime statisticsGeneratedAt;
+}
+
+/**
+ * 合约验证请求
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+class ContractValidationRequest {
+    private String masterContractId;
+    private String contractTermsId;
+    private List<String> serviceList;
+    private List<String> entityList;
+}
+
+/**
+ * 合约验证结果DTO
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ContractValidationResultDTO {
+    private Boolean isValid;
+    private List<String> validationErrors;
+    private List<String> validationWarnings;
+    private Map<String, Object> validationDetails;
+    private LocalDateTime validatedAt;
+}
+
+/**
+ * 合约健康状态DTO
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ContractHealthStatusDTO {
+    private Boolean systemHealthy;
+    private Integer expiringSoonCount; // 即将到期的合约数量
+    private Integer conflictingRulesCount; // 冲突规则数量
+    private Integer incompleteConfigCount; // 配置不完整的数量
+    private List<String> healthIssues;
+    private List<String> recommendations;
+    private LocalDateTime lastCheckedAt;
+}

@@ -1,0 +1,8 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ---------------< com.oneorder:oneorder-clearing-system >----------------
+[INFO] Building OneOrder财务清分系统 1.0.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] >>> spring-boot:2.7.14:run (default-cli) > test-compile @ oneorder-clearing-system >>>

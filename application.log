@@ -1,0 +1,1126 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::               (v2.7.14)
+
+2025-09-18 11:25:51 [main] INFO  c.o.c.OneOrderClearingApplication - Starting OneOrderClearingApplication v1.0.0 using Java 11.0.28 on shenyangdeMacBook-Air.local with PID 48875 (/Users/jay/Documents/baidu/projects/OneOrder/target/oneorder-clearing-system-1.0.0.jar started by jay in /Users/jay/Documents/baidu/projects/OneOrder)
+2025-09-18 11:25:51 [main] DEBUG c.o.c.OneOrderClearingApplication - Running with Spring Boot v2.7.14, Spring v5.3.29
+2025-09-18 11:25:51 [main] INFO  c.o.c.OneOrderClearingApplication - No active profile set, falling back to 1 default profile: "default"
+2025-09-18 11:25:54 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2025-09-18 11:25:54 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2025-09-18 11:25:55 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 852 ms. Found 14 JPA repository interfaces.
+2025-09-18 11:25:55 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2025-09-18 11:25:55 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2025-09-18 11:25:55 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.oneorder.clearing.repository.OrderServiceRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-18 11:25:55 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.oneorder.clearing.repository.ClearingRuleRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-18 11:25:55 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.oneorder.clearing.repository.ClearingResultRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-18 11:25:55 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.oneorder.clearing.repository.DepartmentRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-18 11:25:55 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.oneorder.clearing.repository.StaffRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-18 11:25:55 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.oneorder.clearing.repository.CrossBorderFlowRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-18 11:25:55 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.oneorder.clearing.repository.ServiceConfigRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-18 11:25:55 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.oneorder.clearing.repository.ProtocolRevenueRuleRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-18 11:25:55 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.oneorder.clearing.repository.LegalEntityRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-18 11:25:55 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.oneorder.clearing.repository.ServiceAssignmentNotificationRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-18 11:25:55 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.oneorder.clearing.repository.InternalProtocolRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-18 11:25:55 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.oneorder.clearing.repository.TransitEntityRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-18 11:25:55 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.oneorder.clearing.repository.OrderRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-18 11:25:55 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.oneorder.clearing.repository.AccountingEntryRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-18 11:25:55 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 84 ms. Found 0 Redis repository interfaces.
+2025-09-18 11:25:57 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port(s): 8081 (http)
+2025-09-18 11:25:57 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2025-09-18 11:25:57 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/9.0.78]
+2025-09-18 11:25:57 [main] INFO  o.a.c.c.C.[.[localhost].[/api] - Initializing Spring embedded WebApplicationContext
+2025-09-18 11:25:57 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 6692 ms
+2025-09-18 11:25:59 [main] INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+2025-09-18 11:25:59 [main] INFO  org.hibernate.Version - HHH000412: Hibernate ORM core version 5.6.15.Final
+2025-09-18 11:25:59 [main] INFO  o.h.annotations.common.Version - HCANN000001: Hibernate Commons Annotations {5.1.2.Final}
+2025-09-18 11:26:00 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2025-09-18 11:26:00 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2025-09-18 11:26:00 [main] INFO  org.hibernate.dialect.Dialect - HHH000400: Using dialect: org.hibernate.dialect.PostgreSQLDialect
+2025-09-18 11:26:03 [main] INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000490: Using JtaPlatform implementation: [org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform]
+2025-09-18 11:26:03 [main] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2025-09-18 11:26:09 [main] WARN  o.s.b.a.o.j.JpaBaseConfiguration$JpaWebConfiguration - spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2025-09-18 11:26:09 [main] INFO  o.s.b.a.w.s.WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+2025-09-18 11:26:11 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port(s): 8081 (http) with context path '/api'
+2025-09-18 11:26:11 [main] INFO  c.o.c.OneOrderClearingApplication - Started OneOrderClearingApplication in 22.064 seconds (JVM running for 23.143)
+2025-09-18 11:26:11 [main] DEBUG org.hibernate.SQL - 
+    /* select
+        count(*) 
+    from
+        ServiceConfig x */ select
+            count(*) as col_0_0_ 
+        from
+            service_config servicecon0_
+Hibernate: 
+    /* select
+        count(*) 
+    from
+        ServiceConfig x */ select
+            count(*) as col_0_0_ 
+        from
+            service_config servicecon0_
+2025-09-18 11:26:11 [main] INFO  c.o.c.s.ServiceConfigInitializer - 服务配置已存在 20 条记录，跳过初始化
+==============================================
+OneOrder财务清分系统启动成功！
+API文档地址: http://localhost:8080/api/swagger-ui.html
+==============================================
+2025-09-18 11:26:24 [http-nio-8081-exec-1] INFO  o.a.c.c.C.[.[localhost].[/api] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-09-18 11:26:24 [http-nio-8081-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2025-09-18 11:26:24 [http-nio-8081-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 10 ms
+2025-09-18 12:02:48 [HikariPool-1 housekeeper] WARN  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=6m7s40ms).
+2025-09-18 12:06:36 [HikariPool-1 housekeeper] WARN  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=3m48s113ms).
+2025-09-18 12:22:34 [HikariPool-1 housekeeper] WARN  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=15m28s36ms).
+2025-09-18 12:43:02 [HikariPool-1 housekeeper] WARN  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=15m28s233ms).
+2025-09-18 12:59:01 [HikariPool-1 housekeeper] WARN  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=15m28s788ms).
+2025-09-18 13:27:27 [http-nio-8081-exec-2] INFO  c.o.c.c.NotificationWebSocketController - WebSocket连接建立: 24c0a8f7-a7b9-c012-fd74-81178c21e1cb
+2025-09-18 13:27:27 [http-nio-8081-exec-2] INFO  c.o.c.c.NotificationWebSocketController - 用户 OP001 的WebSocket会话已建立
+2025-09-18 13:27:28 [http-nio-8081-exec-4] DEBUG org.hibernate.SQL - 
+    /* select
+        generatedAlias0 
+    from
+        
+    Order as generatedAlias0 */ select
+        order0_.order_id as order_id1_9_,
+        order0_.created_by as created_2_9_,
+        order0_.created_time as created_3_9_,
+        order0_.updated_by as updated_4_9_,
+        order0_.updated_time as updated_5_9_,
+        order0_.version as version6_9_,
+        order0_.business_type as business7_9_,
+        order0_.clearing_mode as clearing8_9_,
+        order0_.clearing_status as clearing9_9_,
+        order0_.currency as currenc10_9_,
+        order0_.customer_id as custome11_9_,
+        order0_.delivery_entity_id as deliver12_9_,
+        order0_.order_date as order_d13_9_,
+        order0_.order_no as order_n14_9_,
+        order0_.order_status as order_s15_9_,
+        order0_.payment_account as payment16_9_,
+        order0_.payment_entity_id as payment17_9_,
+        order0_.port_of_discharge as port_of18_9_,
+        order0_.port_of_loading as port_of19_9_,
+        order0_.remarks as remarks20_9_,
+        order0_.sales_department_id as sales_d21_9_,
+        order0_.sales_entity_id as sales_e22_9_,
+        order0_.sales_staff_id as sales_s23_9_,
+        order0_.total_amount as total_a24_9_,
+        order0_.total_cost as total_c25_9_ from
+            orders order0_
+Hibernate: 
+    /* select
+        generatedAlias0 
+    from
+        
+    Order as generatedAlias0 */ select
+        order0_.order_id as order_id1_9_,
+        order0_.created_by as created_2_9_,
+        order0_.created_time as created_3_9_,
+        order0_.updated_by as updated_4_9_,
+        order0_.updated_time as updated_5_9_,
+        order0_.version as version6_9_,
+        order0_.business_type as business7_9_,
+        order0_.clearing_mode as clearing8_9_,
+        order0_.clearing_status as clearing9_9_,
+        order0_.currency as currenc10_9_,
+        order0_.customer_id as custome11_9_,
+        order0_.delivery_entity_id as deliver12_9_,
+        order0_.order_date as order_d13_9_,
+        order0_.order_no as order_n14_9_,
+        order0_.order_status as order_s15_9_,
+        order0_.payment_account as payment16_9_,
+        order0_.payment_entity_id as payment17_9_,
+        order0_.port_of_discharge as port_of18_9_,
+        order0_.port_of_loading as port_of19_9_,
+        order0_.remarks as remarks20_9_,
+        order0_.sales_department_id as sales_d21_9_,
+        order0_.sales_entity_id as sales_e22_9_,
+        order0_.sales_staff_id as sales_s23_9_,
+        order0_.total_amount as total_a24_9_,
+        order0_.total_cost as total_c25_9_ from
+            orders order0_
+2025-09-18 13:27:37 [http-nio-8081-exec-1] DEBUG org.hibernate.SQL - 
+    /* select
+        generatedAlias0 
+    from
+        
+    Order as generatedAlias0 */ select
+        order0_.order_id as order_id1_9_,
+        order0_.created_by as created_2_9_,
+        order0_.created_time as created_3_9_,
+        order0_.updated_by as updated_4_9_,
+        order0_.updated_time as updated_5_9_,
+        order0_.version as version6_9_,
+        order0_.business_type as business7_9_,
+        order0_.clearing_mode as clearing8_9_,
+        order0_.clearing_status as clearing9_9_,
+        order0_.currency as currenc10_9_,
+        order0_.customer_id as custome11_9_,
+        order0_.delivery_entity_id as deliver12_9_,
+        order0_.order_date as order_d13_9_,
+        order0_.order_no as order_n14_9_,
+        order0_.order_status as order_s15_9_,
+        order0_.payment_account as payment16_9_,
+        order0_.payment_entity_id as payment17_9_,
+        order0_.port_of_discharge as port_of18_9_,
+        order0_.port_of_loading as port_of19_9_,
+        order0_.remarks as remarks20_9_,
+        order0_.sales_department_id as sales_d21_9_,
+        order0_.sales_entity_id as sales_e22_9_,
+        order0_.sales_staff_id as sales_s23_9_,
+        order0_.total_amount as total_a24_9_,
+        order0_.total_cost as total_c25_9_ from
+            orders order0_
+Hibernate: 
+    /* select
+        generatedAlias0 
+    from
+        
+    Order as generatedAlias0 */ select
+        order0_.order_id as order_id1_9_,
+        order0_.created_by as created_2_9_,
+        order0_.created_time as created_3_9_,
+        order0_.updated_by as updated_4_9_,
+        order0_.updated_time as updated_5_9_,
+        order0_.version as version6_9_,
+        order0_.business_type as business7_9_,
+        order0_.clearing_mode as clearing8_9_,
+        order0_.clearing_status as clearing9_9_,
+        order0_.currency as currenc10_9_,
+        order0_.customer_id as custome11_9_,
+        order0_.delivery_entity_id as deliver12_9_,
+        order0_.order_date as order_d13_9_,
+        order0_.order_no as order_n14_9_,
+        order0_.order_status as order_s15_9_,
+        order0_.payment_account as payment16_9_,
+        order0_.payment_entity_id as payment17_9_,
+        order0_.port_of_discharge as port_of18_9_,
+        order0_.port_of_loading as port_of19_9_,
+        order0_.remarks as remarks20_9_,
+        order0_.sales_department_id as sales_d21_9_,
+        order0_.sales_entity_id as sales_e22_9_,
+        order0_.sales_staff_id as sales_s23_9_,
+        order0_.total_amount as total_a24_9_,
+        order0_.total_cost as total_c25_9_ from
+            orders order0_
+2025-09-18 13:28:48 [http-nio-8081-exec-3] DEBUG org.hibernate.SQL - 
+    /* select
+        generatedAlias0 
+    from
+        
+    Order as generatedAlias0 */ select
+        order0_.order_id as order_id1_9_,
+        order0_.created_by as created_2_9_,
+        order0_.created_time as created_3_9_,
+        order0_.updated_by as updated_4_9_,
+        order0_.updated_time as updated_5_9_,
+        order0_.version as version6_9_,
+        order0_.business_type as business7_9_,
+        order0_.clearing_mode as clearing8_9_,
+        order0_.clearing_status as clearing9_9_,
+        order0_.currency as currenc10_9_,
+        order0_.customer_id as custome11_9_,
+        order0_.delivery_entity_id as deliver12_9_,
+        order0_.order_date as order_d13_9_,
+        order0_.order_no as order_n14_9_,
+        order0_.order_status as order_s15_9_,
+        order0_.payment_account as payment16_9_,
+        order0_.payment_entity_id as payment17_9_,
+        order0_.port_of_discharge as port_of18_9_,
+        order0_.port_of_loading as port_of19_9_,
+        order0_.remarks as remarks20_9_,
+        order0_.sales_department_id as sales_d21_9_,
+        order0_.sales_entity_id as sales_e22_9_,
+        order0_.sales_staff_id as sales_s23_9_,
+        order0_.total_amount as total_a24_9_,
+        order0_.total_cost as total_c25_9_ from
+            orders order0_
+Hibernate: 
+    /* select
+        generatedAlias0 
+    from
+        
+    Order as generatedAlias0 */ select
+        order0_.order_id as order_id1_9_,
+        order0_.created_by as created_2_9_,
+        order0_.created_time as created_3_9_,
+        order0_.updated_by as updated_4_9_,
+        order0_.updated_time as updated_5_9_,
+        order0_.version as version6_9_,
+        order0_.business_type as business7_9_,
+        order0_.clearing_mode as clearing8_9_,
+        order0_.clearing_status as clearing9_9_,
+        order0_.currency as currenc10_9_,
+        order0_.customer_id as custome11_9_,
+        order0_.delivery_entity_id as deliver12_9_,
+        order0_.order_date as order_d13_9_,
+        order0_.order_no as order_n14_9_,
+        order0_.order_status as order_s15_9_,
+        order0_.payment_account as payment16_9_,
+        order0_.payment_entity_id as payment17_9_,
+        order0_.port_of_discharge as port_of18_9_,
+        order0_.port_of_loading as port_of19_9_,
+        order0_.remarks as remarks20_9_,
+        order0_.sales_department_id as sales_d21_9_,
+        order0_.sales_entity_id as sales_e22_9_,
+        order0_.sales_staff_id as sales_s23_9_,
+        order0_.total_amount as total_a24_9_,
+        order0_.total_cost as total_c25_9_ from
+            orders order0_
+2025-09-18 13:29:05 [http-nio-8081-exec-8] DEBUG org.hibernate.SQL - 
+    /* select
+        generatedAlias0 
+    from
+        
+    Order as generatedAlias0 */ select
+        order0_.order_id as order_id1_9_,
+        order0_.created_by as created_2_9_,
+        order0_.created_time as created_3_9_,
+        order0_.updated_by as updated_4_9_,
+        order0_.updated_time as updated_5_9_,
+        order0_.version as version6_9_,
+        order0_.business_type as business7_9_,
+        order0_.clearing_mode as clearing8_9_,
+        order0_.clearing_status as clearing9_9_,
+        order0_.currency as currenc10_9_,
+        order0_.customer_id as custome11_9_,
+        order0_.delivery_entity_id as deliver12_9_,
+        order0_.order_date as order_d13_9_,
+        order0_.order_no as order_n14_9_,
+        order0_.order_status as order_s15_9_,
+        order0_.payment_account as payment16_9_,
+        order0_.payment_entity_id as payment17_9_,
+        order0_.port_of_discharge as port_of18_9_,
+        order0_.port_of_loading as port_of19_9_,
+        order0_.remarks as remarks20_9_,
+        order0_.sales_department_id as sales_d21_9_,
+        order0_.sales_entity_id as sales_e22_9_,
+        order0_.sales_staff_id as sales_s23_9_,
+        order0_.total_amount as total_a24_9_,
+        order0_.total_cost as total_c25_9_ from
+            orders order0_
+Hibernate: 
+    /* select
+        generatedAlias0 
+    from
+        
+    Order as generatedAlias0 */ select
+        order0_.order_id as order_id1_9_,
+        order0_.created_by as created_2_9_,
+        order0_.created_time as created_3_9_,
+        order0_.updated_by as updated_4_9_,
+        order0_.updated_time as updated_5_9_,
+        order0_.version as version6_9_,
+        order0_.business_type as business7_9_,
+        order0_.clearing_mode as clearing8_9_,
+        order0_.clearing_status as clearing9_9_,
+        order0_.currency as currenc10_9_,
+        order0_.customer_id as custome11_9_,
+        order0_.delivery_entity_id as deliver12_9_,
+        order0_.order_date as order_d13_9_,
+        order0_.order_no as order_n14_9_,
+        order0_.order_status as order_s15_9_,
+        order0_.payment_account as payment16_9_,
+        order0_.payment_entity_id as payment17_9_,
+        order0_.port_of_discharge as port_of18_9_,
+        order0_.port_of_loading as port_of19_9_,
+        order0_.remarks as remarks20_9_,
+        order0_.sales_department_id as sales_d21_9_,
+        order0_.sales_entity_id as sales_e22_9_,
+        order0_.sales_staff_id as sales_s23_9_,
+        order0_.total_amount as total_a24_9_,
+        order0_.total_cost as total_c25_9_ from
+            orders order0_
+2025-09-18 13:35:49 [http-nio-8081-exec-1] INFO  c.o.c.c.NotificationWebSocketController - WebSocket连接建立: e261e630-bb53-c037-7de1-773c38b51906
+2025-09-18 13:35:49 [http-nio-8081-exec-1] INFO  c.o.c.c.NotificationWebSocketController - 用户 OP001 的WebSocket会话已建立
+2025-09-18 13:35:49 [http-nio-8081-exec-6] DEBUG org.hibernate.SQL - 
+    /* select
+        generatedAlias0 
+    from
+        
+    Order as generatedAlias0 */ select
+        order0_.order_id as order_id1_9_,
+        order0_.created_by as created_2_9_,
+        order0_.created_time as created_3_9_,
+        order0_.updated_by as updated_4_9_,
+        order0_.updated_time as updated_5_9_,
+        order0_.version as version6_9_,
+        order0_.business_type as business7_9_,
+        order0_.clearing_mode as clearing8_9_,
+        order0_.clearing_status as clearing9_9_,
+        order0_.currency as currenc10_9_,
+        order0_.customer_id as custome11_9_,
+        order0_.delivery_entity_id as deliver12_9_,
+        order0_.order_date as order_d13_9_,
+        order0_.order_no as order_n14_9_,
+        order0_.order_status as order_s15_9_,
+        order0_.payment_account as payment16_9_,
+        order0_.payment_entity_id as payment17_9_,
+        order0_.port_of_discharge as port_of18_9_,
+        order0_.port_of_loading as port_of19_9_,
+        order0_.remarks as remarks20_9_,
+        order0_.sales_department_id as sales_d21_9_,
+        order0_.sales_entity_id as sales_e22_9_,
+        order0_.sales_staff_id as sales_s23_9_,
+        order0_.total_amount as total_a24_9_,
+        order0_.total_cost as total_c25_9_ from
+            orders order0_
+Hibernate: 
+    /* select
+        generatedAlias0 
+    from
+        
+    Order as generatedAlias0 */ select
+        order0_.order_id as order_id1_9_,
+        order0_.created_by as created_2_9_,
+        order0_.created_time as created_3_9_,
+        order0_.updated_by as updated_4_9_,
+        order0_.updated_time as updated_5_9_,
+        order0_.version as version6_9_,
+        order0_.business_type as business7_9_,
+        order0_.clearing_mode as clearing8_9_,
+        order0_.clearing_status as clearing9_9_,
+        order0_.currency as currenc10_9_,
+        order0_.customer_id as custome11_9_,
+        order0_.delivery_entity_id as deliver12_9_,
+        order0_.order_date as order_d13_9_,
+        order0_.order_no as order_n14_9_,
+        order0_.order_status as order_s15_9_,
+        order0_.payment_account as payment16_9_,
+        order0_.payment_entity_id as payment17_9_,
+        order0_.port_of_discharge as port_of18_9_,
+        order0_.port_of_loading as port_of19_9_,
+        order0_.remarks as remarks20_9_,
+        order0_.sales_department_id as sales_d21_9_,
+        order0_.sales_entity_id as sales_e22_9_,
+        order0_.sales_staff_id as sales_s23_9_,
+        order0_.total_amount as total_a24_9_,
+        order0_.total_cost as total_c25_9_ from
+            orders order0_
+2025-09-18 13:35:54 [http-nio-8081-exec-8] DEBUG org.hibernate.SQL - 
+    /* select
+        generatedAlias0 
+    from
+        
+    Order as generatedAlias0 */ select
+        order0_.order_id as order_id1_9_,
+        order0_.created_by as created_2_9_,
+        order0_.created_time as created_3_9_,
+        order0_.updated_by as updated_4_9_,
+        order0_.updated_time as updated_5_9_,
+        order0_.version as version6_9_,
+        order0_.business_type as business7_9_,
+        order0_.clearing_mode as clearing8_9_,
+        order0_.clearing_status as clearing9_9_,
+        order0_.currency as currenc10_9_,
+        order0_.customer_id as custome11_9_,
+        order0_.delivery_entity_id as deliver12_9_,
+        order0_.order_date as order_d13_9_,
+        order0_.order_no as order_n14_9_,
+        order0_.order_status as order_s15_9_,
+        order0_.payment_account as payment16_9_,
+        order0_.payment_entity_id as payment17_9_,
+        order0_.port_of_discharge as port_of18_9_,
+        order0_.port_of_loading as port_of19_9_,
+        order0_.remarks as remarks20_9_,
+        order0_.sales_department_id as sales_d21_9_,
+        order0_.sales_entity_id as sales_e22_9_,
+        order0_.sales_staff_id as sales_s23_9_,
+        order0_.total_amount as total_a24_9_,
+        order0_.total_cost as total_c25_9_ from
+            orders order0_
+Hibernate: 
+    /* select
+        generatedAlias0 
+    from
+        
+    Order as generatedAlias0 */ select
+        order0_.order_id as order_id1_9_,
+        order0_.created_by as created_2_9_,
+        order0_.created_time as created_3_9_,
+        order0_.updated_by as updated_4_9_,
+        order0_.updated_time as updated_5_9_,
+        order0_.version as version6_9_,
+        order0_.business_type as business7_9_,
+        order0_.clearing_mode as clearing8_9_,
+        order0_.clearing_status as clearing9_9_,
+        order0_.currency as currenc10_9_,
+        order0_.customer_id as custome11_9_,
+        order0_.delivery_entity_id as deliver12_9_,
+        order0_.order_date as order_d13_9_,
+        order0_.order_no as order_n14_9_,
+        order0_.order_status as order_s15_9_,
+        order0_.payment_account as payment16_9_,
+        order0_.payment_entity_id as payment17_9_,
+        order0_.port_of_discharge as port_of18_9_,
+        order0_.port_of_loading as port_of19_9_,
+        order0_.remarks as remarks20_9_,
+        order0_.sales_department_id as sales_d21_9_,
+        order0_.sales_entity_id as sales_e22_9_,
+        order0_.sales_staff_id as sales_s23_9_,
+        order0_.total_amount as total_a24_9_,
+        order0_.total_cost as total_c25_9_ from
+            orders order0_
+2025-09-18 13:36:50 [http-nio-8081-exec-5] INFO  c.o.c.c.NotificationWebSocketController - WebSocket连接关闭: e261e630-bb53-c037-7de1-773c38b51906, 状态: CloseStatus[code=1001, reason=null]
+2025-09-18 13:36:50 [http-nio-8081-exec-3] INFO  c.o.c.c.NotificationWebSocketController - WebSocket连接建立: c7b1926b-7a14-de65-7fe7-5a374280c8d4
+2025-09-18 13:36:50 [http-nio-8081-exec-3] INFO  c.o.c.c.NotificationWebSocketController - 用户 OP001 的WebSocket会话已建立
+2025-09-18 13:36:50 [http-nio-8081-exec-6] DEBUG org.hibernate.SQL - 
+    /* select
+        generatedAlias0 
+    from
+        
+    Order as generatedAlias0 */ select
+        order0_.order_id as order_id1_9_,
+        order0_.created_by as created_2_9_,
+        order0_.created_time as created_3_9_,
+        order0_.updated_by as updated_4_9_,
+        order0_.updated_time as updated_5_9_,
+        order0_.version as version6_9_,
+        order0_.business_type as business7_9_,
+        order0_.clearing_mode as clearing8_9_,
+        order0_.clearing_status as clearing9_9_,
+        order0_.currency as currenc10_9_,
+        order0_.customer_id as custome11_9_,
+        order0_.delivery_entity_id as deliver12_9_,
+        order0_.order_date as order_d13_9_,
+        order0_.order_no as order_n14_9_,
+        order0_.order_status as order_s15_9_,
+        order0_.payment_account as payment16_9_,
+        order0_.payment_entity_id as payment17_9_,
+        order0_.port_of_discharge as port_of18_9_,
+        order0_.port_of_loading as port_of19_9_,
+        order0_.remarks as remarks20_9_,
+        order0_.sales_department_id as sales_d21_9_,
+        order0_.sales_entity_id as sales_e22_9_,
+        order0_.sales_staff_id as sales_s23_9_,
+        order0_.total_amount as total_a24_9_,
+        order0_.total_cost as total_c25_9_ from
+            orders order0_
+Hibernate: 
+    /* select
+        generatedAlias0 
+    from
+        
+    Order as generatedAlias0 */ select
+        order0_.order_id as order_id1_9_,
+        order0_.created_by as created_2_9_,
+        order0_.created_time as created_3_9_,
+        order0_.updated_by as updated_4_9_,
+        order0_.updated_time as updated_5_9_,
+        order0_.version as version6_9_,
+        order0_.business_type as business7_9_,
+        order0_.clearing_mode as clearing8_9_,
+        order0_.clearing_status as clearing9_9_,
+        order0_.currency as currenc10_9_,
+        order0_.customer_id as custome11_9_,
+        order0_.delivery_entity_id as deliver12_9_,
+        order0_.order_date as order_d13_9_,
+        order0_.order_no as order_n14_9_,
+        order0_.order_status as order_s15_9_,
+        order0_.payment_account as payment16_9_,
+        order0_.payment_entity_id as payment17_9_,
+        order0_.port_of_discharge as port_of18_9_,
+        order0_.port_of_loading as port_of19_9_,
+        order0_.remarks as remarks20_9_,
+        order0_.sales_department_id as sales_d21_9_,
+        order0_.sales_entity_id as sales_e22_9_,
+        order0_.sales_staff_id as sales_s23_9_,
+        order0_.total_amount as total_a24_9_,
+        order0_.total_cost as total_c25_9_ from
+            orders order0_
+2025-09-18 13:41:21 [http-nio-8081-exec-7] INFO  c.o.c.c.NotificationWebSocketController - WebSocket连接关闭: c7b1926b-7a14-de65-7fe7-5a374280c8d4, 状态: CloseStatus[code=1001, reason=null]
+2025-09-18 13:43:51 [http-nio-8081-exec-10] INFO  c.o.c.c.NotificationWebSocketController - WebSocket连接建立: a66158fa-42b8-3a7e-b11a-216628085a9e
+2025-09-18 13:43:51 [http-nio-8081-exec-10] INFO  c.o.c.c.NotificationWebSocketController - 用户 OP001 的WebSocket会话已建立
+2025-09-18 13:43:51 [http-nio-8081-exec-1] DEBUG org.hibernate.SQL - 
+    /* select
+        generatedAlias0 
+    from
+        
+    Order as generatedAlias0 */ select
+        order0_.order_id as order_id1_9_,
+        order0_.created_by as created_2_9_,
+        order0_.created_time as created_3_9_,
+        order0_.updated_by as updated_4_9_,
+        order0_.updated_time as updated_5_9_,
+        order0_.version as version6_9_,
+        order0_.business_type as business7_9_,
+        order0_.clearing_mode as clearing8_9_,
+        order0_.clearing_status as clearing9_9_,
+        order0_.currency as currenc10_9_,
+        order0_.customer_id as custome11_9_,
+        order0_.delivery_entity_id as deliver12_9_,
+        order0_.order_date as order_d13_9_,
+        order0_.order_no as order_n14_9_,
+        order0_.order_status as order_s15_9_,
+        order0_.payment_account as payment16_9_,
+        order0_.payment_entity_id as payment17_9_,
+        order0_.port_of_discharge as port_of18_9_,
+        order0_.port_of_loading as port_of19_9_,
+        order0_.remarks as remarks20_9_,
+        order0_.sales_department_id as sales_d21_9_,
+        order0_.sales_entity_id as sales_e22_9_,
+        order0_.sales_staff_id as sales_s23_9_,
+        order0_.total_amount as total_a24_9_,
+        order0_.total_cost as total_c25_9_ from
+            orders order0_
+Hibernate: 
+    /* select
+        generatedAlias0 
+    from
+        
+    Order as generatedAlias0 */ select
+        order0_.order_id as order_id1_9_,
+        order0_.created_by as created_2_9_,
+        order0_.created_time as created_3_9_,
+        order0_.updated_by as updated_4_9_,
+        order0_.updated_time as updated_5_9_,
+        order0_.version as version6_9_,
+        order0_.business_type as business7_9_,
+        order0_.clearing_mode as clearing8_9_,
+        order0_.clearing_status as clearing9_9_,
+        order0_.currency as currenc10_9_,
+        order0_.customer_id as custome11_9_,
+        order0_.delivery_entity_id as deliver12_9_,
+        order0_.order_date as order_d13_9_,
+        order0_.order_no as order_n14_9_,
+        order0_.order_status as order_s15_9_,
+        order0_.payment_account as payment16_9_,
+        order0_.payment_entity_id as payment17_9_,
+        order0_.port_of_discharge as port_of18_9_,
+        order0_.port_of_loading as port_of19_9_,
+        order0_.remarks as remarks20_9_,
+        order0_.sales_department_id as sales_d21_9_,
+        order0_.sales_entity_id as sales_e22_9_,
+        order0_.sales_staff_id as sales_s23_9_,
+        order0_.total_amount as total_a24_9_,
+        order0_.total_cost as total_c25_9_ from
+            orders order0_
+2025-09-18 13:43:54 [http-nio-8081-exec-8] DEBUG org.hibernate.SQL - 
+    /* select
+        generatedAlias0 
+    from
+        
+    Order as generatedAlias0 */ select
+        order0_.order_id as order_id1_9_,
+        order0_.created_by as created_2_9_,
+        order0_.created_time as created_3_9_,
+        order0_.updated_by as updated_4_9_,
+        order0_.updated_time as updated_5_9_,
+        order0_.version as version6_9_,
+        order0_.business_type as business7_9_,
+        order0_.clearing_mode as clearing8_9_,
+        order0_.clearing_status as clearing9_9_,
+        order0_.currency as currenc10_9_,
+        order0_.customer_id as custome11_9_,
+        order0_.delivery_entity_id as deliver12_9_,
+        order0_.order_date as order_d13_9_,
+        order0_.order_no as order_n14_9_,
+        order0_.order_status as order_s15_9_,
+        order0_.payment_account as payment16_9_,
+        order0_.payment_entity_id as payment17_9_,
+        order0_.port_of_discharge as port_of18_9_,
+        order0_.port_of_loading as port_of19_9_,
+        order0_.remarks as remarks20_9_,
+        order0_.sales_department_id as sales_d21_9_,
+        order0_.sales_entity_id as sales_e22_9_,
+        order0_.sales_staff_id as sales_s23_9_,
+        order0_.total_amount as total_a24_9_,
+        order0_.total_cost as total_c25_9_ from
+            orders order0_
+Hibernate: 
+    /* select
+        generatedAlias0 
+    from
+        
+    Order as generatedAlias0 */ select
+        order0_.order_id as order_id1_9_,
+        order0_.created_by as created_2_9_,
+        order0_.created_time as created_3_9_,
+        order0_.updated_by as updated_4_9_,
+        order0_.updated_time as updated_5_9_,
+        order0_.version as version6_9_,
+        order0_.business_type as business7_9_,
+        order0_.clearing_mode as clearing8_9_,
+        order0_.clearing_status as clearing9_9_,
+        order0_.currency as currenc10_9_,
+        order0_.customer_id as custome11_9_,
+        order0_.delivery_entity_id as deliver12_9_,
+        order0_.order_date as order_d13_9_,
+        order0_.order_no as order_n14_9_,
+        order0_.order_status as order_s15_9_,
+        order0_.payment_account as payment16_9_,
+        order0_.payment_entity_id as payment17_9_,
+        order0_.port_of_discharge as port_of18_9_,
+        order0_.port_of_loading as port_of19_9_,
+        order0_.remarks as remarks20_9_,
+        order0_.sales_department_id as sales_d21_9_,
+        order0_.sales_entity_id as sales_e22_9_,
+        order0_.sales_staff_id as sales_s23_9_,
+        order0_.total_amount as total_a24_9_,
+        order0_.total_cost as total_c25_9_ from
+            orders order0_
+2025-09-18 13:52:55 [http-nio-8081-exec-3] DEBUG org.hibernate.SQL - 
+    /* select
+        generatedAlias0 
+    from
+        
+    Order as generatedAlias0 */ select
+        order0_.order_id as order_id1_9_,
+        order0_.created_by as created_2_9_,
+        order0_.created_time as created_3_9_,
+        order0_.updated_by as updated_4_9_,
+        order0_.updated_time as updated_5_9_,
+        order0_.version as version6_9_,
+        order0_.business_type as business7_9_,
+        order0_.clearing_mode as clearing8_9_,
+        order0_.clearing_status as clearing9_9_,
+        order0_.currency as currenc10_9_,
+        order0_.customer_id as custome11_9_,
+        order0_.delivery_entity_id as deliver12_9_,
+        order0_.order_date as order_d13_9_,
+        order0_.order_no as order_n14_9_,
+        order0_.order_status as order_s15_9_,
+        order0_.payment_account as payment16_9_,
+        order0_.payment_entity_id as payment17_9_,
+        order0_.port_of_discharge as port_of18_9_,
+        order0_.port_of_loading as port_of19_9_,
+        order0_.remarks as remarks20_9_,
+        order0_.sales_department_id as sales_d21_9_,
+        order0_.sales_entity_id as sales_e22_9_,
+        order0_.sales_staff_id as sales_s23_9_,
+        order0_.total_amount as total_a24_9_,
+        order0_.total_cost as total_c25_9_ from
+            orders order0_
+Hibernate: 
+    /* select
+        generatedAlias0 
+    from
+        
+    Order as generatedAlias0 */ select
+        order0_.order_id as order_id1_9_,
+        order0_.created_by as created_2_9_,
+        order0_.created_time as created_3_9_,
+        order0_.updated_by as updated_4_9_,
+        order0_.updated_time as updated_5_9_,
+        order0_.version as version6_9_,
+        order0_.business_type as business7_9_,
+        order0_.clearing_mode as clearing8_9_,
+        order0_.clearing_status as clearing9_9_,
+        order0_.currency as currenc10_9_,
+        order0_.customer_id as custome11_9_,
+        order0_.delivery_entity_id as deliver12_9_,
+        order0_.order_date as order_d13_9_,
+        order0_.order_no as order_n14_9_,
+        order0_.order_status as order_s15_9_,
+        order0_.payment_account as payment16_9_,
+        order0_.payment_entity_id as payment17_9_,
+        order0_.port_of_discharge as port_of18_9_,
+        order0_.port_of_loading as port_of19_9_,
+        order0_.remarks as remarks20_9_,
+        order0_.sales_department_id as sales_d21_9_,
+        order0_.sales_entity_id as sales_e22_9_,
+        order0_.sales_staff_id as sales_s23_9_,
+        order0_.total_amount as total_a24_9_,
+        order0_.total_cost as total_c25_9_ from
+            orders order0_
+2025-09-18 13:52:55 [http-nio-8081-exec-2] DEBUG org.hibernate.SQL - 
+    /* select
+        generatedAlias0 
+    from
+        
+    Order as generatedAlias0 */ select
+        order0_.order_id as order_id1_9_,
+        order0_.created_by as created_2_9_,
+        order0_.created_time as created_3_9_,
+        order0_.updated_by as updated_4_9_,
+        order0_.updated_time as updated_5_9_,
+        order0_.version as version6_9_,
+        order0_.business_type as business7_9_,
+        order0_.clearing_mode as clearing8_9_,
+        order0_.clearing_status as clearing9_9_,
+        order0_.currency as currenc10_9_,
+        order0_.customer_id as custome11_9_,
+        order0_.delivery_entity_id as deliver12_9_,
+        order0_.order_date as order_d13_9_,
+        order0_.order_no as order_n14_9_,
+        order0_.order_status as order_s15_9_,
+        order0_.payment_account as payment16_9_,
+        order0_.payment_entity_id as payment17_9_,
+        order0_.port_of_discharge as port_of18_9_,
+        order0_.port_of_loading as port_of19_9_,
+        order0_.remarks as remarks20_9_,
+        order0_.sales_department_id as sales_d21_9_,
+        order0_.sales_entity_id as sales_e22_9_,
+        order0_.sales_staff_id as sales_s23_9_,
+        order0_.total_amount as total_a24_9_,
+        order0_.total_cost as total_c25_9_ from
+            orders order0_
+Hibernate: 
+    /* select
+        generatedAlias0 
+    from
+        
+    Order as generatedAlias0 */ select
+        order0_.order_id as order_id1_9_,
+        order0_.created_by as created_2_9_,
+        order0_.created_time as created_3_9_,
+        order0_.updated_by as updated_4_9_,
+        order0_.updated_time as updated_5_9_,
+        order0_.version as version6_9_,
+        order0_.business_type as business7_9_,
+        order0_.clearing_mode as clearing8_9_,
+        order0_.clearing_status as clearing9_9_,
+        order0_.currency as currenc10_9_,
+        order0_.customer_id as custome11_9_,
+        order0_.delivery_entity_id as deliver12_9_,
+        order0_.order_date as order_d13_9_,
+        order0_.order_no as order_n14_9_,
+        order0_.order_status as order_s15_9_,
+        order0_.payment_account as payment16_9_,
+        order0_.payment_entity_id as payment17_9_,
+        order0_.port_of_discharge as port_of18_9_,
+        order0_.port_of_loading as port_of19_9_,
+        order0_.remarks as remarks20_9_,
+        order0_.sales_department_id as sales_d21_9_,
+        order0_.sales_entity_id as sales_e22_9_,
+        order0_.sales_staff_id as sales_s23_9_,
+        order0_.total_amount as total_a24_9_,
+        order0_.total_cost as total_c25_9_ from
+            orders order0_
+2025-09-18 13:53:01 [http-nio-8081-exec-7] DEBUG org.hibernate.SQL - 
+    /* select
+        generatedAlias0 
+    from
+        
+    Order as generatedAlias0 */ select
+        order0_.order_id as order_id1_9_,
+        order0_.created_by as created_2_9_,
+        order0_.created_time as created_3_9_,
+        order0_.updated_by as updated_4_9_,
+        order0_.updated_time as updated_5_9_,
+        order0_.version as version6_9_,
+        order0_.business_type as business7_9_,
+        order0_.clearing_mode as clearing8_9_,
+        order0_.clearing_status as clearing9_9_,
+        order0_.currency as currenc10_9_,
+        order0_.customer_id as custome11_9_,
+        order0_.delivery_entity_id as deliver12_9_,
+        order0_.order_date as order_d13_9_,
+        order0_.order_no as order_n14_9_,
+        order0_.order_status as order_s15_9_,
+        order0_.payment_account as payment16_9_,
+        order0_.payment_entity_id as payment17_9_,
+        order0_.port_of_discharge as port_of18_9_,
+        order0_.port_of_loading as port_of19_9_,
+        order0_.remarks as remarks20_9_,
+        order0_.sales_department_id as sales_d21_9_,
+        order0_.sales_entity_id as sales_e22_9_,
+        order0_.sales_staff_id as sales_s23_9_,
+        order0_.total_amount as total_a24_9_,
+        order0_.total_cost as total_c25_9_ from
+            orders order0_
+Hibernate: 
+    /* select
+        generatedAlias0 
+    from
+        
+    Order as generatedAlias0 */ select
+        order0_.order_id as order_id1_9_,
+        order0_.created_by as created_2_9_,
+        order0_.created_time as created_3_9_,
+        order0_.updated_by as updated_4_9_,
+        order0_.updated_time as updated_5_9_,
+        order0_.version as version6_9_,
+        order0_.business_type as business7_9_,
+        order0_.clearing_mode as clearing8_9_,
+        order0_.clearing_status as clearing9_9_,
+        order0_.currency as currenc10_9_,
+        order0_.customer_id as custome11_9_,
+        order0_.delivery_entity_id as deliver12_9_,
+        order0_.order_date as order_d13_9_,
+        order0_.order_no as order_n14_9_,
+        order0_.order_status as order_s15_9_,
+        order0_.payment_account as payment16_9_,
+        order0_.payment_entity_id as payment17_9_,
+        order0_.port_of_discharge as port_of18_9_,
+        order0_.port_of_loading as port_of19_9_,
+        order0_.remarks as remarks20_9_,
+        order0_.sales_department_id as sales_d21_9_,
+        order0_.sales_entity_id as sales_e22_9_,
+        order0_.sales_staff_id as sales_s23_9_,
+        order0_.total_amount as total_a24_9_,
+        order0_.total_cost as total_c25_9_ from
+            orders order0_
+2025-09-18 13:53:01 [http-nio-8081-exec-10] INFO  c.o.c.c.NotificationWebSocketController - WebSocket连接建立: 5251bc5b-c564-9f6e-ff18-a2e7691c23c5
+2025-09-18 13:53:01 [http-nio-8081-exec-10] INFO  c.o.c.c.NotificationWebSocketController - 用户 OP001 的WebSocket会话已建立
+2025-09-18 13:53:03 [http-nio-8081-exec-8] INFO  c.o.c.c.NotificationWebSocketController - WebSocket连接关闭: 5251bc5b-c564-9f6e-ff18-a2e7691c23c5, 状态: CloseStatus[code=1001, reason=null]
+2025-09-18 13:53:05 [http-nio-8081-exec-1] DEBUG org.hibernate.SQL - 
+    /* select
+        generatedAlias0 
+    from
+        
+    Order as generatedAlias0 */ select
+        order0_.order_id as order_id1_9_,
+        order0_.created_by as created_2_9_,
+        order0_.created_time as created_3_9_,
+        order0_.updated_by as updated_4_9_,
+        order0_.updated_time as updated_5_9_,
+        order0_.version as version6_9_,
+        order0_.business_type as business7_9_,
+        order0_.clearing_mode as clearing8_9_,
+        order0_.clearing_status as clearing9_9_,
+        order0_.currency as currenc10_9_,
+        order0_.customer_id as custome11_9_,
+        order0_.delivery_entity_id as deliver12_9_,
+        order0_.order_date as order_d13_9_,
+        order0_.order_no as order_n14_9_,
+        order0_.order_status as order_s15_9_,
+        order0_.payment_account as payment16_9_,
+        order0_.payment_entity_id as payment17_9_,
+        order0_.port_of_discharge as port_of18_9_,
+        order0_.port_of_loading as port_of19_9_,
+        order0_.remarks as remarks20_9_,
+        order0_.sales_department_id as sales_d21_9_,
+        order0_.sales_entity_id as sales_e22_9_,
+        order0_.sales_staff_id as sales_s23_9_,
+        order0_.total_amount as total_a24_9_,
+        order0_.total_cost as total_c25_9_ from
+            orders order0_
+Hibernate: 
+    /* select
+        generatedAlias0 
+    from
+        
+    Order as generatedAlias0 */ select
+        order0_.order_id as order_id1_9_,
+        order0_.created_by as created_2_9_,
+        order0_.created_time as created_3_9_,
+        order0_.updated_by as updated_4_9_,
+        order0_.updated_time as updated_5_9_,
+        order0_.version as version6_9_,
+        order0_.business_type as business7_9_,
+        order0_.clearing_mode as clearing8_9_,
+        order0_.clearing_status as clearing9_9_,
+        order0_.currency as currenc10_9_,
+        order0_.customer_id as custome11_9_,
+        order0_.delivery_entity_id as deliver12_9_,
+        order0_.order_date as order_d13_9_,
+        order0_.order_no as order_n14_9_,
+        order0_.order_status as order_s15_9_,
+        order0_.payment_account as payment16_9_,
+        order0_.payment_entity_id as payment17_9_,
+        order0_.port_of_discharge as port_of18_9_,
+        order0_.port_of_loading as port_of19_9_,
+        order0_.remarks as remarks20_9_,
+        order0_.sales_department_id as sales_d21_9_,
+        order0_.sales_entity_id as sales_e22_9_,
+        order0_.sales_staff_id as sales_s23_9_,
+        order0_.total_amount as total_a24_9_,
+        order0_.total_cost as total_c25_9_ from
+            orders order0_
+2025-09-18 13:53:47 [http-nio-8081-exec-4] INFO  c.o.c.c.NotificationWebSocketController - WebSocket连接关闭: a66158fa-42b8-3a7e-b11a-216628085a9e, 状态: CloseStatus[code=1001, reason=null]
+2025-09-18 13:53:47 [http-nio-8081-exec-5] INFO  c.o.c.c.NotificationWebSocketController - WebSocket连接建立: a8024f91-b3a6-772b-3848-e79e59ed52a6
+2025-09-18 13:53:47 [http-nio-8081-exec-5] INFO  c.o.c.c.NotificationWebSocketController - 用户 OP001 的WebSocket会话已建立
+2025-09-18 13:53:47 [http-nio-8081-exec-10] DEBUG org.hibernate.SQL - 
+    /* select
+        generatedAlias0 
+    from
+        
+    Order as generatedAlias0 */ select
+        order0_.order_id as order_id1_9_,
+        order0_.created_by as created_2_9_,
+        order0_.created_time as created_3_9_,
+        order0_.updated_by as updated_4_9_,
+        order0_.updated_time as updated_5_9_,
+        order0_.version as version6_9_,
+        order0_.business_type as business7_9_,
+        order0_.clearing_mode as clearing8_9_,
+        order0_.clearing_status as clearing9_9_,
+        order0_.currency as currenc10_9_,
+        order0_.customer_id as custome11_9_,
+        order0_.delivery_entity_id as deliver12_9_,
+        order0_.order_date as order_d13_9_,
+        order0_.order_no as order_n14_9_,
+        order0_.order_status as order_s15_9_,
+        order0_.payment_account as payment16_9_,
+        order0_.payment_entity_id as payment17_9_,
+        order0_.port_of_discharge as port_of18_9_,
+        order0_.port_of_loading as port_of19_9_,
+        order0_.remarks as remarks20_9_,
+        order0_.sales_department_id as sales_d21_9_,
+        order0_.sales_entity_id as sales_e22_9_,
+        order0_.sales_staff_id as sales_s23_9_,
+        order0_.total_amount as total_a24_9_,
+        order0_.total_cost as total_c25_9_ from
+            orders order0_
+Hibernate: 
+    /* select
+        generatedAlias0 
+    from
+        
+    Order as generatedAlias0 */ select
+        order0_.order_id as order_id1_9_,
+        order0_.created_by as created_2_9_,
+        order0_.created_time as created_3_9_,
+        order0_.updated_by as updated_4_9_,
+        order0_.updated_time as updated_5_9_,
+        order0_.version as version6_9_,
+        order0_.business_type as business7_9_,
+        order0_.clearing_mode as clearing8_9_,
+        order0_.clearing_status as clearing9_9_,
+        order0_.currency as currenc10_9_,
+        order0_.customer_id as custome11_9_,
+        order0_.delivery_entity_id as deliver12_9_,
+        order0_.order_date as order_d13_9_,
+        order0_.order_no as order_n14_9_,
+        order0_.order_status as order_s15_9_,
+        order0_.payment_account as payment16_9_,
+        order0_.payment_entity_id as payment17_9_,
+        order0_.port_of_discharge as port_of18_9_,
+        order0_.port_of_loading as port_of19_9_,
+        order0_.remarks as remarks20_9_,
+        order0_.sales_department_id as sales_d21_9_,
+        order0_.sales_entity_id as sales_e22_9_,
+        order0_.sales_staff_id as sales_s23_9_,
+        order0_.total_amount as total_a24_9_,
+        order0_.total_cost as total_c25_9_ from
+            orders order0_
+2025-09-18 13:53:55 [http-nio-8081-exec-1] DEBUG org.hibernate.SQL - 
+    /* select
+        generatedAlias0 
+    from
+        
+    Order as generatedAlias0 */ select
+        order0_.order_id as order_id1_9_,
+        order0_.created_by as created_2_9_,
+        order0_.created_time as created_3_9_,
+        order0_.updated_by as updated_4_9_,
+        order0_.updated_time as updated_5_9_,
+        order0_.version as version6_9_,
+        order0_.business_type as business7_9_,
+        order0_.clearing_mode as clearing8_9_,
+        order0_.clearing_status as clearing9_9_,
+        order0_.currency as currenc10_9_,
+        order0_.customer_id as custome11_9_,
+        order0_.delivery_entity_id as deliver12_9_,
+        order0_.order_date as order_d13_9_,
+        order0_.order_no as order_n14_9_,
+        order0_.order_status as order_s15_9_,
+        order0_.payment_account as payment16_9_,
+        order0_.payment_entity_id as payment17_9_,
+        order0_.port_of_discharge as port_of18_9_,
+        order0_.port_of_loading as port_of19_9_,
+        order0_.remarks as remarks20_9_,
+        order0_.sales_department_id as sales_d21_9_,
+        order0_.sales_entity_id as sales_e22_9_,
+        order0_.sales_staff_id as sales_s23_9_,
+        order0_.total_amount as total_a24_9_,
+        order0_.total_cost as total_c25_9_ from
+            orders order0_
+Hibernate: 
+    /* select
+        generatedAlias0 
+    from
+        
+    Order as generatedAlias0 */ select
+        order0_.order_id as order_id1_9_,
+        order0_.created_by as created_2_9_,
+        order0_.created_time as created_3_9_,
+        order0_.updated_by as updated_4_9_,
+        order0_.updated_time as updated_5_9_,
+        order0_.version as version6_9_,
+        order0_.business_type as business7_9_,
+        order0_.clearing_mode as clearing8_9_,
+        order0_.clearing_status as clearing9_9_,
+        order0_.currency as currenc10_9_,
+        order0_.customer_id as custome11_9_,
+        order0_.delivery_entity_id as deliver12_9_,
+        order0_.order_date as order_d13_9_,
+        order0_.order_no as order_n14_9_,
+        order0_.order_status as order_s15_9_,
+        order0_.payment_account as payment16_9_,
+        order0_.payment_entity_id as payment17_9_,
+        order0_.port_of_discharge as port_of18_9_,
+        order0_.port_of_loading as port_of19_9_,
+        order0_.remarks as remarks20_9_,
+        order0_.sales_department_id as sales_d21_9_,
+        order0_.sales_entity_id as sales_e22_9_,
+        order0_.sales_staff_id as sales_s23_9_,
+        order0_.total_amount as total_a24_9_,
+        order0_.total_cost as total_c25_9_ from
+            orders order0_
+2025-09-18 13:56:10 [http-nio-8081-exec-2] INFO  c.o.c.c.NotificationWebSocketController - WebSocket连接关闭: a8024f91-b3a6-772b-3848-e79e59ed52a6, 状态: CloseStatus[code=1001, reason=null]
+2025-09-18 13:56:10 [http-nio-8081-exec-6] INFO  c.o.c.c.NotificationWebSocketController - WebSocket连接建立: d2c9b210-b816-8155-f149-1836353cefd6
+2025-09-18 13:56:10 [http-nio-8081-exec-6] INFO  c.o.c.c.NotificationWebSocketController - 用户 OP001 的WebSocket会话已建立
+2025-09-18 13:56:11 [http-nio-8081-exec-4] DEBUG org.hibernate.SQL - 
+    /* select
+        generatedAlias0 
+    from
+        
+    Order as generatedAlias0 */ select
+        order0_.order_id as order_id1_9_,
+        order0_.created_by as created_2_9_,
+        order0_.created_time as created_3_9_,
+        order0_.updated_by as updated_4_9_,
+        order0_.updated_time as updated_5_9_,
+        order0_.version as version6_9_,
+        order0_.business_type as business7_9_,
+        order0_.clearing_mode as clearing8_9_,
+        order0_.clearing_status as clearing9_9_,
+        order0_.currency as currenc10_9_,
+        order0_.customer_id as custome11_9_,
+        order0_.delivery_entity_id as deliver12_9_,
+        order0_.order_date as order_d13_9_,
+        order0_.order_no as order_n14_9_,
+        order0_.order_status as order_s15_9_,
+        order0_.payment_account as payment16_9_,
+        order0_.payment_entity_id as payment17_9_,
+        order0_.port_of_discharge as port_of18_9_,
+        order0_.port_of_loading as port_of19_9_,
+        order0_.remarks as remarks20_9_,
+        order0_.sales_department_id as sales_d21_9_,
+        order0_.sales_entity_id as sales_e22_9_,
+        order0_.sales_staff_id as sales_s23_9_,
+        order0_.total_amount as total_a24_9_,
+        order0_.total_cost as total_c25_9_ from
+            orders order0_
+Hibernate: 
+    /* select
+        generatedAlias0 
+    from
+        
+    Order as generatedAlias0 */ select
+        order0_.order_id as order_id1_9_,
+        order0_.created_by as created_2_9_,
+        order0_.created_time as created_3_9_,
+        order0_.updated_by as updated_4_9_,
+        order0_.updated_time as updated_5_9_,
+        order0_.version as version6_9_,
+        order0_.business_type as business7_9_,
+        order0_.clearing_mode as clearing8_9_,
+        order0_.clearing_status as clearing9_9_,
+        order0_.currency as currenc10_9_,
+        order0_.customer_id as custome11_9_,
+        order0_.delivery_entity_id as deliver12_9_,
+        order0_.order_date as order_d13_9_,
+        order0_.order_no as order_n14_9_,
+        order0_.order_status as order_s15_9_,
+        order0_.payment_account as payment16_9_,
+        order0_.payment_entity_id as payment17_9_,
+        order0_.port_of_discharge as port_of18_9_,
+        order0_.port_of_loading as port_of19_9_,
+        order0_.remarks as remarks20_9_,
+        order0_.sales_department_id as sales_d21_9_,
+        order0_.sales_entity_id as sales_e22_9_,
+        order0_.sales_staff_id as sales_s23_9_,
+        order0_.total_amount as total_a24_9_,
+        order0_.total_cost as total_c25_9_ from
+            orders order0_
+2025-09-18 14:00:01 [SpringApplicationShutdownHook] INFO  c.o.c.c.NotificationWebSocketController - WebSocket连接关闭: d2c9b210-b816-8155-f149-1836353cefd6, 状态: CloseStatus[code=1001, reason=The web application is stopping]
+2025-09-18 14:00:01 [SpringApplicationShutdownHook] INFO  c.o.c.c.NotificationWebSocketController - WebSocket连接关闭: 24c0a8f7-a7b9-c012-fd74-81178c21e1cb, 状态: CloseStatus[code=1001, reason=The web application is stopping]
+2025-09-18 14:00:01 [SpringApplicationShutdownHook] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Closing JPA EntityManagerFactory for persistence unit 'default'
+2025-09-18 14:00:01 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
+2025-09-18 14:00:01 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试订单加载</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .log { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 4px; white-space: pre-wrap; }
+        .error { background: #ffe6e6; color: #d63384; }
+        .success { background: #e6f7e6; color: #198754; }
+        select { width: 100%; padding: 8px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>订单加载测试</h1>
+    
+    <div>
+        <label>订单选择:</label>
+        <select id="orderSelect">
+            <option value="">请选择订单</option>
+        </select>
+        <button onclick="loadOrderList()">刷新订单列表</button>
+    </div>
+    
+    <div id="logs"></div>
+
+    <script>
+        // 简化的日志函数
+        function log(message, type = 'info') {
+            const logsDiv = document.getElementById('logs');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log ${type}`;
+            logEntry.textContent = new Date().toLocaleTimeString() + ': ' + message;
+            logsDiv.appendChild(logEntry);
+            console.log(message);
+        }
+
+        // 简化的通知函数
+        function showNotification(message, type) {
+            log(`通知 (${type}): ${message}`, type);
+        }
+
+        // 客户映射
+        const customerMapping = {
+            'CUST_001': 'CONG TY TNHH COCREATION GRASS CORPORATION VIET NAM',
+            'CUST_002': 'COCREATION GRASS CORPORATION (VIET NAM) CO., LTD',
+            'CUST_003': 'CONG TY TNHH COCREATION GRASS CORPORATION VIET NAM',
+            'CUST_004': 'COCREATION GRASS CORPORATION (VIET NAM) CO., LTD',
+            'CUST_005': 'CONG TY TNHH COCREATION GRASS CORPORATION VIET NAM',
+            'CUST_006': 'COCREATION GRASS CORPORATION (VIET NAM) CO., LTD',
+            'CUST_007': 'CONG TY TNHH COCREATION GRASS CORPORATION VIET NAM',
+            'CUST_008': 'COCREATION GRASS CORPORATION (VIET NAM) CO., LTD'
+        };
+
+        function getCustomerName(order) {
+            if (order.customerName && order.customerName.trim() !== '') {
+                return order.customerName;
+            }
+            return customerMapping[order.customerId] || order.customerId || 'Unknown Customer';
+        }
+
+        function getBusinessTypeName(type) {
+            const typeMap = {
+                'OCEAN': '海运',
+                'AIR': '空运',
+                'TRUCK': '陆运',
+                'RAIL': '铁运',
+                'CUSTOMS': '关务',
+                'WAREHOUSE': '仓储'
+            };
+            return typeMap[type] || type || '海运';
+        }
+
+        // 加载订单列表函数
+        async function loadOrderList() {
+            log('🔄 开始加载订单列表...');
+            
+            try {
+                // 检查orderSelect元素是否存在
+                const orderSelect = document.getElementById('orderSelect');
+                if (!orderSelect) {
+                    throw new Error('未找到订单选择框元素(orderSelect)');
+                }
+                
+                log('📡 调用货代订单API...');
+                // 调用货代订单API获取真实数据
+                const response = await fetch('/api/freight-orders?page=0&size=20');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const apiOrders = await response.json();
+                log(`✅ 获取到${apiOrders.length}个订单`, 'success');
+                
+                const orders = apiOrders.map(order => {
+                    return {
+                        orderId: order.orderId,
+                        orderNo: order.orderNo,
+                        customerId: order.customerId,
+                        customerName: order.customerName,
+                        businessType: order.businessType || 'OCEAN',
+                        portOfLoading: order.portOfLoading,
+                        portOfDischarge: order.portOfDischarge,
+                        orderStatus: order.orderStatus
+                    };
+                });
+                
+                log('🔄 更新订单选择框...');
+                
+                // 清空现有选项（保留默认选项）
+                while (orderSelect.children.length > 1) {
+                    orderSelect.removeChild(orderSelect.lastChild);
+                }
+                
+                if (orders && orders.length > 0) {
+                    orders.forEach((order, index) => {
+                        log(`  添加订单 ${index + 1}: ${order.orderNo}`);
+                        const option = document.createElement('option');
+                        option.value = order.orderId;
+                        const customerDisplayName = getCustomerName(order);
+                        const shortCustomerName = customerDisplayName.length > 30 ? customerDisplayName.substring(0, 27) + '...' : customerDisplayName;
+                        option.textContent = `${order.orderNo} - ${shortCustomerName} (${getBusinessTypeName(order.businessType)})`;
+                        option.title = `${order.orderNo} - ${customerDisplayName} (${getBusinessTypeName(order.businessType)})`;
+                        orderSelect.appendChild(option);
+                    });
+                    
+                    log(`✅ 成功添加${orders.length}个订单到选择框`, 'success');
+                    showNotification(`订单列表已更新 (${orders.length}个订单)`, 'success');
+                } else {
+                    log('⚠️ 没有找到订单数据');
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = '暂无订单数据，请先在货代管理系统中创建订单';
+                    option.disabled = true;
+                    orderSelect.appendChild(option);
+                    showNotification('暂无订单数据', 'warning');
+                }
+                
+            } catch (error) {
+                log(`❌ 加载订单列表失败: ${error.message}`, 'error');
+                showNotification('加载订单列表失败: ' + error.message, 'error');
+                
+                // 添加错误时的备用显示
+                const orderSelect = document.getElementById('orderSelect');
+                if (orderSelect) {
+                    while (orderSelect.children.length > 1) {
+                        orderSelect.removeChild(orderSelect.lastChild);
+                    }
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = '无法加载订单数据，请检查API连接';
+                    option.disabled = true;
+                    orderSelect.appendChild(option);
+                }
+            }
+        }
+
+        // 页面加载后自动执行测试
+        document.addEventListener('DOMContentLoaded', function() {
+            log('📖 页面加载完成，开始测试...');
+            loadOrderList();
+        });
+    </script>
+</body>
+</html>

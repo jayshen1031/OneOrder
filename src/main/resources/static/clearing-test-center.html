@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>借抬头与过账规则测试中心</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .test-section {
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .test-result {
+            margin-top: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .scenario-result {
+            margin-top: 15px;
+            max-height: 80vh;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        .financial-summary {
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 10;
+            margin: -15px -15px 15px -15px;
+            padding: 15px;
+            border-bottom: 2px solid #dee2e6;
+            border-radius: 8px 8px 0 0;
+        }
+        .status-badge {
+            font-size: 12px;
+        }
+        .amount-display {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <h1 class="text-center mb-4">🧪 借抬头与过账规则测试中心</h1>
+        
+        <!-- 测试数据状态 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="alert alert-info d-flex justify-content-between align-items-center">
+                    <span>📊 测试环境状态</span>
+                    <div>
+                        <button class="btn btn-sm btn-outline-primary" onclick="checkTestDataStatus()">检查数据状态</button>
+                        <button class="btn btn-sm btn-warning" onclick="initTestData()">重置测试数据</button>
+                    </div>
+                </div>
+                <div id="dataStatus" class="mt-2"></div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- 左侧：借抬头测试 -->
+            <div class="col-lg-6">
+                <div class="test-section">
+                    <h3>🔄 借抬头处理测试</h3>
+                    
+                    <!-- 收款借抬头测试 -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0">💰 收款借抬头测试</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label">订单金额 (CNY)</label>
+                                    <input type="number" class="form-control" id="receivableAmount" value="50000" step="1000">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">业务类型</label>
+                                    <select class="form-select" id="receivableBusinessType">
+                                        <option value="OCEAN_FREIGHT">海运</option>
+                                        <option value="AIR_FREIGHT">空运</option>
+                                        <option value="TRUCK_FREIGHT">陆运</option>
+                                        <option value="RAIL_FREIGHT">铁运</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-md-6">
+                                    <label class="form-label">货币</label>
+                                    <select class="form-select" id="receivableCurrency">
+                                        <option value="CNY">人民币</option>
+                                        <option value="USD">美元</option>
+                                        <option value="EUR">欧元</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">客户付款账户</label>
+                                    <input type="text" class="form-control" id="customerPaymentAccount" value="6225881234567890">
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <button class="btn btn-success" onclick="testReceivableTransit()">🧪 测试收款借抬头</button>
+                                <button class="btn btn-sm btn-outline-info" onclick="showTransitEntityRules('RECEIVABLE')">查看规则</button>
+                            </div>
+                            <div id="receivableResult" class="test-result" style="display: none;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 付款借抬头测试 -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="mb-0">💸 付款借抬头测试</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label">付款金额 (CNY)</label>
+                                    <input type="number" class="form-control" id="payableAmount" value="30000" step="1000">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">业务类型</label>
+                                    <select class="form-select" id="payableBusinessType">
+                                        <option value="TRUCK_FREIGHT">陆运</option>
+                                        <option value="RAIL_FREIGHT">铁运</option>
+                                        <option value="OCEAN_FREIGHT">海运</option>
+                                        <option value="AIR_FREIGHT">空运</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-md-6">
+                                    <label class="form-label">供应商收款账户</label>
+                                    <input type="text" class="form-control" id="supplierAccount" value="6225880000000001">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">留存类型</label>
+                                    <select class="form-select" id="retentionType">
+                                        <option value="FIXED_AMOUNT">固定金额 (¥1000)</option>
+                                        <option value="PERCENTAGE">百分比 (3%)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <button class="btn btn-warning" onclick="testPayableTransit()">🧪 测试付款借抬头</button>
+                                <button class="btn btn-sm btn-outline-info" onclick="showTransitEntityRules('PAYABLE')">查看规则</button>
+                            </div>
+                            <div id="payableResult" class="test-result" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：过账规则测试 -->
+            <div class="col-lg-6">
+                <div class="test-section">
+                    <h3>🌐 过账规则测试</h3>
+                    
+                    <!-- 标准过账流程测试 -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">🔄 标准过账流程</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label">过账金额</label>
+                                    <input type="number" class="form-control" id="standardFlowAmount" value="100000" step="5000">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">过账货币</label>
+                                    <select class="form-select" id="standardFlowCurrency">
+                                        <option value="CNY">人民币</option>
+                                        <option value="USD">美元</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-md-6">
+                                    <label class="form-label">付款实体区域</label>
+                                    <select class="form-select" id="payerRegion">
+                                        <option value="CN">中国大陆</option>
+                                        <option value="HK">香港</option>
+                                        <option value="SG">新加坡</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">收款实体区域</label>
+                                    <select class="form-select" id="receiverRegion">
+                                        <option value="TH">泰国</option>
+                                        <option value="MY">马来西亚</option>
+                                        <option value="VN">越南</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-md-6">
+                                    <label class="form-label">处理方式</label>
+                                    <select class="form-select" id="processingType">
+                                        <option value="FLAT_TRANSFER">平转</option>
+                                        <option value="NET_TRANSFER">净额处理</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">启用抵消</label>
+                                    <select class="form-select" id="nettingEnabled">
+                                        <option value="true">启用</option>
+                                        <option value="false">禁用</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <button class="btn btn-primary" onclick="testStandardFlow()">🧪 测试标准过账</button>
+                                <button class="btn btn-sm btn-outline-info" onclick="showCrossBorderRules('STANDARD')">查看规则</button>
+                            </div>
+                            <div id="standardFlowResult" class="test-result" style="display: none;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 区域性过账规则测试 -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0">🌏 东南亚过账流程</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label">过账金额</label>
+                                    <input type="number" class="form-control" id="southeastFlowAmount" value="80000" step="5000">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">业务类型</label>
+                                    <select class="form-select" id="southeastBusinessType">
+                                        <option value="AIR_FREIGHT">空运</option>
+                                        <option value="TRUCK_FREIGHT">陆运</option>
+                                        <option value="OCEAN_FREIGHT">海运</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <button class="btn btn-info" onclick="testSoutheastAsiaFlow()">🧪 测试东南亚过账</button>
+                                <button class="btn btn-sm btn-outline-info" onclick="showCrossBorderRules('SOUTHEAST')">查看规则</button>
+                            </div>
+                            <div id="southeastFlowResult" class="test-result" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 综合测试场景 -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="test-section">
+                    <h3>🎯 综合测试场景</h3>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <button class="btn btn-outline-success w-100" onclick="runScenarioTest('high-value-ocean')">
+                                💎 华为海运场景<br>
+                                <small>5G设备 → 阿姆斯特丹</small><br>
+                                <small class="text-muted">¥116,100 | 3%留存</small>
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-outline-warning w-100" onclick="runScenarioTest('cross-border-truck')">
+                                🚚 比亚迪陆运场景<br>
+                                <small>电池组件 → 曼谷</small><br>
+                                <small class="text-muted">¥57,500 | 固定¥1000留存</small>
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-outline-info w-100" onclick="runScenarioTest('multi-currency-air')">
+                                ✈️ 大疆空运场景<br>
+                                <small>无人机 → 洛杉矶</small><br>
+                                <small class="text-muted">$42,970 | 0.8%留存</small>
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-outline-primary w-100" onclick="runScenarioTest('bulk-clearing')">
+                                📦 小米批量场景<br>
+                                <small>多线路手机配件</small><br>
+                                <small class="text-muted">3订单 | 混合清分</small>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="scenarioResult" class="scenario-result mt-3" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="business-scenarios.js"></script>
+    <script>
+        // 检查测试数据状态
+        async function checkTestDataStatus() {
+            // 模拟数据状态，因为后端服务暂时不可用
+            const transitCount = 2; // 收款借抬头 + 付款借抬头
+            const flowCount = 2;    // 标准过账 + 东南亚过账
+            
+            document.getElementById('dataStatus').innerHTML = `
+                <div class="alert alert-light">
+                    <strong>📊 数据统计:</strong>
+                    借抬头配置: ${transitCount} 个 | 
+                    过账规则配置: ${flowCount} 个
+                    <span class="badge bg-success ms-2">演示模式</span>
+                    <span class="badge bg-info ms-2">后端API暂时不可用</span>
+                </div>
+            `;
+        }
+
+        // 初始化测试数据
+        async function initTestData() {
+            const statusDiv = document.getElementById('dataStatus');
+            statusDiv.innerHTML = '<div class="alert alert-info">⏳ 正在初始化测试数据（演示模式）...</div>';
+            
+            // 模拟初始化过程
+            setTimeout(() => {
+                statusDiv.innerHTML = `
+                    <div class="alert alert-success">
+                        ✅ 演示数据初始化成功<br>
+                        <small>借抬头: 2 个, 过账规则: 2 个 (演示数据)</small>
+                    </div>
+                `;
+                setTimeout(checkTestDataStatus, 1000);
+            }, 1500);
+        }
+
+        // 测试收款借抬头
+        async function testReceivableTransit() {
+            const resultDiv = document.getElementById('receivableResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<div class="text-info">⏳ 正在执行收款借抬头测试（演示模式）...</div>';
+            
+            const testData = {
+                amount: document.getElementById('receivableAmount').value,
+                businessType: document.getElementById('receivableBusinessType').value,
+                currency: document.getElementById('receivableCurrency').value,
+                paymentAccount: document.getElementById('customerPaymentAccount').value,
+                customerId: 'CUSTOMER_001'
+            };
+            
+            // 模拟测试结果
+            setTimeout(() => {
+                const mockResult = {
+                    success: true,
+                    data: {
+                        clearingResults: [
+                            {
+                                entityId: 'ENTITY_HK_001',
+                                transactionType: 'RECEIVABLE',
+                                amount: testData.amount,
+                                currency: testData.currency,
+                                isTransitRetention: true,
+                                accountType: 'EXTERNAL_RECEIVABLE'
+                            },
+                            {
+                                entityId: 'ENTITY_CN_SALES',
+                                transactionType: 'TRANSIT_FEE',
+                                amount: (parseFloat(testData.amount) * 0.03).toFixed(2),
+                                currency: testData.currency,
+                                isTransitRetention: true,
+                                accountType: 'INTERNAL_RECEIVABLE'
+                            }
+                        ],
+                        summary: `收款借抬头测试完成，涉及香港中转实体，3%留存费用`
+                    }
+                };
+                displayTestResult(resultDiv, mockResult, '收款借抬头');
+            }, 1500);
+        }
+
+        // 测试付款借抬头
+        async function testPayableTransit() {
+            const resultDiv = document.getElementById('payableResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<div class="text-info">⏳ 正在执行付款借抬头测试（演示模式）...</div>';
+            
+            const testData = {
+                amount: document.getElementById('payableAmount').value,
+                businessType: document.getElementById('payableBusinessType').value,
+                currency: 'CNY',
+                supplierAccount: document.getElementById('supplierAccount').value,
+                retentionType: document.getElementById('retentionType').value,
+                supplierId: 'SUPPLIER_001'
+            };
+            
+            // 模拟测试结果
+            setTimeout(() => {
+                const retentionAmount = testData.retentionType === 'FIXED_AMOUNT' ? 1000 : 
+                    (parseFloat(testData.amount) * 0.03).toFixed(2);
+                
+                const mockResult = {
+                    success: true,
+                    data: {
+                        clearingResults: [
+                            {
+                                entityId: 'ENTITY_SG_001',
+                                transactionType: 'PAYABLE',
+                                amount: (parseFloat(testData.amount) - parseFloat(retentionAmount)).toFixed(2),
+                                currency: testData.currency,
+                                isTransitRetention: false,
+                                accountType: 'EXTERNAL_PAYABLE'
+                            },
+                            {
+                                entityId: 'ENTITY_CN_SALES',
+                                transactionType: 'TRANSIT_FEE',
+                                amount: retentionAmount,
+                                currency: testData.currency,
+                                isTransitRetention: true,
+                                accountType: 'INTERNAL_PAYABLE'
+                            }
+                        ],
+                        summary: `付款借抬头测试完成，${testData.retentionType === 'FIXED_AMOUNT' ? '固定' : '百分比'}留存 ${retentionAmount} ${testData.currency}`
+                    }
+                };
+                displayTestResult(resultDiv, mockResult, '付款借抬头');
+            }, 1500);
+        }
+
+        // 测试标准过账流程
+        async function testStandardFlow() {
+            const resultDiv = document.getElementById('standardFlowResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<div class="text-info">⏳ 正在执行标准过账测试（演示模式）...</div>';
+            
+            const testData = {
+                amount: document.getElementById('standardFlowAmount').value,
+                currency: document.getElementById('standardFlowCurrency').value,
+                payerRegion: document.getElementById('payerRegion').value,
+                receiverRegion: document.getElementById('receiverRegion').value,
+                processingType: document.getElementById('processingType').value,
+                nettingEnabled: document.getElementById('nettingEnabled').value === 'true',
+                businessType: 'OCEAN_FREIGHT'
+            };
+            
+            // 模拟测试结果
+            setTimeout(() => {
+                const transitFee = (parseFloat(testData.amount) * 0.005).toFixed(2);
+                const mockResult = {
+                    success: true,
+                    data: {
+                        clearingResults: [
+                            {
+                                entityId: `ENTITY_${testData.payerRegion}_PAYER`,
+                                transactionType: 'PAYABLE',
+                                amount: testData.amount,
+                                currency: testData.currency,
+                                isTransitRetention: false,
+                                accountType: 'EXTERNAL_PAYABLE'
+                            },
+                            {
+                                entityId: 'ENTITY_HK_TRANSIT',
+                                transactionType: 'TRANSIT_FEE',
+                                amount: transitFee,
+                                currency: testData.currency,
+                                isTransitRetention: true,
+                                accountType: 'INTERNAL_RECEIVABLE'
+                            },
+                            {
+                                entityId: `ENTITY_${testData.receiverRegion}_RECEIVER`,
+                                transactionType: 'RECEIVABLE',
+                                amount: (parseFloat(testData.amount) - parseFloat(transitFee)).toFixed(2),
+                                currency: testData.currency,
+                                isTransitRetention: false,
+                                accountType: 'EXTERNAL_RECEIVABLE'
+                            }
+                        ],
+                        summary: `标准过账流程：${testData.payerRegion} → HK → ${testData.receiverRegion}，${testData.processingType}处理，${testData.nettingEnabled ? '启用' : '禁用'}抵消`
+                    }
+                };
+                displayTestResult(resultDiv, mockResult, '标准过账流程');
+            }, 1500);
+        }
+
+        // 测试东南亚过账流程
+        async function testSoutheastAsiaFlow() {
+            const resultDiv = document.getElementById('southeastFlowResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<div class="text-info">⏳ 正在执行东南亚过账测试（演示模式）...</div>';
+            
+            const testData = {
+                amount: document.getElementById('southeastFlowAmount').value,
+                businessType: document.getElementById('southeastBusinessType').value,
+                currency: 'CNY',
+                payerRegion: 'CN',
+                receiverRegion: 'MY',
+                processingType: 'NET_TRANSFER'
+            };
+            
+            // 模拟测试结果
+            setTimeout(() => {
+                const transitFee = (parseFloat(testData.amount) * 0.008).toFixed(2);
+                const mockResult = {
+                    success: true,
+                    data: {
+                        clearingResults: [
+                            {
+                                entityId: 'ENTITY_CN_SHENZHEN',
+                                transactionType: 'PAYABLE',
+                                amount: testData.amount,
+                                currency: testData.currency,
+                                isTransitRetention: false,
+                                accountType: 'EXTERNAL_PAYABLE'
+                            },
+                            {
+                                entityId: 'ENTITY_SG_TRANSIT',
+                                transactionType: 'TRANSIT_FEE',
+                                amount: transitFee,
+                                currency: testData.currency,
+                                isTransitRetention: true,
+                                accountType: 'INTERNAL_RECEIVABLE'
+                            },
+                            {
+                                entityId: 'ENTITY_MY_RECEIVER',
+                                transactionType: 'RECEIVABLE',
+                                amount: (parseFloat(testData.amount) - parseFloat(transitFee)).toFixed(2),
+                                currency: testData.currency,
+                                isTransitRetention: false,
+                                accountType: 'EXTERNAL_RECEIVABLE'
+                            }
+                        ],
+                        summary: `东南亚过账流程：${testData.businessType}业务，净额处理，0.8%中转费用`
+                    }
+                };
+                displayTestResult(resultDiv, mockResult, '东南亚过账流程');
+            }, 1500);
+        }
+
+        // 显示测试结果
+        function displayTestResult(resultDiv, result, testType) {
+            if (result.success) {
+                let html = `<div class="alert alert-success">✅ ${testType}测试成功</div>`;
+                
+                if (result.data && result.data.clearingResults) {
+                    html += `<h6>清分结果:</h6><div class="table-responsive">
+                        <table class="table table-sm table-striped">
+                            <thead><tr>
+                                <th>实体ID</th><th>交易类型</th><th>金额</th><th>留存</th><th>账务类型</th>
+                            </tr></thead><tbody>`;
+                    
+                    result.data.clearingResults.forEach(item => {
+                        html += `<tr>
+                            <td>${item.entityId || 'N/A'}</td>
+                            <td><span class="badge bg-primary">${item.transactionType}</span></td>
+                            <td class="amount-display">${item.currency} ${item.amount}</td>
+                            <td>${item.isTransitRetention ? '✓' : '✗'}</td>
+                            <td><span class="badge bg-secondary">${item.accountType}</span></td>
+                        </tr>`;
+                    });
+                    html += `</tbody></table></div>`;
+                }
+                
+                if (result.data && result.data.summary) {
+                    html += `<div class="mt-2"><strong>汇总:</strong> ${result.data.summary}</div>`;
+                }
+                
+                resultDiv.innerHTML = html;
+            } else {
+                resultDiv.innerHTML = `<div class="alert alert-danger">❌ ${result.message}</div>`;
+            }
+        }
+
+        // 运行综合测试场景
+        async function runScenarioTest(scenario) {
+            const resultDiv = document.getElementById('scenarioResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<div class="text-info">⏳ 正在加载真实业务场景数据...</div>';
+            
+            // 使用真实业务场景数据
+            setTimeout(() => {
+                const businessData = window.BusinessScenarios.generateClearingTestData(scenario);
+                if (!businessData) {
+                    resultDiv.innerHTML = '<div class="alert alert-danger">❌ 场景数据未找到</div>';
+                    return;
+                }
+                
+                const scenarioInfo = window.BusinessScenarios.getBusinessScenario(scenario);
+                const order = scenarioInfo.orders[0];
+                
+                // 计算清分结果
+                const clearingResults = [];
+                let retentionAmount = 0;
+                
+                // 添加客户收款记录
+                clearingResults.push({
+                    entityId: businessData.customerInfo.id,
+                    entityName: businessData.customerInfo.name,
+                    transactionType: 'RECEIVABLE',
+                    amount: order.totalAmount,
+                    currency: order.currency,
+                    isTransitRetention: false,
+                    accountType: 'EXTERNAL_RECEIVABLE'
+                });
+                
+                // 计算留存费用
+                if (order.transitEntity) {
+                    retentionAmount = order.transitEntity.type === 'RECEIVABLE_TRANSIT' ?
+                        (order.totalAmount * order.transitEntity.retentionRate) :
+                        order.transitEntity.retentionAmount;
+                        
+                    clearingResults.push({
+                        entityId: order.transitEntity.entityId,
+                        entityName: '中转实体留存',
+                        transactionType: 'TRANSIT_FEE',
+                        amount: retentionAmount.toFixed(2),
+                        currency: order.currency,
+                        isTransitRetention: true,
+                        accountType: 'INTERNAL_RECEIVABLE'
+                    });
+                } else if (order.crossBorderFlow) {
+                    retentionAmount = order.totalAmount * order.crossBorderFlow.retentionRate;
+                    clearingResults.push({
+                        entityId: 'CROSS_BORDER_TRANSIT',
+                        entityName: '过账中转费',
+                        transactionType: 'TRANSIT_FEE', 
+                        amount: retentionAmount.toFixed(2),
+                        currency: order.currency,
+                        isTransitRetention: true,
+                        accountType: 'INTERNAL_RECEIVABLE'
+                    });
+                }
+                
+                // 添加供应商付款记录
+                order.services.forEach((service, index) => {
+                    clearingResults.push({
+                        entityId: `SUPPLIER_${index + 1}`,
+                        entityName: service.provider,
+                        transactionType: 'PAYABLE',
+                        amount: service.costAmount,
+                        currency: service.currency,
+                        isTransitRetention: false,
+                        accountType: 'EXTERNAL_PAYABLE'
+                    });
+                });
+                
+                const mockResult = {
+                    success: true,
+                    data: {
+                        businessScenario: {
+                            name: scenarioInfo.name,
+                            customer: businessData.customerInfo.name,
+                            orderId: order.orderId,
+                            businessType: order.businessType,
+                            route: `${order.route.pol} → ${order.route.via || ''} → ${order.route.pod}`.replace('→  →', '→'),
+                            cargo: order.cargo.description
+                        },
+                        clearingResults: clearingResults,
+                        services: order.services,
+                        financialSummary: {
+                            totalRevenue: order.totalAmount,
+                            totalCost: order.totalCost,
+                            grossProfit: order.totalAmount - order.totalCost,
+                            retentionAmount: retentionAmount,
+                            profitMargin: order.profitMargin
+                        },
+                        summary: `${scenarioInfo.name}：${businessData.customerInfo.name}的${order.businessType}业务，总收入 ${order.currency} ${order.totalAmount.toLocaleString()}，毛利率 ${order.profitMargin}%`
+                    }
+                };
+                displayBusinessScenarioResult(resultDiv, mockResult, scenarioInfo.name);
+            }, 1500);
+        }
+
+        // 显示借抬头规则
+        function showTransitEntityRules(type) {
+            const ruleData = type === 'RECEIVABLE' ? {
+                title: '收款借抬头规则配置',
+                rules: [
+                    {
+                        id: 'TRANSIT_RECEIVABLE_001',
+                        name: '香港中转收款实体',
+                        sourceEntity: 'CUSTOMER_001 (客户)',
+                        transitEntity: 'ENTITY_HK_001 (香港中转实体)',
+                        targetEntity: 'ENTITY_CN_SALES (中国销售实体)',
+                        account: '6225881234567890',
+                        retentionType: '百分比留存',
+                        retentionRate: '3%',
+                        applicableConditions: '海运、空运 | 人民币、美元',
+                        description: '客户付款通过香港实体中转到中国销售实体，留存3%作为中转费用'
+                    }
+                ]
+            } : {
+                title: '付款借抬头规则配置', 
+                rules: [
+                    {
+                        id: 'TRANSIT_PAYABLE_001',
+                        name: '新加坡中转付款实体',
+                        sourceEntity: 'ENTITY_CN_SALES (中国销售实体)',
+                        transitEntity: 'ENTITY_SG_001 (新加坡中转实体)',
+                        targetEntity: 'SUPPLIER_001 (供应商)',
+                        account: '6225880000000001',
+                        retentionType: '固定金额留存',
+                        retentionAmount: '¥1,000',
+                        applicableConditions: '陆运、铁运 | 人民币',
+                        description: '中国销售实体通过新加坡实体中转付款给供应商，固定留存1000元作为中转费用'
+                    }
+                ]
+            };
+            
+            showRuleModal(ruleData);
+        }
+
+        // 显示过账规则
+        function showCrossBorderRules(type) {
+            const ruleData = type === 'STANDARD' ? {
+                title: '标准过账流程规则配置',
+                rules: [
+                    {
+                        id: 'FLOW_STANDARD_001',
+                        name: '中国-香港-泰国标准过账',
+                        flowType: 'STANDARD_FLOW',
+                        payerEntity: 'ENTITY_CN_NINGBO (宁波实体)',
+                        payerRegion: 'CN (中国)',
+                        transitEntity: 'ENTITY_HK_TRANSIT (香港中转)',
+                        transitRegion: 'HK (香港)',
+                        receiverEntity: 'ENTITY_TH_RECEIVER (泰国收款方)',
+                        receiverRegion: 'TH (泰国)',
+                        processingType: '平转处理',
+                        transitRetentionRate: '0.5%',
+                        nettingEnabled: '启用抵消',
+                        nettingPriority: '优先级1',
+                        applicableConditions: '海运 | 人民币、美元',
+                        description: '标准三地过账流程，中国付款方通过香港中转到泰国收款方，0.5%中转费用，支持净额抵消'
+                    }
+                ]
+            } : {
+                title: '东南亚过账流程规则配置',
+                rules: [
+                    {
+                        id: 'FLOW_SOUTHEAST_001', 
+                        name: '中国-新加坡-马来西亚过账',
+                        flowType: 'SOUTHEAST_ASIA_FLOW',
+                        payerEntity: 'ENTITY_CN_SHENZHEN (深圳实体)',
+                        payerRegion: 'CN (中国)',
+                        transitEntity: 'ENTITY_SG_TRANSIT (新加坡中转)',
+                        transitRegion: 'SG (新加坡)',
+                        receiverEntity: 'ENTITY_MY_RECEIVER (马来西亚收款方)',
+                        receiverRegion: 'MY (马来西亚)',
+                        processingType: '净额处理',
+                        transitRetentionRate: '0.8%',
+                        nettingEnabled: '启用抵消',
+                        nettingPriority: '优先级2',
+                        applicableConditions: '空运、陆运 | 人民币、美元',
+                        description: '东南亚区域专用过账流程，深圳实体通过新加坡中转到马来西亚，0.8%中转费用，支持净额处理'
+                    }
+                ]
+            };
+            
+            showRuleModal(ruleData);
+        }
+        
+        // 显示规则详情模态框
+        function showRuleModal(ruleData) {
+            const modalHtml = `
+                <div class="modal fade" id="ruleModal" tabindex="-1" aria-labelledby="ruleModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-xl">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="ruleModalLabel">${ruleData.title}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                ${ruleData.rules.map(rule => `
+                                    <div class="card mb-3">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">
+                                                <strong>${rule.name}</strong> 
+                                                <span class="badge bg-primary ms-2">${rule.id}</span>
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <table class="table table-sm table-borderless">
+                                                        <tbody>
+                                                            <tr><td><strong>源实体:</strong></td><td>${rule.sourceEntity}</td></tr>
+                                                            <tr><td><strong>中转实体:</strong></td><td>${rule.transitEntity}</td></tr>
+                                                            <tr><td><strong>目标实体:</strong></td><td>${rule.targetEntity}</td></tr>
+                                                            ${rule.account ? `<tr><td><strong>中转账户:</strong></td><td>${rule.account}</td></tr>` : ''}
+                                                            ${rule.payerRegion ? `<tr><td><strong>付款区域:</strong></td><td>${rule.payerRegion}</td></tr>` : ''}
+                                                            ${rule.receiverRegion ? `<tr><td><strong>收款区域:</strong></td><td>${rule.receiverRegion}</td></tr>` : ''}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <table class="table table-sm table-borderless">
+                                                        <tbody>
+                                                            ${rule.retentionType ? `<tr><td><strong>留存类型:</strong></td><td>${rule.retentionType}</td></tr>` : ''}
+                                                            ${rule.retentionRate ? `<tr><td><strong>留存费率:</strong></td><td class="text-primary">${rule.retentionRate}</td></tr>` : ''}
+                                                            ${rule.retentionAmount ? `<tr><td><strong>留存金额:</strong></td><td class="text-primary">${rule.retentionAmount}</td></tr>` : ''}
+                                                            ${rule.transitRetentionRate ? `<tr><td><strong>中转费率:</strong></td><td class="text-primary">${rule.transitRetentionRate}</td></tr>` : ''}
+                                                            ${rule.processingType ? `<tr><td><strong>处理方式:</strong></td><td>${rule.processingType}</td></tr>` : ''}
+                                                            ${rule.nettingEnabled ? `<tr><td><strong>抵消功能:</strong></td><td>${rule.nettingEnabled}</td></tr>` : ''}
+                                                            ${rule.nettingPriority ? `<tr><td><strong>抵消优先级:</strong></td><td>${rule.nettingPriority}</td></tr>` : ''}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                            <div class="row mt-3">
+                                                <div class="col-12">
+                                                    <strong>适用条件:</strong> 
+                                                    <span class="badge bg-secondary">${rule.applicableConditions}</span>
+                                                </div>
+                                            </div>
+                                            <div class="row mt-2">
+                                                <div class="col-12">
+                                                    <strong>规则描述:</strong>
+                                                    <p class="text-muted mb-0">${rule.description}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                                <button type="button" class="btn btn-primary" onclick="exportRuleConfig()">导出配置</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 移除现有模态框
+            const existingModal = document.getElementById('ruleModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // 添加新模态框
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // 显示模态框
+            const modal = new bootstrap.Modal(document.getElementById('ruleModal'));
+            modal.show();
+        }
+        
+        // 导出规则配置
+        function exportRuleConfig() {
+            alert('规则配置导出功能（将生成SQL/JSON配置文件）');
+        }
+        
+        // 显示业务场景测试结果
+        function displayBusinessScenarioResult(resultDiv, result, testType) {
+            if (result.success && result.data.businessScenario) {
+                let html = `<div class="alert alert-success">✅ ${testType}测试成功</div>`;
+                
+                // 业务场景信息
+                html += `
+                    <div class="card mb-2">
+                        <div class="card-header bg-primary text-white py-2">
+                            <h6 class="mb-0">📋 ${result.data.businessScenario.customer} - ${result.data.businessScenario.orderId}</h6>
+                        </div>
+                        <div class="card-body p-2">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <small><strong>业务类型:</strong> <span class="badge bg-info">${result.data.businessScenario.businessType}</span></small><br>
+                                    <small><strong>运输路线:</strong> ${result.data.businessScenario.route}</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <small><strong>货物描述:</strong> ${result.data.businessScenario.cargo}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // 财务汇总 - 使用粘性定位
+                if (result.data.financialSummary) {
+                    const summary = result.data.financialSummary;
+                    html += `
+                        <div class="financial-summary">
+                            <div class="alert alert-success mb-2">
+                                <strong>💰 财务汇总</strong>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-3 text-center">
+                                    <h5 class="text-primary amount-display">${summary.totalRevenue.toLocaleString()}</h5>
+                                    <small class="text-muted">总收入</small>
+                                </div>
+                                <div class="col-md-3 text-center">
+                                    <h5 class="text-warning amount-display">${summary.totalCost.toLocaleString()}</h5>
+                                    <small class="text-muted">总成本</small>
+                                </div>
+                                <div class="col-md-3 text-center">
+                                    <h5 class="text-success amount-display">${summary.grossProfit.toLocaleString()}</h5>
+                                    <small class="text-muted">毛利润</small>
+                                </div>
+                                <div class="col-md-3 text-center">
+                                    <h5 class="text-info">${summary.profitMargin}%</h5>
+                                    <small class="text-muted">毛利率</small>
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-12 text-center">
+                                    <strong>中转留存费用:</strong> 
+                                    <span class="badge bg-warning amount-display">${summary.retentionAmount.toLocaleString()}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // 服务明细
+                if (result.data.services && result.data.services.length > 0) {
+                    html += `
+                        <div class="card mb-2">
+                            <div class="card-header bg-info text-white py-2">
+                                <h6 class="mb-0">🚚 服务明细</h6>
+                            </div>
+                            <div class="card-body p-2">
+                                ${window.BusinessScenarios.generateServiceTable(result.data.services)}
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // 清分结果
+                if (result.data.clearingResults) {
+                    html += `
+                        <div class="card mb-2">
+                            <div class="card-header bg-secondary text-white py-2">
+                                <h6 class="mb-0">⚖️ 清分结果</h6>
+                            </div>
+                            <div class="card-body p-2">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-striped table-hover mb-0">
+                                        <thead class="table-light"><tr>
+                                            <th style="width: 20%;">实体名称</th><th style="width: 15%;">交易类型</th><th style="width: 15%;" class="text-end">金额</th><th style="width: 8%;" class="text-center">留存</th><th style="width: 20%;">账务类型</th><th style="width: 22%;">实体ID</th>
+                                        </tr></thead><tbody>`;
+                    
+                    result.data.clearingResults.forEach(item => {
+                        const typeColor = item.transactionType === 'RECEIVABLE' ? 'success' : 
+                                        item.transactionType === 'PAYABLE' ? 'danger' : 'warning';
+                        html += `<tr>
+                            <td><small><strong>${item.entityName || item.entityId || 'N/A'}</strong></small></td>
+                            <td><span class="badge bg-${typeColor}" style="font-size: 10px;">${item.transactionType}</span></td>
+                            <td class="amount-display text-end"><small><strong>${item.currency} ${parseFloat(item.amount).toLocaleString()}</strong></small></td>
+                            <td class="text-center">${item.isTransitRetention ? '<span class="text-success">✓</span>' : '<span class="text-muted">✗</span>'}</td>
+                            <td><span class="badge bg-secondary" style="font-size: 9px;">${item.accountType.replace('_', ' ')}</span></td>
+                            <td><small class="text-muted">${item.entityId || 'N/A'}</small></td>
+                        </tr>`;
+                    });
+                    html += `</tbody></table></div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                if (result.data.summary) {
+                    html += `<div class="mt-2"><strong>测试总结:</strong> ${result.data.summary}</div>`;
+                }
+                
+                resultDiv.innerHTML = html;
+            } else {
+                resultDiv.innerHTML = `<div class="alert alert-danger">❌ ${result.message || '业务场景测试失败'}</div>`;
+            }
+        }
+
+        // 页面加载时检查数据状态
+        document.addEventListener('DOMContentLoaded', checkTestDataStatus);
+    </script>
+</body>
+</html>

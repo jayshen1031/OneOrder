@@ -1,0 +1,458 @@
+package com.oneorder.clearing.dto;
+
+import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import lombok.Builder;
+
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.NotEmpty;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+
+// ==================== 1. 客服接单阶段 DTOs ====================
+
+/**
+ * 客服接单请求
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+class CustomerServiceOrderRequest {
+    @NotBlank(message = "客户ID不能为空")
+    private String customerId;
+    
+    @NotBlank(message = "业务类型不能为空")
+    private String businessType; // OCEAN, AIR, TRUCK, RAIL, CUSTOMS, WAREHOUSE
+    
+    @NotEmpty(message = "服务编码不能为空")
+    private List<String> serviceCodes;
+    
+    @NotBlank(message = "销售人员ID不能为空")
+    private String salesStaffId;
+    
+    @NotBlank(message = "销售部门ID不能为空")
+    private String salesDepartmentId;
+    
+    private String orderNotes;
+    private BigDecimal estimatedValue;
+    private String urgencyLevel; // LOW, MEDIUM, HIGH, URGENT
+}
+
+/**
+ * 客服接单结果
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class CustomerServiceOrderResult {
+    private String orderId;
+    private Boolean success;
+    private String message;
+    private Boolean contractMatched;
+    private ContractMatchResultDTO contractDetails;
+    private List<ServiceConfigDTO> services;
+    private BigDecimal estimatedAmount;
+    private LocalDateTime createdTime;
+}
+
+/**
+ * 服务配置DTO
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ServiceConfigDTO {
+    private String feeCode;
+    private String feeName;
+    private String businessType;
+    private String feeType;
+    private String currency;
+    private BigDecimal unitPrice;
+    private String description;
+    private Boolean active;
+}
+
+// ==================== 2. 服务派单阶段 DTOs ====================
+
+/**
+ * 服务派单请求
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ServiceAssignmentRequest {
+    @NotBlank(message = "订单ID不能为空")
+    private String orderId;
+    
+    @NotEmpty(message = "服务派单项不能为空")
+    private List<ServiceAssignmentRequestItem> serviceAssignments;
+    
+    private String assignmentNotes;
+    private String assignedBy; // 派单人员ID
+}
+
+/**
+ * 单个服务派单请求项
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ServiceAssignmentRequestItem {
+    @NotBlank(message = "服务编码不能为空")
+    private String serviceCode;
+    
+    @NotBlank(message = "操作人员ID不能为空")
+    private String operationStaffId;
+    
+    private BigDecimal serviceAmount;
+    private String priority; // LOW, MEDIUM, HIGH, URGENT
+    private String assignmentNotes;
+    private LocalDateTime expectedCompletionTime;
+}
+
+/**
+ * 服务派单结果
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ServiceAssignmentResult {
+    private String orderId;
+    private Integer totalServices;
+    private Integer successCount;
+    private Integer failureCount;
+    private Boolean overallSuccess;
+    private List<ServiceAssignmentResultItem> assignmentResults;
+    private LocalDateTime assignedTime;
+}
+
+/**
+ * 单个服务派单结果项
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ServiceAssignmentResultItem {
+    private String serviceCode;
+    private String operationStaffId;
+    private String operationStaffName;
+    private String protocolId;
+    private String protocolName;
+    private Boolean success;
+    private String message;
+    private LocalDateTime assignedTime;
+}
+
+/**
+ * 操作人员推荐DTO
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class StaffRecommendationDTO {
+    private String staffId;
+    private String staffName;
+    private String departmentId;
+    private String departmentName;
+    private BigDecimal recommendationScore; // 0-100
+    private String reasonCode;
+    private String reasonDescription;
+    private Integer currentWorkload; // 当前工作量
+    private BigDecimal averageCompletionTime; // 平均完成时间（小时）
+}
+
+// ==================== 3. 操作接单阶段 DTOs ====================
+
+/**
+ * 操作接单请求
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class OperationAcceptanceRequest {
+    @NotBlank(message = "操作人员ID不能为空")
+    private String staffId;
+    
+    @NotEmpty(message = "订单服务ID列表不能为空")
+    private List<Long> orderServiceIds;
+    
+    private String acceptanceNotes;
+    private Boolean termsAccepted; // 是否接受协议条款
+}
+
+/**
+ * 操作接单结果
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class OperationAcceptanceResult {
+    private String staffId;
+    private Integer totalServices;
+    private Integer successCount;
+    private Integer failureCount;
+    private Boolean overallSuccess;
+    private List<OperationAcceptanceResultItem> acceptanceResults;
+    private LocalDateTime acceptedTime;
+}
+
+/**
+ * 单个操作接单结果项
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class OperationAcceptanceResultItem {
+    private Long orderServiceId;
+    private String serviceCode;
+    private Boolean success;
+    private String message;
+    private LocalDateTime startedTime;
+}
+
+/**
+ * 服务派单通知DTO
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ServiceAssignmentNotificationDTO {
+    private Long notificationId;
+    private String orderId;
+    private String serviceCode;
+    private String serviceName;
+    private String protocolName;
+    private BigDecimal serviceAmount;
+    private String priority;
+    private Boolean isRead;
+    private LocalDateTime assignedTime;
+    private LocalDateTime expectedCompletionTime;
+    
+    // 订单相关信息
+    private String customerName;
+    private String businessType;
+    private String salesStaffName;
+    
+    // 协议相关信息
+    private BigDecimal baseCommissionRate;
+    private BigDecimal performanceBonusRate;
+}
+
+/**
+ * 协议确认请求
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ProtocolConfirmationRequest {
+    @NotNull(message = "订单服务ID不能为空")
+    private Long orderServiceId;
+    
+    @NotBlank(message = "操作人员ID不能为空")
+    private String staffId;
+    
+    private Boolean termsAccepted; // 是否接受协议条款
+    private String confirmationNotes;
+}
+
+/**
+ * 协议确认结果
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ProtocolConfirmationResult {
+    private Long orderServiceId;
+    private Boolean success;
+    private String protocolId;
+    private String protocolName;
+    private BigDecimal baseCommissionRate;
+    private BigDecimal performanceBonusRate;
+    private String message;
+    private LocalDateTime confirmedTime;
+}
+
+// ==================== 流程状态查询 DTOs ====================
+
+/**
+ * 订单流程状态DTO
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class OrderProcessStatusDTO {
+    private String orderId;
+    private String currentStage; // CREATED, ASSIGNED, IN_PROGRESS, COMPLETED
+    private Integer totalServices;
+    private Integer completedServices;
+    private BigDecimal progressPercentage;
+    
+    // 各阶段时间
+    private LocalDateTime createdTime;
+    private LocalDateTime firstAssignedTime;
+    private LocalDateTime lastStartedTime;
+    private LocalDateTime estimatedCompletionTime;
+    
+    // 服务明细
+    private List<ServiceProcessStatusDTO> serviceStatuses;
+}
+
+/**
+ * 服务流程状态DTO
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ServiceProcessStatusDTO {
+    private Long orderServiceId;
+    private String serviceCode;
+    private String serviceName;
+    private String status; // PENDING, ASSIGNED, PROTOCOL_CONFIRMED, IN_PROGRESS, COMPLETED, BLOCKED
+    private String operationStaffId;
+    private String operationStaffName;
+    private String protocolId;
+    private String protocolName;
+    
+    // 时间节点
+    private LocalDateTime assignedTime;
+    private LocalDateTime protocolConfirmedTime;
+    private LocalDateTime startedTime;
+    private LocalDateTime completedTime;
+    
+    // 进度信息
+    private BigDecimal progressPercentage;
+    private String currentStep;
+    private String nextStep;
+}
+
+// ==================== 批量操作 DTOs ====================
+
+/**
+ * 批量服务派单请求
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class BatchServiceAssignmentRequest {
+    @NotEmpty(message = "订单ID列表不能为空")
+    private List<String> orderIds;
+    
+    @NotEmpty(message = "派单规则不能为空")
+    private List<BatchAssignmentRule> assignmentRules;
+    
+    private String assignedBy;
+    private String batchNotes;
+}
+
+/**
+ * 批量派单规则
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class BatchAssignmentRule {
+    private String serviceCode;
+    private String operationStaffId;
+    private String assignmentStrategy; // LOAD_BALANCE, EXPERTISE_MATCH, PRIORITY_FIRST
+}
+
+/**
+ * 批量派单结果
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class BatchServiceAssignmentResult {
+    private Integer totalOrders;
+    private Integer successOrders;
+    private Integer failureOrders;
+    private List<ServiceAssignmentResult> orderResults;
+    private LocalDateTime processedTime;
+    private String batchId;
+}
+
+// ==================== 统计与报表 DTOs ====================
+
+/**
+ * 业务流程统计DTO
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class BusinessProcessStatisticsDTO {
+    // 客服接单统计
+    private Integer totalOrdersCreated;
+    private Integer ordersWithContractMatch;
+    private BigDecimal contractMatchRate;
+    
+    // 服务派单统计
+    private Integer totalServicesAssigned;
+    private Integer successfulAssignments;
+    private BigDecimal assignmentSuccessRate;
+    private Double averageAssignmentTime; // 分钟
+    
+    // 操作接单统计
+    private Integer totalServicesAccepted;
+    private Integer servicesInProgress;
+    private Integer completedServices;
+    private BigDecimal completionRate;
+    private Double averageCompletionTime; // 小时
+    
+    // 效率指标
+    private Double averageOrderProcessingTime; // 小时
+    private Integer bottleneckServices; // 瓶颈服务数量
+    private List<String> topPerformingStaff;
+    
+    private LocalDateTime statisticsGeneratedAt;
+}
+
+/**
+ * 人员工作负载DTO
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class StaffWorkloadDTO {
+    private String staffId;
+    private String staffName;
+    private String departmentName;
+    
+    // 当前工作负载
+    private Integer assignedServices;
+    private Integer inProgressServices;
+    private Integer pendingServices;
+    private BigDecimal workloadPercentage;
+    
+    // 历史表现
+    private Integer completedServicesThisMonth;
+    private Double averageCompletionTime;
+    private BigDecimal customerSatisfactionScore;
+    
+    // 状态
+    private String currentStatus; // AVAILABLE, BUSY, OVERLOADED, OFFLINE
+    private LocalDateTime lastActiveTime;
+}

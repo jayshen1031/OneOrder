@@ -1,0 +1,110 @@
+{
+  "execution_summary": {
+    "total_orders_processed": 3,
+    "complete_workflow_success": 0,
+    "complete_success_rate": "0.0%"
+  },
+  "step_statistics": {
+    "expense_entry": {
+      "success_count": 0,
+      "failed_count": 3,
+      "success_rate": "0.0%"
+    },
+    "management_profit_sharing": {
+      "success_count": 0,
+      "failed_count": 3,
+      "success_rate": "0.0%"
+    },
+    "clearing_process": {
+      "success_count": 0,
+      "failed_count": 3,
+      "success_rate": "0.0%"
+    },
+    "passthrough_process": {
+      "success_count": 0,
+      "failed_count": 3,
+      "success_rate": "0.0%"
+    }
+  },
+  "financial_summary": {
+    "total_income": 78708,
+    "total_expense": 44202,
+    "total_profit": 34506,
+    "avg_profit_margin": 43.84
+  },
+  "execution_time": "2025-09-17T20:25:51.738551",
+  "detailed_results": [
+    {
+      "order_no": "HW-EXPORT-20240102-001",
+      "expense_entry": {
+        "success": false,
+        "data": {
+          "total_income": 15821,
+          "total_expense": 9021,
+          "gross_profit": 6800,
+          "profit_margin": 42.980848239681436
+        }
+      },
+      "management_profit_sharing": {
+        "success": false,
+        "data": {}
+      },
+      "clearing_process": {
+        "success": false,
+        "data": {}
+      },
+      "passthrough_process": {
+        "success": false,
+        "data": {}
+      }
+    },
+    {
+      "order_no": "MIDEA-SHIP-20240103-001",
+      "expense_entry": {
+        "success": false,
+        "data": {
+          "total_income": 20561,
+          "total_expense": 12405,
+          "gross_profit": 8156,
+          "profit_margin": 39.66733135547882
+        }
+      },
+      "management_profit_sharing": {
+        "success": false,
+        "data": {}
+      },
+      "clearing_process": {
+        "success": false,
+        "data": {}
+      },
+      "passthrough_process": {
+        "success": false,
+        "data": {}
+      }
+    },
+    {
+      "order_no": "SH-AUTO-20240101-001",
+      "expense_entry": {
+        "success": false,
+        "data": {
+          "total_income": 42326,
+          "total_expense": 22776,
+          "gross_profit": 19550,
+          "profit_margin": 46.189103624249874
+        }
+      },
+      "management_profit_sharing": {
+        "success": false,
+        "data": {}
+      },
+      "clearing_process": {
+        "success": false,
+        "data": {}
+      },
+      "passthrough_process": {
+        "success": false,
+        "data": {}
+      }
+    }
+  ]
+}

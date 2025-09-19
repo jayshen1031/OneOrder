@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OneOrder 货代管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .main-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 0;
+            margin-bottom: 0;
+        }
+        .nav-tabs {
+            border-bottom: none;
+            background: white;
+            border-radius: 10px 10px 0 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .nav-tabs .nav-link {
+            border: none;
+            border-radius: 10px 10px 0 0;
+            margin-right: 5px;
+            color: #6c757d;
+            font-weight: 500;
+        }
+        .nav-tabs .nav-link.active {
+            background-color: #667eea;
+            color: white;
+            border: none;
+        }
+        .nav-tabs .nav-link:hover {
+            border: none;
+            background-color: #e9ecef;
+        }
+        .nav-tabs .nav-link.active:hover {
+            background-color: #667eea;
+        }
+        .tab-content {
+            background: white;
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            min-height: 600px;
+        }
+        .tab-pane {
+            padding: 2rem;
+        }
+        .system-status {
+            background: rgba(255,255,255,0.2);
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            display: inline-block;
+        }
+        .module-icon {
+            font-size: 1.2rem;
+            width: 20px;
+            text-align: center;
+        }
+        .user-info {
+            background: rgba(255,255,255,0.15);
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            margin-left: 1rem;
+        }
+        .notification-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #dc3545;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 0.75rem;
+            min-width: 18px;
+            text-align: center;
+            display: none;
+        }
+        .notification-badge.show {
+            display: inline-block;
+        }
+        .btn-outline-light {
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+    <!-- 主标题栏 -->
+    <div class="main-header">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col-md-3">
+                    <h2 class="mb-0">
+                        <i class="fas fa-cube me-2"></i>OneOrder 货代管理系统
+                    </h2>
+                    <small class="system-status">
+                        <i class="fas fa-circle text-success me-1"></i>系统运行正常 | 端口: 8081
+                    </small>
+                </div>
+                <div class="col-md-6 text-center">
+                    <!-- 用户切换控件 -->
+                    <div class="user-switch-control">
+                        <label for="userSelect" class="form-label text-white mb-1">
+                            <i class="fas fa-user-friends me-1"></i>用户切换
+                        </label>
+                        <select class="form-select form-select-sm" id="userSelect" style="width: auto; display: inline-block;" data-role="user-selector">
+                            <!-- 选项将由GlobalUserManager自动生成 -->
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3 text-end">
+                    <div class="user-info d-inline-block">
+                        <i class="fas fa-user-circle me-2"></i>
+                        <span id="currentUserName" data-user-name>张美华</span>
+                        <small class="ms-2" id="currentUserDept" data-user-department>客服部</small>
+                    </div>
+                    <div class="user-info">
+                        <i class="fas fa-clock me-2"></i>
+                        <span id="headerCurrentTime">--</span>
+                    </div>
+                    <!-- 全局通知中心 -->
+                    <button class="btn btn-outline-light btn-sm ms-2" onclick="notificationSystem.displayNotificationCenter()" title="通知中心">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge" id="globalNotificationCount">0</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主导航标签 -->
+    <div class="container-fluid mt-3">
+        <ul class="nav nav-tabs" id="mainSystemTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard" type="button" role="tab">
+                    <i class="module-icon fas fa-tachometer-alt me-2"></i>仪表盘
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="orders-tab" data-bs-toggle="tab" data-bs-target="#orders" type="button" role="tab">
+                    <i class="module-icon fas fa-ship me-2"></i>订单管理
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="assignment-tab" data-bs-toggle="tab" data-bs-target="#assignment" type="button" role="tab">
+                    <i class="module-icon fas fa-tasks me-2"></i>服务派单
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="clearing-tab" data-bs-toggle="tab" data-bs-target="#clearing" type="button" role="tab">
+                    <i class="module-icon fas fa-coins me-2"></i>财务清分
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="contracts-tab" data-bs-toggle="tab" data-bs-target="#contracts" type="button" role="tab">
+                    <i class="module-icon fas fa-handshake me-2"></i>内部合约
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="reports-tab" data-bs-toggle="tab" data-bs-target="#reports" type="button" role="tab">
+                    <i class="module-icon fas fa-chart-bar me-2"></i>统计报表
+                </button>
+            </li>
+        </ul>
+
+        <!-- 标签内容 -->
+        <div class="tab-content" id="mainSystemContent">
+            <!-- 仪表盘 -->
+            <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4><i class="fas fa-tachometer-alt text-primary me-2"></i>业务仪表盘</h4>
+                    <button class="btn btn-outline-primary btn-sm" onclick="refreshDashboard()">
+                        <i class="fas fa-sync-alt me-1"></i>刷新数据
+                    </button>
+                </div>
+                
+                <!-- 仪表盘内容 -->
+                <div class="row">
+                    <div class="col-md-3 mb-4">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body text-center">
+                                <i class="fas fa-ship fa-2x text-primary mb-2"></i>
+                                <h5 class="card-title">今日订单</h5>
+                                <h2 class="text-primary mb-0" id="todayOrders">--</h2>
+                                <small class="text-muted">较昨日 +12%</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-4">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body text-center">
+                                <i class="fas fa-tasks fa-2x text-success mb-2"></i>
+                                <h5 class="card-title">待派单服务</h5>
+                                <h2 class="text-success mb-0" id="pendingAssignments">--</h2>
+                                <small class="text-muted">需处理</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-4">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body text-center">
+                                <i class="fas fa-coins fa-2x text-warning mb-2"></i>
+                                <h5 class="card-title">今日清分</h5>
+                                <h2 class="text-warning mb-0" id="todayClearing">--</h2>
+                                <small class="text-muted">笔数</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-4">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body text-center">
+                                <i class="fas fa-chart-line fa-2x text-info mb-2"></i>
+                                <h5 class="card-title">本月收入</h5>
+                                <h2 class="text-info mb-0" id="monthlyRevenue">--</h2>
+                                <small class="text-muted">万元</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 快速操作 -->
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="fas fa-bolt me-2"></i>快速操作</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3 text-center mb-3">
+                                        <button class="btn btn-outline-primary btn-lg" onclick="switchToTab('orders-tab')">
+                                            <i class="fas fa-plus fa-2x d-block mb-2"></i>
+                                            创建订单
+                                        </button>
+                                    </div>
+                                    <div class="col-md-3 text-center mb-3">
+                                        <button class="btn btn-outline-success btn-lg" onclick="switchToTab('assignment-tab')">
+                                            <i class="fas fa-user-plus fa-2x d-block mb-2"></i>
+                                            服务派单
+                                        </button>
+                                    </div>
+                                    <div class="col-md-3 text-center mb-3">
+                                        <button class="btn btn-outline-warning btn-lg" onclick="switchToTab('clearing-tab')">
+                                            <i class="fas fa-calculator fa-2x d-block mb-2"></i>
+                                            执行清分
+                                        </button>
+                                    </div>
+                                    <div class="col-md-3 text-center mb-3">
+                                        <button class="btn btn-outline-info btn-lg" onclick="switchToTab('reports-tab')">
+                                            <i class="fas fa-chart-pie fa-2x d-block mb-2"></i>
+                                            查看报表
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 订单管理 -->
+            <div class="tab-pane fade" id="orders" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4><i class="fas fa-ship text-primary me-2"></i>订单管理</h4>
+                </div>
+                <div class="embed-container">
+                    <iframe id="ordersFrame" src="" frameborder="0" style="width: 100%; height: 600px; display: none;"></iframe>
+                    <div class="text-center py-5" id="ordersPlaceholder">
+                        <i class="fas fa-ship fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">点击加载订单管理模块</p>
+                        <button class="btn btn-primary" onclick="loadOrdersModule()">
+                            <i class="fas fa-play me-2"></i>加载订单管理
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 服务派单 -->
+            <div class="tab-pane fade" id="assignment" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4><i class="fas fa-tasks text-primary me-2"></i>服务派单</h4>
+                </div>
+                <div class="embed-container">
+                    <iframe id="assignmentFrame" src="" frameborder="0" style="width: 100%; height: 600px; display: none;"></iframe>
+                    <div class="text-center py-5" id="assignmentPlaceholder">
+                        <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">点击加载服务派单模块</p>
+                        <button class="btn btn-primary" onclick="loadAssignmentModule()">
+                            <i class="fas fa-play me-2"></i>加载派单管理
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 财务清分 -->
+            <div class="tab-pane fade" id="clearing" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4><i class="fas fa-coins text-primary me-2"></i>财务清分</h4>
+                </div>
+                <div class="embed-container">
+                    <iframe id="clearingFrame" src="" frameborder="0" style="width: 100%; height: 600px; display: none;"></iframe>
+                    <div class="text-center py-5" id="clearingPlaceholder">
+                        <i class="fas fa-coins fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">点击加载财务清分模块</p>
+                        <button class="btn btn-primary" onclick="loadClearingModule()">
+                            <i class="fas fa-play me-2"></i>加载清分管理
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 内部合约 -->
+            <div class="tab-pane fade" id="contracts" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4><i class="fas fa-handshake text-primary me-2"></i>内部合约</h4>
+                </div>
+                <div class="embed-container">
+                    <iframe id="contractsFrame" src="" frameborder="0" style="width: 100%; height: 600px; display: none;"></iframe>
+                    <div class="text-center py-5" id="contractsPlaceholder">
+                        <i class="fas fa-handshake fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">点击加载内部合约模块</p>
+                        <button class="btn btn-primary" onclick="loadContractsModule()">
+                            <i class="fas fa-play me-2"></i>加载合约管理
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 统计报表 -->
+            <div class="tab-pane fade" id="reports" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4><i class="fas fa-chart-bar text-primary me-2"></i>统计报表</h4>
+                </div>
+                <div class="embed-container">
+                    <iframe id="reportsFrame" src="" frameborder="0" style="width: 100%; height: 600px; display: none;"></iframe>
+                    <div class="text-center py-5" id="reportsPlaceholder">
+                        <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">点击加载统计报表模块</p>
+                        <button class="btn btn-primary" onclick="loadReportsModule()">
+                            <i class="fas fa-play me-2"></i>加载报表分析
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/user-state.js"></script>
+    <script src="js/global-user-manager.js"></script>
+    <script src="js/notification-system.js"></script>
+    <script>
+        // 全局变量
+        let loadedModules = new Set();
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeHeader();
+            loadDashboardData();
+            
+            // 标签切换事件监听
+            document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
+                tab.addEventListener('shown.bs.tab', function (event) {
+                    const targetTab = event.target.getAttribute('data-bs-target');
+                    handleTabChange(targetTab);
+                });
+            });
+            
+            // 监听全局用户变更事件
+            document.addEventListener('globalUserChanged', function(event) {
+                const user = event.detail.user;
+                updateCurrentUserDisplay(user);
+                console.log('统一系统：接收到全局用户变更:', user.name);
+            });
+        });
+
+        // 初始化头部信息
+        function initializeHeader() {
+            // 初始化通知系统
+            if (typeof notificationSystem !== 'undefined') {
+                notificationSystem.init();
+                notificationSystem.updateGlobalNotificationCount();
+            }
+            
+            // 更新用户信息
+            if (typeof GlobalUserManager !== 'undefined') {
+                const currentUser = GlobalUserManager.getCurrentUser();
+                if (currentUser) {
+                    updateCurrentUserDisplay(currentUser);
+                    console.log('统一系统：初始化用户:', currentUser.name);
+                }
+            } else if (typeof UserState !== 'undefined') {
+                const currentUser = UserState.getCurrentUser();
+                if (currentUser) {
+                    updateCurrentUserDisplay(currentUser);
+                    // 同步用户选择框
+                    const userSelect = document.getElementById('userSelect');
+                    if (userSelect) {
+                        userSelect.value = currentUser.id;
+                    }
+                }
+            }
+            
+            // 更新时间
+            updateHeaderTime();
+            setInterval(updateHeaderTime, 1000);
+        }
+
+        // 更新当前用户显示
+        function updateCurrentUserDisplay(user) {
+            const nameElement = document.getElementById('currentUserName');
+            const deptElement = document.getElementById('currentUserDept');
+            
+            if (nameElement) nameElement.textContent = user.name;
+            if (deptElement) deptElement.textContent = user.department;
+        }
+
+        // 用户切换功能
+        function switchUser() {
+            const userSelect = document.getElementById('userSelect');
+            const selectedUserId = userSelect.value;
+            
+            // 使用GlobalUserManager进行用户切换
+            if (typeof GlobalUserManager !== 'undefined') {
+                const success = GlobalUserManager.switchUser(selectedUserId);
+                if (success) {
+                    const currentUser = GlobalUserManager.getCurrentUser();
+                    updateCurrentUserDisplay(currentUser);
+                    
+                    // 向所有iframe发送用户切换消息
+                    sendMessageToAllFrames({
+                        type: 'USER_SWITCH',
+                        user: currentUser
+                    });
+                    
+                    // 显示切换成功通知
+                    if (typeof notificationSystem !== 'undefined') {
+                        notificationSystem.showSystemNotification(
+                            `已切换到：${currentUser.name} (${currentUser.department})`,
+                            'success',
+                            '用户切换成功'
+                        );
+                    }
+                    
+                    console.log('统一系统：用户切换成功:', currentUser);
+                } else {
+                    console.error('统一系统：用户切换失败');
+                }
+            } else if (typeof UserState !== 'undefined') {
+                // 降级到UserState
+                const success = UserState.switchUser(selectedUserId);
+                if (success) {
+                    const currentUser = UserState.getCurrentUser();
+                    updateCurrentUserDisplay(currentUser);
+                    sendMessageToAllFrames({
+                        type: 'USER_SWITCH',
+                        user: currentUser
+                    });
+                    console.log('统一系统：用户切换成功(降级):', currentUser);
+                }
+            }
+        }
+
+        // 向所有iframe发送消息
+        function sendMessageToAllFrames(message) {
+            const frames = ['ordersFrame', 'assignmentFrame', 'clearingFrame', 'contractsFrame', 'reportsFrame'];
+            frames.forEach(frameId => {
+                const frame = document.getElementById(frameId);
+                if (frame && frame.contentWindow) {
+                    try {
+                        frame.contentWindow.postMessage(message, '*');
+                    } catch (error) {
+                        console.warn(`向${frameId}发送消息失败:`, error);
+                    }
+                }
+            });
+        }
+
+        // 更新头部时间
+        function updateHeaderTime() {
+            const now = new Date();
+            const timeString = now.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('headerCurrentTime').textContent = timeString;
+        }
+
+        // 加载仪表盘数据
+        function loadDashboardData() {
+            // 模拟加载仪表盘数据
+            setTimeout(() => {
+                document.getElementById('todayOrders').textContent = '23';
+                document.getElementById('pendingAssignments').textContent = '8';
+                document.getElementById('todayClearing').textContent = '15';
+                document.getElementById('monthlyRevenue').textContent = '128.5';
+            }, 500);
+        }
+
+        // 刷新仪表盘
+        function refreshDashboard() {
+            document.getElementById('todayOrders').textContent = '--';
+            document.getElementById('pendingAssignments').textContent = '--';
+            document.getElementById('todayClearing').textContent = '--';
+            document.getElementById('monthlyRevenue').textContent = '--';
+            loadDashboardData();
+        }
+
+        // 切换到指定标签
+        function switchToTab(tabId) {
+            const tab = document.getElementById(tabId);
+            if (tab) {
+                const tabInstance = new bootstrap.Tab(tab);
+                tabInstance.show();
+            }
+        }
+
+        // 处理标签切换
+        function handleTabChange(targetTab) {
+            switch(targetTab) {
+                case '#orders':
+                    if (!loadedModules.has('orders')) {
+                        // 自动加载订单模块
+                        setTimeout(() => loadOrdersModule(), 100);
+                    }
+                    break;
+                case '#assignment':
+                    if (!loadedModules.has('assignment')) {
+                        // 自动加载派单模块
+                        setTimeout(() => loadAssignmentModule(), 100);
+                    }
+                    break;
+                // 其他模块可以手动加载
+            }
+        }
+
+        // 加载订单管理模块
+        function loadOrdersModule() {
+            const frame = document.getElementById('ordersFrame');
+            const placeholder = document.getElementById('ordersPlaceholder');
+            
+            frame.src = 'freight-order.html';
+            frame.style.display = 'block';
+            placeholder.style.display = 'none';
+            
+            loadedModules.add('orders');
+        }
+
+        // 加载派单管理模块
+        function loadAssignmentModule() {
+            const frame = document.getElementById('assignmentFrame');
+            const placeholder = document.getElementById('assignmentPlaceholder');
+            
+            frame.src = 'freight-order.html#assignment';
+            frame.style.display = 'block';
+            placeholder.style.display = 'none';
+            
+            loadedModules.add('assignment');
+        }
+
+        // 加载清分管理模块
+        function loadClearingModule() {
+            const frame = document.getElementById('clearingFrame');
+            const placeholder = document.getElementById('clearingPlaceholder');
+            
+            frame.src = 'index.html';
+            frame.style.display = 'block';
+            placeholder.style.display = 'none';
+            
+            loadedModules.add('clearing');
+        }
+
+        // 加载合约管理模块
+        function loadContractsModule() {
+            const frame = document.getElementById('contractsFrame');
+            const placeholder = document.getElementById('contractsPlaceholder');
+            
+            frame.src = 'simple-contract-management.html';
+            frame.style.display = 'block';
+            placeholder.style.display = 'none';
+            
+            loadedModules.add('contracts');
+        }
+
+        // 加载报表模块
+        function loadReportsModule() {
+            const frame = document.getElementById('reportsFrame');
+            const placeholder = document.getElementById('reportsPlaceholder');
+            
+            frame.src = 'profit-sharing.html';
+            frame.style.display = 'block';
+            placeholder.style.display = 'none';
+            
+            loadedModules.add('reports');
+        }
+    </script>
+</body>
+</html>

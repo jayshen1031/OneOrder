@@ -1,0 +1,1987 @@
+{
+  "execution_summary": {
+    "total_orders": 15,
+    "execution_time": "2025-09-17T20:27:47.593738",
+    "process_status": "COMPLETED"
+  },
+  "financial_summary": {
+    "total_income": 277500.0,
+    "total_expense": 194250.0,
+    "total_profit": 83250.0,
+    "avg_profit_margin": 30.0
+  },
+  "profit_sharing_summary": {
+    "total_sales_profit": 12487.5,
+    "total_operation_profit": 8325.0,
+    "total_company_profit": 62437.5
+  },
+  "business_statistics": {
+    "上海 → 洛杉矶": {
+      "count": 5,
+      "income": 75000.0
+    },
+    "深圳 → 汉堡": {
+      "count": 5,
+      "income": 110000.0
+    },
+    "青岛 → 纽约": {
+      "count": 5,
+      "income": 92500.0
+    }
+  },
+  "detailed_results": [
+    {
+      "order": {
+        "orderId": "ORD1758112059808",
+        "orderNo": "DEMO001",
+        "customerId": "CUST_808",
+        "customerName": "ACME Corp",
+        "salesEntityId": "ENTITY_SALES_001",
+        "deliveryEntityId": "ENTITY_DELIVERY_001",
+        "paymentEntityId": "ENTITY_PAYMENT_001",
+        "portOfLoading": "上海",
+        "portOfDischarge": "洛杉矶",
+        "commodityDescription": "一般货物",
+        "weight": 1200,
+        "volume": 68,
+        "containers": 1,
+        "tradeTerms": "FOB",
+        "totalAmount": 15000,
+        "totalCost": 10500.0,
+        "estimatedProfit": 4500.0,
+        "currency": "USD",
+        "orderStatus": "CONFIRMED",
+        "clearingStatus": "PENDING",
+        "clearingMode": "STAR",
+        "orderDate": "2025-09-17T20:27:39.808613",
+        "bookingDate": null,
+        "customsDate": null,
+        "shippingDate": null,
+        "arrivalDate": null,
+        "deliveryDate": null,
+        "vesselName": null,
+        "voyage": null,
+        "etd": null,
+        "eta": null,
+        "actualDeparture": null,
+        "actualArrival": null,
+        "customsDeclarationNo": null,
+        "customsStatus": null,
+        "orderItems": [
+          {
+            "itemId": "2ece13d1-1073-4a91-a1ef-c77af0dfd19b",
+            "costType": "OCEAN_FREIGHT",
+            "description": "海运费",
+            "amount": 9000.0,
+            "actualAmount": null,
+            "currency": "USD",
+            "supplier": "船公司",
+            "status": "ESTIMATED",
+            "remarks": null
+          },
+          {
+            "itemId": "129f339e-5a7f-4900-b6d4-9951eccb938e",
+            "costType": "LOCAL_CHARGES",
+            "description": "本地费用",
+            "amount": 1500.0,
+            "actualAmount": null,
+            "currency": "USD",
+            "supplier": "本地代理",
+            "status": "ESTIMATED",
+            "remarks": null
+          }
+        ],
+        "timeline": [
+          {
+            "eventId": "3a9fb264-9348-4cdf-913d-b35745df9787",
+            "eventType": "ORDER_CREATED",
+            "description": "订单已创建，等待订舱确认",
+            "operator": "系统",
+            "timestamp": "2025-09-17T20:27:39.808613",
+            "status": "success",
+            "remarks": null
+          }
+        ],
+        "specialRequirements": "无特殊要求",
+        "currentStage": "ORDER_CREATED",
+        "nextAction": "等待订舱确认",
+        "remarks": null,
+        "createdAt": "2025-09-17T20:27:39.808613",
+        "updatedAt": "2025-09-17T20:27:39.808613"
+      },
+      "expense_data": {
+        "order_id": "ORD1758112059808",
+        "order_no": "DEMO001",
+        "external_income": {
+          "ocean_freight": 9000.0,
+          "local_charges": 3000.0,
+          "documentation": 1500.0,
+          "handling": 1500.0
+        },
+        "external_expense": {
+          "shipping_cost": 7349.999999999999,
+          "terminal_cost": 2100.0,
+          "customs_cost": 1050.0
+        },
+        "gross_profit": 4500.0,
+        "profit_margin": 30.0
+      },
+      "profit_sharing": {
+        "sales_profit": 675.0,
+        "operation_profit": 450.0,
+        "company_profit": 3375.0,
+        "total_distributed": 4500.0
+      },
+      "clearing_flows": [
+        {
+          "from": "客户",
+          "to": "海程邦达供应链管理股份有限公司",
+          "amount": 15000.0,
+          "type": "外部收入"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "供应商",
+          "amount": 10500.0,
+          "type": "外部支出"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "上海海领供应链管理有限公司",
+          "amount": 675.0,
+          "type": "销售分润"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "深圳邦达国际货运代理有限公司",
+          "amount": 450.0,
+          "type": "操作分润"
+        }
+      ]
+    },
+    {
+      "order": {
+        "orderId": "ORD1758112059809",
+        "orderNo": "DEMO002",
+        "customerId": "CUST_809",
+        "customerName": "Global Trade Ltd",
+        "salesEntityId": "ENTITY_SALES_001",
+        "deliveryEntityId": "ENTITY_DELIVERY_001",
+        "paymentEntityId": "ENTITY_PAYMENT_001",
+        "portOfLoading": "深圳",
+        "portOfDischarge": "汉堡",
+        "commodityDescription": "一般货物",
+        "weight": 1200,
+        "volume": 68,
+        "containers": 1,
+        "tradeTerms": "FOB",
+        "totalAmount": 22000,
+        "totalCost": 15400.0,
+        "estimatedProfit": 6600.0,
+        "currency": "USD",
+        "orderStatus": "CONFIRMED",
+        "clearingStatus": "PENDING",
+        "clearingMode": "CHAIN",
+        "orderDate": "2025-09-17T20:27:39.809311",
+        "bookingDate": null,
+        "customsDate": null,
+        "shippingDate": null,
+        "arrivalDate": null,
+        "deliveryDate": null,
+        "vesselName": null,
+        "voyage": null,
+        "etd": null,
+        "eta": null,
+        "actualDeparture": null,
+        "actualArrival": null,
+        "customsDeclarationNo": null,
+        "customsStatus": null,
+        "orderItems": [
+          {
+            "itemId": "f98e513c-a010-4d54-95c0-777b294cc1c0",
+            "costType": "OCEAN_FREIGHT",
+            "description": "海运费",
+            "amount": 13200.0,
+            "actualAmount": null,
+            "currency": "USD",
+            "supplier": "船公司",
+            "status": "ESTIMATED",
+            "remarks": null
+          },
+          {
+            "itemId": "99300174-4d3a-434a-81aa-53b901b2f7dd",
+            "costType": "LOCAL_CHARGES",
+            "description": "本地费用",
+            "amount": 2200.0,
+            "actualAmount": null,
+            "currency": "USD",
+            "supplier": "本地代理",
+            "status": "ESTIMATED",
+            "remarks": null
+          }
+        ],
+        "timeline": [
+          {
+            "eventId": "45ed1f1e-fdf7-43a4-88c3-9586bd9bcf51",
+            "eventType": "ORDER_CREATED",
+            "description": "订单已创建，等待订舱确认",
+            "operator": "系统",
+            "timestamp": "2025-09-17T20:27:39.809311",
+            "status": "success",
+            "remarks": null
+          }
+        ],
+        "specialRequirements": "无特殊要求",
+        "currentStage": "ORDER_CREATED",
+        "nextAction": "等待订舱确认",
+        "remarks": null,
+        "createdAt": "2025-09-17T20:27:39.809311",
+        "updatedAt": "2025-09-17T20:27:39.809311"
+      },
+      "expense_data": {
+        "order_id": "ORD1758112059809",
+        "order_no": "DEMO002",
+        "external_income": {
+          "ocean_freight": 13200.0,
+          "local_charges": 4400.0,
+          "documentation": 2200.0,
+          "handling": 2200.0
+        },
+        "external_expense": {
+          "shipping_cost": 10780.0,
+          "terminal_cost": 3080.0,
+          "customs_cost": 1540.0
+        },
+        "gross_profit": 6600.0,
+        "profit_margin": 30.0
+      },
+      "profit_sharing": {
+        "sales_profit": 990.0,
+        "operation_profit": 660.0,
+        "company_profit": 4950.0,
+        "total_distributed": 6600.0
+      },
+      "clearing_flows": [
+        {
+          "from": "客户",
+          "to": "海程邦达供应链管理股份有限公司",
+          "amount": 22000.0,
+          "type": "外部收入"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "供应商",
+          "amount": 15400.0,
+          "type": "外部支出"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "上海海领供应链管理有限公司",
+          "amount": 990.0,
+          "type": "销售分润"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "深圳邦达国际货运代理有限公司",
+          "amount": 660.0,
+          "type": "操作分润"
+        }
+      ]
+    },
+    {
+      "order": {
+        "orderId": "ORD1758112059809",
+        "orderNo": "DEMO003",
+        "customerId": "CUST_809",
+        "customerName": "International Freight Co",
+        "salesEntityId": "ENTITY_SALES_001",
+        "deliveryEntityId": "ENTITY_DELIVERY_001",
+        "paymentEntityId": "ENTITY_PAYMENT_001",
+        "portOfLoading": "青岛",
+        "portOfDischarge": "纽约",
+        "commodityDescription": "一般货物",
+        "weight": 1200,
+        "volume": 68,
+        "containers": 1,
+        "tradeTerms": "FOB",
+        "totalAmount": 18500,
+        "totalCost": 12950.0,
+        "estimatedProfit": 5550.0,
+        "currency": "USD",
+        "orderStatus": "CONFIRMED",
+        "clearingStatus": "PENDING",
+        "clearingMode": "STAR",
+        "orderDate": "2025-09-17T20:27:39.809502",
+        "bookingDate": null,
+        "customsDate": null,
+        "shippingDate": null,
+        "arrivalDate": null,
+        "deliveryDate": null,
+        "vesselName": null,
+        "voyage": null,
+        "etd": null,
+        "eta": null,
+        "actualDeparture": null,
+        "actualArrival": null,
+        "customsDeclarationNo": null,
+        "customsStatus": null,
+        "orderItems": [
+          {
+            "itemId": "de5d74da-a198-4b85-a643-5e8f48898b38",
+            "costType": "OCEAN_FREIGHT",
+            "description": "海运费",
+            "amount": 11100.0,
+            "actualAmount": null,
+            "currency": "USD",
+            "supplier": "船公司",
+            "status": "ESTIMATED",
+            "remarks": null
+          },
+          {
+            "itemId": "c664b17e-2bc6-40f4-9b46-5126bb33a3cc",
+            "costType": "LOCAL_CHARGES",
+            "description": "本地费用",
+            "amount": 1850.0,
+            "actualAmount": null,
+            "currency": "USD",
+            "supplier": "本地代理",
+            "status": "ESTIMATED",
+            "remarks": null
+          }
+        ],
+        "timeline": [
+          {
+            "eventId": "45ed1f1e-fdf7-43a4-88c3-9586bd9bcf51",
+            "eventType": "ORDER_CREATED",
+            "description": "订单已创建，等待订舱确认",
+            "operator": "系统",
+            "timestamp": "2025-09-17T20:27:39.809311",
+            "status": "success",
+            "remarks": null
+          },
+          {
+            "eventId": "a79f8270-dbb7-4958-a685-d81c3a284159",
+            "eventType": "ORDER_CREATED",
+            "description": "订单已创建，等待订舱确认",
+            "operator": "系统",
+            "timestamp": "2025-09-17T20:27:39.809502",
+            "status": "success",
+            "remarks": null
+          }
+        ],
+        "specialRequirements": "无特殊要求",
+        "currentStage": "ORDER_CREATED",
+        "nextAction": "等待订舱确认",
+        "remarks": null,
+        "createdAt": "2025-09-17T20:27:39.809502",
+        "updatedAt": "2025-09-17T20:27:39.809502"
+      },
+      "expense_data": {
+        "order_id": "ORD1758112059809",
+        "order_no": "DEMO003",
+        "external_income": {
+          "ocean_freight": 11100.0,
+          "local_charges": 3700.0,
+          "documentation": 1850.0,
+          "handling": 1850.0
+        },
+        "external_expense": {
+          "shipping_cost": 9065.0,
+          "terminal_cost": 2590.0,
+          "customs_cost": 1295.0
+        },
+        "gross_profit": 5550.0,
+        "profit_margin": 30.0
+      },
+      "profit_sharing": {
+        "sales_profit": 832.5,
+        "operation_profit": 555.0,
+        "company_profit": 4162.5,
+        "total_distributed": 5550.0
+      },
+      "clearing_flows": [
+        {
+          "from": "客户",
+          "to": "海程邦达供应链管理股份有限公司",
+          "amount": 18500.0,
+          "type": "外部收入"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "供应商",
+          "amount": 12950.0,
+          "type": "外部支出"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "上海海领供应链管理有限公司",
+          "amount": 832.5,
+          "type": "销售分润"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "深圳邦达国际货运代理有限公司",
+          "amount": 555.0,
+          "type": "操作分润"
+        }
+      ]
+    },
+    {
+      "order": {
+        "orderId": "ORD1758112060465",
+        "orderNo": "DEMO001",
+        "customerId": "CUST_465",
+        "customerName": "ACME Corp",
+        "salesEntityId": "ENTITY_SALES_001",
+        "deliveryEntityId": "ENTITY_DELIVERY_001",
+        "paymentEntityId": "ENTITY_PAYMENT_001",
+        "portOfLoading": "上海",
+        "portOfDischarge": "洛杉矶",
+        "commodityDescription": "一般货物",
+        "weight": 1200,
+        "volume": 68,
+        "containers": 1,
+        "tradeTerms": "FOB",
+        "totalAmount": 15000,
+        "totalCost": 10500.0,
+        "estimatedProfit": 4500.0,
+        "currency": "USD",
+        "orderStatus": "CONFIRMED",
+        "clearingStatus": "PENDING",
+        "clearingMode": "STAR",
+        "orderDate": "2025-09-17T20:27:40.46548",
+        "bookingDate": null,
+        "customsDate": null,
+        "shippingDate": null,
+        "arrivalDate": null,
+        "deliveryDate": null,
+        "vesselName": null,
+        "voyage": null,
+        "etd": null,
+        "eta": null,
+        "actualDeparture": null,
+        "actualArrival": null,
+        "customsDeclarationNo": null,
+        "customsStatus": null,
+        "orderItems": [
+          {
+            "itemId": "1e12589b-fa87-440a-9806-5a609ea0ba79",
+            "costType": "OCEAN_FREIGHT",
+            "description": "海运费",
+            "amount": 9000.0,
+            "actualAmount": null,
+            "currency": "USD",
+            "supplier": "船公司",
+            "status": "ESTIMATED",
+            "remarks": null
+          },
+          {
+            "itemId": "19f01582-d9cc-4bd5-a211-2e62020b737b",
+            "costType": "LOCAL_CHARGES",
+            "description": "本地费用",
+            "amount": 1500.0,
+            "actualAmount": null,
+            "currency": "USD",
+            "supplier": "本地代理",
+            "status": "ESTIMATED",
+            "remarks": null
+          }
+        ],
+        "timeline": [
+          {
+            "eventId": "57396c90-330a-42ce-bf88-16e00b1ec325",
+            "eventType": "ORDER_CREATED",
+            "description": "订单已创建，等待订舱确认",
+            "operator": "系统",
+            "timestamp": "2025-09-17T20:27:40.46548",
+            "status": "success",
+            "remarks": null
+          }
+        ],
+        "specialRequirements": "无特殊要求",
+        "currentStage": "ORDER_CREATED",
+        "nextAction": "等待订舱确认",
+        "remarks": null,
+        "createdAt": "2025-09-17T20:27:40.46548",
+        "updatedAt": "2025-09-17T20:27:40.46548"
+      },
+      "expense_data": {
+        "order_id": "ORD1758112060465",
+        "order_no": "DEMO001",
+        "external_income": {
+          "ocean_freight": 9000.0,
+          "local_charges": 3000.0,
+          "documentation": 1500.0,
+          "handling": 1500.0
+        },
+        "external_expense": {
+          "shipping_cost": 7349.999999999999,
+          "terminal_cost": 2100.0,
+          "customs_cost": 1050.0
+        },
+        "gross_profit": 4500.0,
+        "profit_margin": 30.0
+      },
+      "profit_sharing": {
+        "sales_profit": 675.0,
+        "operation_profit": 450.0,
+        "company_profit": 3375.0,
+        "total_distributed": 4500.0
+      },
+      "clearing_flows": [
+        {
+          "from": "客户",
+          "to": "海程邦达供应链管理股份有限公司",
+          "amount": 15000.0,
+          "type": "外部收入"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "供应商",
+          "amount": 10500.0,
+          "type": "外部支出"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "上海海领供应链管理有限公司",
+          "amount": 675.0,
+          "type": "销售分润"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "深圳邦达国际货运代理有限公司",
+          "amount": 450.0,
+          "type": "操作分润"
+        }
+      ]
+    },
+    {
+      "order": {
+        "orderId": "ORD1758112060469",
+        "orderNo": "DEMO002",
+        "customerId": "CUST_469",
+        "customerName": "Global Trade Ltd",
+        "salesEntityId": "ENTITY_SALES_001",
+        "deliveryEntityId": "ENTITY_DELIVERY_001",
+        "paymentEntityId": "ENTITY_PAYMENT_001",
+        "portOfLoading": "深圳",
+        "portOfDischarge": "汉堡",
+        "commodityDescription": "一般货物",
+        "weight": 1200,
+        "volume": 68,
+        "containers": 1,
+        "tradeTerms": "FOB",
+        "totalAmount": 22000,
+        "totalCost": 15400.0,
+        "estimatedProfit": 6600.0,
+        "currency": "USD",
+        "orderStatus": "CONFIRMED",
+        "clearingStatus": "PENDING",
+        "clearingMode": "CHAIN",
+        "orderDate": "2025-09-17T20:27:40.469678",
+        "bookingDate": null,
+        "customsDate": null,
+        "shippingDate": null,
+        "arrivalDate": null,
+        "deliveryDate": null,
+        "vesselName": null,
+        "voyage": null,
+        "etd": null,
+        "eta": null,
+        "actualDeparture": null,
+        "actualArrival": null,
+        "customsDeclarationNo": null,
+        "customsStatus": null,
+        "orderItems": [
+          {
+            "itemId": "3e64aa7d-a3c9-416b-b58d-8323f115fb35",
+            "costType": "OCEAN_FREIGHT",
+            "description": "海运费",
+            "amount": 13200.0,
+            "actualAmount": null,
+            "currency": "USD",
+            "supplier": "船公司",
+            "status": "ESTIMATED",
+            "remarks": null
+          },
+          {
+            "itemId": "fadd0199-6f9f-4d08-9f38-27208c6aed83",
+            "costType": "LOCAL_CHARGES",
+            "description": "本地费用",
+            "amount": 2200.0,
+            "actualAmount": null,
+            "currency": "USD",
+            "supplier": "本地代理",
+            "status": "ESTIMATED",
+            "remarks": null
+          }
+        ],
+        "timeline": [
+          {
+            "eventId": "d260814b-382c-45ee-93bc-cc90387a5d0e",
+            "eventType": "ORDER_CREATED",
+            "description": "订单已创建，等待订舱确认",
+            "operator": "系统",
+            "timestamp": "2025-09-17T20:27:40.469678",
+            "status": "success",
+            "remarks": null
+          }
+        ],
+        "specialRequirements": "无特殊要求",
+        "currentStage": "ORDER_CREATED",
+        "nextAction": "等待订舱确认",
+        "remarks": null,
+        "createdAt": "2025-09-17T20:27:40.469678",
+        "updatedAt": "2025-09-17T20:27:40.469678"
+      },
+      "expense_data": {
+        "order_id": "ORD1758112060469",
+        "order_no": "DEMO002",
+        "external_income": {
+          "ocean_freight": 13200.0,
+          "local_charges": 4400.0,
+          "documentation": 2200.0,
+          "handling": 2200.0
+        },
+        "external_expense": {
+          "shipping_cost": 10780.0,
+          "terminal_cost": 3080.0,
+          "customs_cost": 1540.0
+        },
+        "gross_profit": 6600.0,
+        "profit_margin": 30.0
+      },
+      "profit_sharing": {
+        "sales_profit": 990.0,
+        "operation_profit": 660.0,
+        "company_profit": 4950.0,
+        "total_distributed": 6600.0
+      },
+      "clearing_flows": [
+        {
+          "from": "客户",
+          "to": "海程邦达供应链管理股份有限公司",
+          "amount": 22000.0,
+          "type": "外部收入"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "供应商",
+          "amount": 15400.0,
+          "type": "外部支出"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "上海海领供应链管理有限公司",
+          "amount": 990.0,
+          "type": "销售分润"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "深圳邦达国际货运代理有限公司",
+          "amount": 660.0,
+          "type": "操作分润"
+        }
+      ]
+    },
+    {
+      "order": {
+        "orderId": "ORD1758112060470",
+        "orderNo": "DEMO003",
+        "customerId": "CUST_470",
+        "customerName": "International Freight Co",
+        "salesEntityId": "ENTITY_SALES_001",
+        "deliveryEntityId": "ENTITY_DELIVERY_001",
+        "paymentEntityId": "ENTITY_PAYMENT_001",
+        "portOfLoading": "青岛",
+        "portOfDischarge": "纽约",
+        "commodityDescription": "一般货物",
+        "weight": 1200,
+        "volume": 68,
+        "containers": 1,
+        "tradeTerms": "FOB",
+        "totalAmount": 18500,
+        "totalCost": 12950.0,
+        "estimatedProfit": 5550.0,
+        "currency": "USD",
+        "orderStatus": "CONFIRMED",
+        "clearingStatus": "PENDING",
+        "clearingMode": "STAR",
+        "orderDate": "2025-09-17T20:27:40.470694",
+        "bookingDate": null,
+        "customsDate": null,
+        "shippingDate": null,
+        "arrivalDate": null,
+        "deliveryDate": null,
+        "vesselName": null,
+        "voyage": null,
+        "etd": null,
+        "eta": null,
+        "actualDeparture": null,
+        "actualArrival": null,
+        "customsDeclarationNo": null,
+        "customsStatus": null,
+        "orderItems": [
+          {
+            "itemId": "2a9f6c98-25f0-4b30-b9ef-f35350cf4a43",
+            "costType": "OCEAN_FREIGHT",
+            "description": "海运费",
+            "amount": 11100.0,
+            "actualAmount": null,
+            "currency": "USD",
+            "supplier": "船公司",
+            "status": "ESTIMATED",
+            "remarks": null
+          },
+          {
+            "itemId": "9831f95f-cf5a-47bc-bcfb-0cd9d0ca8828",
+            "costType": "LOCAL_CHARGES",
+            "description": "本地费用",
+            "amount": 1850.0,
+            "actualAmount": null,
+            "currency": "USD",
+            "supplier": "本地代理",
+            "status": "ESTIMATED",
+            "remarks": null
+          }
+        ],
+        "timeline": [
+          {
+            "eventId": "e3a0c4b1-d694-425b-aed5-51a08496baab",
+            "eventType": "ORDER_CREATED",
+            "description": "订单已创建，等待订舱确认",
+            "operator": "系统",
+            "timestamp": "2025-09-17T20:27:40.470694",
+            "status": "success",
+            "remarks": null
+          }
+        ],
+        "specialRequirements": "无特殊要求",
+        "currentStage": "ORDER_CREATED",
+        "nextAction": "等待订舱确认",
+        "remarks": null,
+        "createdAt": "2025-09-17T20:27:40.470694",
+        "updatedAt": "2025-09-17T20:27:40.470694"
+      },
+      "expense_data": {
+        "order_id": "ORD1758112060470",
+        "order_no": "DEMO003",
+        "external_income": {
+          "ocean_freight": 11100.0,
+          "local_charges": 3700.0,
+          "documentation": 1850.0,
+          "handling": 1850.0
+        },
+        "external_expense": {
+          "shipping_cost": 9065.0,
+          "terminal_cost": 2590.0,
+          "customs_cost": 1295.0
+        },
+        "gross_profit": 5550.0,
+        "profit_margin": 30.0
+      },
+      "profit_sharing": {
+        "sales_profit": 832.5,
+        "operation_profit": 555.0,
+        "company_profit": 4162.5,
+        "total_distributed": 5550.0
+      },
+      "clearing_flows": [
+        {
+          "from": "客户",
+          "to": "海程邦达供应链管理股份有限公司",
+          "amount": 18500.0,
+          "type": "外部收入"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "供应商",
+          "amount": 12950.0,
+          "type": "外部支出"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "上海海领供应链管理有限公司",
+          "amount": 832.5,
+          "type": "销售分润"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "深圳邦达国际货运代理有限公司",
+          "amount": 555.0,
+          "type": "操作分润"
+        }
+      ]
+    },
+    {
+      "order": {
+        "orderId": "ORD1758112061007",
+        "orderNo": "DEMO001",
+        "customerId": "CUST_7",
+        "customerName": "ACME Corp",
+        "salesEntityId": "ENTITY_SALES_001",
+        "deliveryEntityId": "ENTITY_DELIVERY_001",
+        "paymentEntityId": "ENTITY_PAYMENT_001",
+        "portOfLoading": "上海",
+        "portOfDischarge": "洛杉矶",
+        "commodityDescription": "一般货物",
+        "weight": 1200,
+        "volume": 68,
+        "containers": 1,
+        "tradeTerms": "FOB",
+        "totalAmount": 15000,
+        "totalCost": 10500.0,
+        "estimatedProfit": 4500.0,
+        "currency": "USD",
+        "orderStatus": "CONFIRMED",
+        "clearingStatus": "PENDING",
+        "clearingMode": "STAR",
+        "orderDate": "2025-09-17T20:27:41.007137",
+        "bookingDate": null,
+        "customsDate": null,
+        "shippingDate": null,
+        "arrivalDate": null,
+        "deliveryDate": null,
+        "vesselName": null,
+        "voyage": null,
+        "etd": null,
+        "eta": null,
+        "actualDeparture": null,
+        "actualArrival": null,
+        "customsDeclarationNo": null,
+        "customsStatus": null,
+        "orderItems": [
+          {
+            "itemId": "f0418867-9d3e-44d8-8317-377600b947b3",
+            "costType": "OCEAN_FREIGHT",
+            "description": "海运费",
+            "amount": 9000.0,
+            "actualAmount": null,
+            "currency": "USD",
+            "supplier": "船公司",
+            "status": "ESTIMATED",
+            "remarks": null
+          },
+          {
+            "itemId": "2c4af709-fbc3-4a05-a978-f80a3ae7521f",
+            "costType": "LOCAL_CHARGES",
+            "description": "本地费用",
+            "amount": 1500.0,
+            "actualAmount": null,
+            "currency": "USD",
+            "supplier": "本地代理",
+            "status": "ESTIMATED",
+            "remarks": null
+          }
+        ],
+        "timeline": [
+          {
+            "eventId": "085be082-f434-4115-8d9e-963a95cfed62",
+            "eventType": "ORDER_CREATED",
+            "description": "订单已创建，等待订舱确认",
+            "operator": "系统",
+            "timestamp": "2025-09-17T20:27:41.007137",
+            "status": "success",
+            "remarks": null
+          }
+        ],
+        "specialRequirements": "无特殊要求",
+        "currentStage": "ORDER_CREATED",
+        "nextAction": "等待订舱确认",
+        "remarks": null,
+        "createdAt": "2025-09-17T20:27:41.007137",
+        "updatedAt": "2025-09-17T20:27:41.007137"
+      },
+      "expense_data": {
+        "order_id": "ORD1758112061007",
+        "order_no": "DEMO001",
+        "external_income": {
+          "ocean_freight": 9000.0,
+          "local_charges": 3000.0,
+          "documentation": 1500.0,
+          "handling": 1500.0
+        },
+        "external_expense": {
+          "shipping_cost": 7349.999999999999,
+          "terminal_cost": 2100.0,
+          "customs_cost": 1050.0
+        },
+        "gross_profit": 4500.0,
+        "profit_margin": 30.0
+      },
+      "profit_sharing": {
+        "sales_profit": 675.0,
+        "operation_profit": 450.0,
+        "company_profit": 3375.0,
+        "total_distributed": 4500.0
+      },
+      "clearing_flows": [
+        {
+          "from": "客户",
+          "to": "海程邦达供应链管理股份有限公司",
+          "amount": 15000.0,
+          "type": "外部收入"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "供应商",
+          "amount": 10500.0,
+          "type": "外部支出"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "上海海领供应链管理有限公司",
+          "amount": 675.0,
+          "type": "销售分润"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "深圳邦达国际货运代理有限公司",
+          "amount": 450.0,
+          "type": "操作分润"
+        }
+      ]
+    },
+    {
+      "order": {
+        "orderId": "ORD1758112061008",
+        "orderNo": "DEMO002",
+        "customerId": "CUST_8",
+        "customerName": "Global Trade Ltd",
+        "salesEntityId": "ENTITY_SALES_001",
+        "deliveryEntityId": "ENTITY_DELIVERY_001",
+        "paymentEntityId": "ENTITY_PAYMENT_001",
+        "portOfLoading": "深圳",
+        "portOfDischarge": "汉堡",
+        "commodityDescription": "一般货物",
+        "weight": 1200,
+        "volume": 68,
+        "containers": 1,
+        "tradeTerms": "FOB",
+        "totalAmount": 22000,
+        "totalCost": 15400.0,
+        "estimatedProfit": 6600.0,
+        "currency": "USD",
+        "orderStatus": "CONFIRMED",
+        "clearingStatus": "PENDING",
+        "clearingMode": "CHAIN",
+        "orderDate": "2025-09-17T20:27:41.008466",
+        "bookingDate": null,
+        "customsDate": null,
+        "shippingDate": null,
+        "arrivalDate": null,
+        "deliveryDate": null,
+        "vesselName": null,
+        "voyage": null,
+        "etd": null,
+        "eta": null,
+        "actualDeparture": null,
+        "actualArrival": null,
+        "customsDeclarationNo": null,
+        "customsStatus": null,
+        "orderItems": [
+          {
+            "itemId": "4db265a7-962b-430b-afc4-6fb9e65dd038",
+            "costType": "OCEAN_FREIGHT",
+            "description": "海运费",
+            "amount": 13200.0,
+            "actualAmount": null,
+            "currency": "USD",
+            "supplier": "船公司",
+            "status": "ESTIMATED",
+            "remarks": null
+          },
+          {
+            "itemId": "5e80c82b-347f-4185-87a1-021f274aae9c",
+            "costType": "LOCAL_CHARGES",
+            "description": "本地费用",
+            "amount": 2200.0,
+            "actualAmount": null,
+            "currency": "USD",
+            "supplier": "本地代理",
+            "status": "ESTIMATED",
+            "remarks": null
+          }
+        ],
+        "timeline": [
+          {
+            "eventId": "7bf290b0-2c0c-445d-a18e-070f74adbc4c",
+            "eventType": "ORDER_CREATED",
+            "description": "订单已创建，等待订舱确认",
+            "operator": "系统",
+            "timestamp": "2025-09-17T20:27:41.008466",
+            "status": "success",
+            "remarks": null
+          }
+        ],
+        "specialRequirements": "无特殊要求",
+        "currentStage": "ORDER_CREATED",
+        "nextAction": "等待订舱确认",
+        "remarks": null,
+        "createdAt": "2025-09-17T20:27:41.008466",
+        "updatedAt": "2025-09-17T20:27:41.008466"
+      },
+      "expense_data": {
+        "order_id": "ORD1758112061008",
+        "order_no": "DEMO002",
+        "external_income": {
+          "ocean_freight": 13200.0,
+          "local_charges": 4400.0,
+          "documentation": 2200.0,
+          "handling": 2200.0
+        },
+        "external_expense": {
+          "shipping_cost": 10780.0,
+          "terminal_cost": 3080.0,
+          "customs_cost": 1540.0
+        },
+        "gross_profit": 6600.0,
+        "profit_margin": 30.0
+      },
+      "profit_sharing": {
+        "sales_profit": 990.0,
+        "operation_profit": 660.0,
+        "company_profit": 4950.0,
+        "total_distributed": 6600.0
+      },
+      "clearing_flows": [
+        {
+          "from": "客户",
+          "to": "海程邦达供应链管理股份有限公司",
+          "amount": 22000.0,
+          "type": "外部收入"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "供应商",
+          "amount": 15400.0,
+          "type": "外部支出"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "上海海领供应链管理有限公司",
+          "amount": 990.0,
+          "type": "销售分润"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "深圳邦达国际货运代理有限公司",
+          "amount": 660.0,
+          "type": "操作分润"
+        }
+      ]
+    },
+    {
+      "order": {
+        "orderId": "ORD1758112061008",
+        "orderNo": "DEMO003",
+        "customerId": "CUST_8",
+        "customerName": "International Freight Co",
+        "salesEntityId": "ENTITY_SALES_001",
+        "deliveryEntityId": "ENTITY_DELIVERY_001",
+        "paymentEntityId": "ENTITY_PAYMENT_001",
+        "portOfLoading": "青岛",
+        "portOfDischarge": "纽约",
+        "commodityDescription": "一般货物",
+        "weight": 1200,
+        "volume": 68,
+        "containers": 1,
+        "tradeTerms": "FOB",
+        "totalAmount": 18500,
+        "totalCost": 12950.0,
+        "estimatedProfit": 5550.0,
+        "currency": "USD",
+        "orderStatus": "CONFIRMED",
+        "clearingStatus": "PENDING",
+        "clearingMode": "STAR",
+        "orderDate": "2025-09-17T20:27:41.008788",
+        "bookingDate": null,
+        "customsDate": null,
+        "shippingDate": null,
+        "arrivalDate": null,
+        "deliveryDate": null,
+        "vesselName": null,
+        "voyage": null,
+        "etd": null,
+        "eta": null,
+        "actualDeparture": null,
+        "actualArrival": null,
+        "customsDeclarationNo": null,
+        "customsStatus": null,
+        "orderItems": [
+          {
+            "itemId": "62366a83-b37e-4ada-a5b4-64a43c10cdf6",
+            "costType": "OCEAN_FREIGHT",
+            "description": "海运费",
+            "amount": 11100.0,
+            "actualAmount": null,
+            "currency": "USD",
+            "supplier": "船公司",
+            "status": "ESTIMATED",
+            "remarks": null
+          },
+          {
+            "itemId": "726ad521-4675-442c-8e0c-a6357a3a4eb2",
+            "costType": "LOCAL_CHARGES",
+            "description": "本地费用",
+            "amount": 1850.0,
+            "actualAmount": null,
+            "currency": "USD",
+            "supplier": "本地代理",
+            "status": "ESTIMATED",
+            "remarks": null
+          }
+        ],
+        "timeline": [
+          {
+            "eventId": "7bf290b0-2c0c-445d-a18e-070f74adbc4c",
+            "eventType": "ORDER_CREATED",
+            "description": "订单已创建，等待订舱确认",
+            "operator": "系统",
+            "timestamp": "2025-09-17T20:27:41.008466",
+            "status": "success",
+            "remarks": null
+          },
+          {
+            "eventId": "0855ae8e-0dda-4419-812a-e8ec8203890f",
+            "eventType": "ORDER_CREATED",
+            "description": "订单已创建，等待订舱确认",
+            "operator": "系统",
+            "timestamp": "2025-09-17T20:27:41.008788",
+            "status": "success",
+            "remarks": null
+          }
+        ],
+        "specialRequirements": "无特殊要求",
+        "currentStage": "ORDER_CREATED",
+        "nextAction": "等待订舱确认",
+        "remarks": null,
+        "createdAt": "2025-09-17T20:27:41.008788",
+        "updatedAt": "2025-09-17T20:27:41.008788"
+      },
+      "expense_data": {
+        "order_id": "ORD1758112061008",
+        "order_no": "DEMO003",
+        "external_income": {
+          "ocean_freight": 11100.0,
+          "local_charges": 3700.0,
+          "documentation": 1850.0,
+          "handling": 1850.0
+        },
+        "external_expense": {
+          "shipping_cost": 9065.0,
+          "terminal_cost": 2590.0,
+          "customs_cost": 1295.0
+        },
+        "gross_profit": 5550.0,
+        "profit_margin": 30.0
+      },
+      "profit_sharing": {
+        "sales_profit": 832.5,
+        "operation_profit": 555.0,
+        "company_profit": 4162.5,
+        "total_distributed": 5550.0
+      },
+      "clearing_flows": [
+        {
+          "from": "客户",
+          "to": "海程邦达供应链管理股份有限公司",
+          "amount": 18500.0,
+          "type": "外部收入"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "供应商",
+          "amount": 12950.0,
+          "type": "外部支出"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "上海海领供应链管理有限公司",
+          "amount": 832.5,
+          "type": "销售分润"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "深圳邦达国际货运代理有限公司",
+          "amount": 555.0,
+          "type": "操作分润"
+        }
+      ]
+    },
+    {
+      "order": {
+        "orderId": "ORD1758112061528",
+        "orderNo": "DEMO001",
+        "customerId": "CUST_528",
+        "customerName": "ACME Corp",
+        "salesEntityId": "ENTITY_SALES_001",
+        "deliveryEntityId": "ENTITY_DELIVERY_001",
+        "paymentEntityId": "ENTITY_PAYMENT_001",
+        "portOfLoading": "上海",
+        "portOfDischarge": "洛杉矶",
+        "commodityDescription": "一般货物",
+        "weight": 1200,
+        "volume": 68,
+        "containers": 1,
+        "tradeTerms": "FOB",
+        "totalAmount": 15000,
+        "totalCost": 10500.0,
+        "estimatedProfit": 4500.0,
+        "currency": "USD",
+        "orderStatus": "CONFIRMED",
+        "clearingStatus": "PENDING",
+        "clearingMode": "STAR",
+        "orderDate": "2025-09-17T20:27:41.528695",
+        "bookingDate": null,
+        "customsDate": null,
+        "shippingDate": null,
+        "arrivalDate": null,
+        "deliveryDate": null,
+        "vesselName": null,
+        "voyage": null,
+        "etd": null,
+        "eta": null,
+        "actualDeparture": null,
+        "actualArrival": null,
+        "customsDeclarationNo": null,
+        "customsStatus": null,
+        "orderItems": [
+          {
+            "itemId": "367728b2-ca89-42f0-93aa-801eb0ed3f85",
+            "costType": "OCEAN_FREIGHT",
+            "description": "海运费",
+            "amount": 9000.0,
+            "actualAmount": null,
+            "currency": "USD",
+            "supplier": "船公司",
+            "status": "ESTIMATED",
+            "remarks": null
+          },
+          {
+            "itemId": "9c9a29ca-9537-4898-924f-9f36e8f548f8",
+            "costType": "LOCAL_CHARGES",
+            "description": "本地费用",
+            "amount": 1500.0,
+            "actualAmount": null,
+            "currency": "USD",
+            "supplier": "本地代理",
+            "status": "ESTIMATED",
+            "remarks": null
+          }
+        ],
+        "timeline": [
+          {
+            "eventId": "ddcc7fc7-76c1-4edf-ae44-16e9b2e00172",
+            "eventType": "ORDER_CREATED",
+            "description": "订单已创建，等待订舱确认",
+            "operator": "系统",
+            "timestamp": "2025-09-17T20:27:41.528695",
+            "status": "success",
+            "remarks": null
+          }
+        ],
+        "specialRequirements": "无特殊要求",
+        "currentStage": "ORDER_CREATED",
+        "nextAction": "等待订舱确认",
+        "remarks": null,
+        "createdAt": "2025-09-17T20:27:41.528695",
+        "updatedAt": "2025-09-17T20:27:41.528695"
+      },
+      "expense_data": {
+        "order_id": "ORD1758112061528",
+        "order_no": "DEMO001",
+        "external_income": {
+          "ocean_freight": 9000.0,
+          "local_charges": 3000.0,
+          "documentation": 1500.0,
+          "handling": 1500.0
+        },
+        "external_expense": {
+          "shipping_cost": 7349.999999999999,
+          "terminal_cost": 2100.0,
+          "customs_cost": 1050.0
+        },
+        "gross_profit": 4500.0,
+        "profit_margin": 30.0
+      },
+      "profit_sharing": {
+        "sales_profit": 675.0,
+        "operation_profit": 450.0,
+        "company_profit": 3375.0,
+        "total_distributed": 4500.0
+      },
+      "clearing_flows": [
+        {
+          "from": "客户",
+          "to": "海程邦达供应链管理股份有限公司",
+          "amount": 15000.0,
+          "type": "外部收入"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "供应商",
+          "amount": 10500.0,
+          "type": "外部支出"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "上海海领供应链管理有限公司",
+          "amount": 675.0,
+          "type": "销售分润"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "深圳邦达国际货运代理有限公司",
+          "amount": 450.0,
+          "type": "操作分润"
+        }
+      ]
+    },
+    {
+      "order": {
+        "orderId": "ORD1758112061531",
+        "orderNo": "DEMO002",
+        "customerId": "CUST_531",
+        "customerName": "Global Trade Ltd",
+        "salesEntityId": "ENTITY_SALES_001",
+        "deliveryEntityId": "ENTITY_DELIVERY_001",
+        "paymentEntityId": "ENTITY_PAYMENT_001",
+        "portOfLoading": "深圳",
+        "portOfDischarge": "汉堡",
+        "commodityDescription": "一般货物",
+        "weight": 1200,
+        "volume": 68,
+        "containers": 1,
+        "tradeTerms": "FOB",
+        "totalAmount": 22000,
+        "totalCost": 15400.0,
+        "estimatedProfit": 6600.0,
+        "currency": "USD",
+        "orderStatus": "CONFIRMED",
+        "clearingStatus": "PENDING",
+        "clearingMode": "CHAIN",
+        "orderDate": "2025-09-17T20:27:41.53191",
+        "bookingDate": null,
+        "customsDate": null,
+        "shippingDate": null,
+        "arrivalDate": null,
+        "deliveryDate": null,
+        "vesselName": null,
+        "voyage": null,
+        "etd": null,
+        "eta": null,
+        "actualDeparture": null,
+        "actualArrival": null,
+        "customsDeclarationNo": null,
+        "customsStatus": null,
+        "orderItems": [
+          {
+            "itemId": "a019bc82-70fd-4b82-9912-51c76e0a728e",
+            "costType": "OCEAN_FREIGHT",
+            "description": "海运费",
+            "amount": 13200.0,
+            "actualAmount": null,
+            "currency": "USD",
+            "supplier": "船公司",
+            "status": "ESTIMATED",
+            "remarks": null
+          },
+          {
+            "itemId": "87a3e585-fc0e-4b1a-ae78-83b94770323c",
+            "costType": "LOCAL_CHARGES",
+            "description": "本地费用",
+            "amount": 2200.0,
+            "actualAmount": null,
+            "currency": "USD",
+            "supplier": "本地代理",
+            "status": "ESTIMATED",
+            "remarks": null
+          }
+        ],
+        "timeline": [
+          {
+            "eventId": "b8f001ae-15ca-4086-a11e-cb42875a098b",
+            "eventType": "ORDER_CREATED",
+            "description": "订单已创建，等待订舱确认",
+            "operator": "系统",
+            "timestamp": "2025-09-17T20:27:41.53191",
+            "status": "success",
+            "remarks": null
+          }
+        ],
+        "specialRequirements": "无特殊要求",
+        "currentStage": "ORDER_CREATED",
+        "nextAction": "等待订舱确认",
+        "remarks": null,
+        "createdAt": "2025-09-17T20:27:41.53191",
+        "updatedAt": "2025-09-17T20:27:41.53191"
+      },
+      "expense_data": {
+        "order_id": "ORD1758112061531",
+        "order_no": "DEMO002",
+        "external_income": {
+          "ocean_freight": 13200.0,
+          "local_charges": 4400.0,
+          "documentation": 2200.0,
+          "handling": 2200.0
+        },
+        "external_expense": {
+          "shipping_cost": 10780.0,
+          "terminal_cost": 3080.0,
+          "customs_cost": 1540.0
+        },
+        "gross_profit": 6600.0,
+        "profit_margin": 30.0
+      },
+      "profit_sharing": {
+        "sales_profit": 990.0,
+        "operation_profit": 660.0,
+        "company_profit": 4950.0,
+        "total_distributed": 6600.0
+      },
+      "clearing_flows": [
+        {
+          "from": "客户",
+          "to": "海程邦达供应链管理股份有限公司",
+          "amount": 22000.0,
+          "type": "外部收入"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "供应商",
+          "amount": 15400.0,
+          "type": "外部支出"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "上海海领供应链管理有限公司",
+          "amount": 990.0,
+          "type": "销售分润"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "深圳邦达国际货运代理有限公司",
+          "amount": 660.0,
+          "type": "操作分润"
+        }
+      ]
+    },
+    {
+      "order": {
+        "orderId": "ORD1758112061532",
+        "orderNo": "DEMO003",
+        "customerId": "CUST_532",
+        "customerName": "International Freight Co",
+        "salesEntityId": "ENTITY_SALES_001",
+        "deliveryEntityId": "ENTITY_DELIVERY_001",
+        "paymentEntityId": "ENTITY_PAYMENT_001",
+        "portOfLoading": "青岛",
+        "portOfDischarge": "纽约",
+        "commodityDescription": "一般货物",
+        "weight": 1200,
+        "volume": 68,
+        "containers": 1,
+        "tradeTerms": "FOB",
+        "totalAmount": 18500,
+        "totalCost": 12950.0,
+        "estimatedProfit": 5550.0,
+        "currency": "USD",
+        "orderStatus": "CONFIRMED",
+        "clearingStatus": "PENDING",
+        "clearingMode": "STAR",
+        "orderDate": "2025-09-17T20:27:41.53281",
+        "bookingDate": null,
+        "customsDate": null,
+        "shippingDate": null,
+        "arrivalDate": null,
+        "deliveryDate": null,
+        "vesselName": null,
+        "voyage": null,
+        "etd": null,
+        "eta": null,
+        "actualDeparture": null,
+        "actualArrival": null,
+        "customsDeclarationNo": null,
+        "customsStatus": null,
+        "orderItems": [
+          {
+            "itemId": "9c63cfb3-bc62-4da0-84f5-5b6d28edb027",
+            "costType": "OCEAN_FREIGHT",
+            "description": "海运费",
+            "amount": 11100.0,
+            "actualAmount": null,
+            "currency": "USD",
+            "supplier": "船公司",
+            "status": "ESTIMATED",
+            "remarks": null
+          },
+          {
+            "itemId": "1fc89ebb-7daa-4f22-ab78-36e66ee2c4b8",
+            "costType": "LOCAL_CHARGES",
+            "description": "本地费用",
+            "amount": 1850.0,
+            "actualAmount": null,
+            "currency": "USD",
+            "supplier": "本地代理",
+            "status": "ESTIMATED",
+            "remarks": null
+          }
+        ],
+        "timeline": [
+          {
+            "eventId": "421bf067-5e3d-48b2-b80c-39777a9bdc85",
+            "eventType": "ORDER_CREATED",
+            "description": "订单已创建，等待订舱确认",
+            "operator": "系统",
+            "timestamp": "2025-09-17T20:27:41.53281",
+            "status": "success",
+            "remarks": null
+          }
+        ],
+        "specialRequirements": "无特殊要求",
+        "currentStage": "ORDER_CREATED",
+        "nextAction": "等待订舱确认",
+        "remarks": null,
+        "createdAt": "2025-09-17T20:27:41.53281",
+        "updatedAt": "2025-09-17T20:27:41.53281"
+      },
+      "expense_data": {
+        "order_id": "ORD1758112061532",
+        "order_no": "DEMO003",
+        "external_income": {
+          "ocean_freight": 11100.0,
+          "local_charges": 3700.0,
+          "documentation": 1850.0,
+          "handling": 1850.0
+        },
+        "external_expense": {
+          "shipping_cost": 9065.0,
+          "terminal_cost": 2590.0,
+          "customs_cost": 1295.0
+        },
+        "gross_profit": 5550.0,
+        "profit_margin": 30.0
+      },
+      "profit_sharing": {
+        "sales_profit": 832.5,
+        "operation_profit": 555.0,
+        "company_profit": 4162.5,
+        "total_distributed": 5550.0
+      },
+      "clearing_flows": [
+        {
+          "from": "客户",
+          "to": "海程邦达供应链管理股份有限公司",
+          "amount": 18500.0,
+          "type": "外部收入"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "供应商",
+          "amount": 12950.0,
+          "type": "外部支出"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "上海海领供应链管理有限公司",
+          "amount": 832.5,
+          "type": "销售分润"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "深圳邦达国际货运代理有限公司",
+          "amount": 555.0,
+          "type": "操作分润"
+        }
+      ]
+    },
+    {
+      "order": {
+        "orderId": "ORD1758112062054",
+        "orderNo": "DEMO001",
+        "customerId": "CUST_54",
+        "customerName": "ACME Corp",
+        "salesEntityId": "ENTITY_SALES_001",
+        "deliveryEntityId": "ENTITY_DELIVERY_001",
+        "paymentEntityId": "ENTITY_PAYMENT_001",
+        "portOfLoading": "上海",
+        "portOfDischarge": "洛杉矶",
+        "commodityDescription": "一般货物",
+        "weight": 1200,
+        "volume": 68,
+        "containers": 1,
+        "tradeTerms": "FOB",
+        "totalAmount": 15000,
+        "totalCost": 10500.0,
+        "estimatedProfit": 4500.0,
+        "currency": "USD",
+        "orderStatus": "CONFIRMED",
+        "clearingStatus": "PENDING",
+        "clearingMode": "STAR",
+        "orderDate": "2025-09-17T20:27:42.054785",
+        "bookingDate": null,
+        "customsDate": null,
+        "shippingDate": null,
+        "arrivalDate": null,
+        "deliveryDate": null,
+        "vesselName": null,
+        "voyage": null,
+        "etd": null,
+        "eta": null,
+        "actualDeparture": null,
+        "actualArrival": null,
+        "customsDeclarationNo": null,
+        "customsStatus": null,
+        "orderItems": [
+          {
+            "itemId": "ff83b77b-191c-4c8e-ac6c-1cdac4fbe114",
+            "costType": "OCEAN_FREIGHT",
+            "description": "海运费",
+            "amount": 9000.0,
+            "actualAmount": null,
+            "currency": "USD",
+            "supplier": "船公司",
+            "status": "ESTIMATED",
+            "remarks": null
+          },
+          {
+            "itemId": "bfd4a93b-6778-4918-adb1-37de07dc9a26",
+            "costType": "LOCAL_CHARGES",
+            "description": "本地费用",
+            "amount": 1500.0,
+            "actualAmount": null,
+            "currency": "USD",
+            "supplier": "本地代理",
+            "status": "ESTIMATED",
+            "remarks": null
+          }
+        ],
+        "timeline": [
+          {
+            "eventId": "b77d9045-ef90-4b3f-b8ee-89629b919f7e",
+            "eventType": "ORDER_CREATED",
+            "description": "订单已创建，等待订舱确认",
+            "operator": "系统",
+            "timestamp": "2025-09-17T20:27:42.054785",
+            "status": "success",
+            "remarks": null
+          }
+        ],
+        "specialRequirements": "无特殊要求",
+        "currentStage": "ORDER_CREATED",
+        "nextAction": "等待订舱确认",
+        "remarks": null,
+        "createdAt": "2025-09-17T20:27:42.054785",
+        "updatedAt": "2025-09-17T20:27:42.054785"
+      },
+      "expense_data": {
+        "order_id": "ORD1758112062054",
+        "order_no": "DEMO001",
+        "external_income": {
+          "ocean_freight": 9000.0,
+          "local_charges": 3000.0,
+          "documentation": 1500.0,
+          "handling": 1500.0
+        },
+        "external_expense": {
+          "shipping_cost": 7349.999999999999,
+          "terminal_cost": 2100.0,
+          "customs_cost": 1050.0
+        },
+        "gross_profit": 4500.0,
+        "profit_margin": 30.0
+      },
+      "profit_sharing": {
+        "sales_profit": 675.0,
+        "operation_profit": 450.0,
+        "company_profit": 3375.0,
+        "total_distributed": 4500.0
+      },
+      "clearing_flows": [
+        {
+          "from": "客户",
+          "to": "海程邦达供应链管理股份有限公司",
+          "amount": 15000.0,
+          "type": "外部收入"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "供应商",
+          "amount": 10500.0,
+          "type": "外部支出"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "上海海领供应链管理有限公司",
+          "amount": 675.0,
+          "type": "销售分润"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "深圳邦达国际货运代理有限公司",
+          "amount": 450.0,
+          "type": "操作分润"
+        }
+      ]
+    },
+    {
+      "order": {
+        "orderId": "ORD1758112062055",
+        "orderNo": "DEMO002",
+        "customerId": "CUST_55",
+        "customerName": "Global Trade Ltd",
+        "salesEntityId": "ENTITY_SALES_001",
+        "deliveryEntityId": "ENTITY_DELIVERY_001",
+        "paymentEntityId": "ENTITY_PAYMENT_001",
+        "portOfLoading": "深圳",
+        "portOfDischarge": "汉堡",
+        "commodityDescription": "一般货物",
+        "weight": 1200,
+        "volume": 68,
+        "containers": 1,
+        "tradeTerms": "FOB",
+        "totalAmount": 22000,
+        "totalCost": 15400.0,
+        "estimatedProfit": 6600.0,
+        "currency": "USD",
+        "orderStatus": "CONFIRMED",
+        "clearingStatus": "PENDING",
+        "clearingMode": "CHAIN",
+        "orderDate": "2025-09-17T20:27:42.055817",
+        "bookingDate": null,
+        "customsDate": null,
+        "shippingDate": null,
+        "arrivalDate": null,
+        "deliveryDate": null,
+        "vesselName": null,
+        "voyage": null,
+        "etd": null,
+        "eta": null,
+        "actualDeparture": null,
+        "actualArrival": null,
+        "customsDeclarationNo": null,
+        "customsStatus": null,
+        "orderItems": [
+          {
+            "itemId": "17ef3000-c223-44c0-97ab-d2c06dd87455",
+            "costType": "OCEAN_FREIGHT",
+            "description": "海运费",
+            "amount": 13200.0,
+            "actualAmount": null,
+            "currency": "USD",
+            "supplier": "船公司",
+            "status": "ESTIMATED",
+            "remarks": null
+          },
+          {
+            "itemId": "9515b0e4-f121-4df4-983e-dc721acbb523",
+            "costType": "LOCAL_CHARGES",
+            "description": "本地费用",
+            "amount": 2200.0,
+            "actualAmount": null,
+            "currency": "USD",
+            "supplier": "本地代理",
+            "status": "ESTIMATED",
+            "remarks": null
+          }
+        ],
+        "timeline": [
+          {
+            "eventId": "d4e01c3c-d06f-45d2-a558-1c3ce94644c7",
+            "eventType": "ORDER_CREATED",
+            "description": "订单已创建，等待订舱确认",
+            "operator": "系统",
+            "timestamp": "2025-09-17T20:27:42.055817",
+            "status": "success",
+            "remarks": null
+          }
+        ],
+        "specialRequirements": "无特殊要求",
+        "currentStage": "ORDER_CREATED",
+        "nextAction": "等待订舱确认",
+        "remarks": null,
+        "createdAt": "2025-09-17T20:27:42.055817",
+        "updatedAt": "2025-09-17T20:27:42.055817"
+      },
+      "expense_data": {
+        "order_id": "ORD1758112062055",
+        "order_no": "DEMO002",
+        "external_income": {
+          "ocean_freight": 13200.0,
+          "local_charges": 4400.0,
+          "documentation": 2200.0,
+          "handling": 2200.0
+        },
+        "external_expense": {
+          "shipping_cost": 10780.0,
+          "terminal_cost": 3080.0,
+          "customs_cost": 1540.0
+        },
+        "gross_profit": 6600.0,
+        "profit_margin": 30.0
+      },
+      "profit_sharing": {
+        "sales_profit": 990.0,
+        "operation_profit": 660.0,
+        "company_profit": 4950.0,
+        "total_distributed": 6600.0
+      },
+      "clearing_flows": [
+        {
+          "from": "客户",
+          "to": "海程邦达供应链管理股份有限公司",
+          "amount": 22000.0,
+          "type": "外部收入"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "供应商",
+          "amount": 15400.0,
+          "type": "外部支出"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "上海海领供应链管理有限公司",
+          "amount": 990.0,
+          "type": "销售分润"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "深圳邦达国际货运代理有限公司",
+          "amount": 660.0,
+          "type": "操作分润"
+        }
+      ]
+    },
+    {
+      "order": {
+        "orderId": "ORD1758112062056",
+        "orderNo": "DEMO003",
+        "customerId": "CUST_56",
+        "customerName": "International Freight Co",
+        "salesEntityId": "ENTITY_SALES_001",
+        "deliveryEntityId": "ENTITY_DELIVERY_001",
+        "paymentEntityId": "ENTITY_PAYMENT_001",
+        "portOfLoading": "青岛",
+        "portOfDischarge": "纽约",
+        "commodityDescription": "一般货物",
+        "weight": 1200,
+        "volume": 68,
+        "containers": 1,
+        "tradeTerms": "FOB",
+        "totalAmount": 18500,
+        "totalCost": 12950.0,
+        "estimatedProfit": 5550.0,
+        "currency": "USD",
+        "orderStatus": "CONFIRMED",
+        "clearingStatus": "PENDING",
+        "clearingMode": "STAR",
+        "orderDate": "2025-09-17T20:27:42.05621",
+        "bookingDate": null,
+        "customsDate": null,
+        "shippingDate": null,
+        "arrivalDate": null,
+        "deliveryDate": null,
+        "vesselName": null,
+        "voyage": null,
+        "etd": null,
+        "eta": null,
+        "actualDeparture": null,
+        "actualArrival": null,
+        "customsDeclarationNo": null,
+        "customsStatus": null,
+        "orderItems": [
+          {
+            "itemId": "1e4e1117-9072-4a88-a4db-e855af73509f",
+            "costType": "OCEAN_FREIGHT",
+            "description": "海运费",
+            "amount": 11100.0,
+            "actualAmount": null,
+            "currency": "USD",
+            "supplier": "船公司",
+            "status": "ESTIMATED",
+            "remarks": null
+          },
+          {
+            "itemId": "bf988b03-fa9c-4380-b662-2655291d423c",
+            "costType": "LOCAL_CHARGES",
+            "description": "本地费用",
+            "amount": 1850.0,
+            "actualAmount": null,
+            "currency": "USD",
+            "supplier": "本地代理",
+            "status": "ESTIMATED",
+            "remarks": null
+          }
+        ],
+        "timeline": [
+          {
+            "eventId": "b11d09b9-b317-49cd-bb09-cb46e0c4ccea",
+            "eventType": "ORDER_CREATED",
+            "description": "订单已创建，等待订舱确认",
+            "operator": "系统",
+            "timestamp": "2025-09-17T20:27:42.05621",
+            "status": "success",
+            "remarks": null
+          }
+        ],
+        "specialRequirements": "无特殊要求",
+        "currentStage": "ORDER_CREATED",
+        "nextAction": "等待订舱确认",
+        "remarks": null,
+        "createdAt": "2025-09-17T20:27:42.05621",
+        "updatedAt": "2025-09-17T20:27:42.05621"
+      },
+      "expense_data": {
+        "order_id": "ORD1758112062056",
+        "order_no": "DEMO003",
+        "external_income": {
+          "ocean_freight": 11100.0,
+          "local_charges": 3700.0,
+          "documentation": 1850.0,
+          "handling": 1850.0
+        },
+        "external_expense": {
+          "shipping_cost": 9065.0,
+          "terminal_cost": 2590.0,
+          "customs_cost": 1295.0
+        },
+        "gross_profit": 5550.0,
+        "profit_margin": 30.0
+      },
+      "profit_sharing": {
+        "sales_profit": 832.5,
+        "operation_profit": 555.0,
+        "company_profit": 4162.5,
+        "total_distributed": 5550.0
+      },
+      "clearing_flows": [
+        {
+          "from": "客户",
+          "to": "海程邦达供应链管理股份有限公司",
+          "amount": 18500.0,
+          "type": "外部收入"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "供应商",
+          "amount": 12950.0,
+          "type": "外部支出"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "上海海领供应链管理有限公司",
+          "amount": 832.5,
+          "type": "销售分润"
+        },
+        {
+          "from": "海程邦达供应链管理股份有限公司",
+          "to": "深圳邦达国际货运代理有限公司",
+          "amount": 555.0,
+          "type": "操作分润"
+        }
+      ]
+    }
+  ]
+}

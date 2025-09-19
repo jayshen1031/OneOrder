@@ -1,0 +1,451 @@
+package com.oneorder.clearing.service;
+
+import com.oneorder.clearing.dto.*;
+import com.oneorder.clearing.entity.*;
+import com.oneorder.clearing.repository.*;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+
+/**
+ * 增强业务流程服务 - 集成内部合约管理
+ * 实现：客服接单阶段 → 服务派单阶段 → 操作接单阶段
+ */
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class EnhancedBusinessProcessService {
+
+    private final OrderRepository orderRepository;
+    private final OrderServiceRepository orderServiceRepository;
+    private final InternalProtocolRepository internalProtocolRepository;
+    private final StaffRepository staffRepository;
+    private final DepartmentRepository departmentRepository;
+    private final ServiceConfigRepository serviceConfigRepository;
+    private final NotificationService notificationService;
+    private final ContractManagementService contractManagementService;
+
+    // ==================== 1. 客服接单阶段 ====================
+
+    /**
+     * 客服接单 - 选择客户 → 确定业务类型 → 选择服务项 → 生成订单
+     */
+    @Transactional
+    public CustomerServiceOrderResult createCustomerServiceOrder(CustomerServiceOrderRequest request) {
+        log.info("客服接单流程开始 - 客户: {}, 业务类型: {}", request.getCustomerId(), request.getBusinessType());
+        
+        // 1. 验证客户信息
+        validateCustomerInfo(request.getCustomerId());
+        
+        // 2. 验证业务类型和服务项
+        List<ServiceConfig> services = validateAndGetServices(request.getServiceCodes(), request.getBusinessType());
+        
+        // 3. 创建订单
+        Order order = createOrderWithServices(request, services);
+        
+        // 4. 预匹配内部合约
+        ContractMatchResultDTO contractMatch = contractManagementService.matchContractForOrder(
+            ContractMatchRequest.builder()
+                .orderId(order.getOrderId())
+                .salesDepartmentId(request.getSalesDepartmentId())
+                .serviceList(request.getServiceCodes())
+                .businessType(request.getBusinessType())
+                .customerId(request.getCustomerId())
+                .build()
+        );
+        
+        // 5. 应用合约（如果找到匹配）
+        if (contractMatch.getMatchFound()) {
+            contractManagementService.applyContractToOrder(
+                ContractApplicationRequest.builder()
+                    .orderId(order.getOrderId())
+                    .masterContractId(contractMatch.getMasterContractId())
+                    .contractTermsId(contractMatch.getContractTermsId())
+                    .applicationReason("自动匹配应用")
+                    .build()
+            );
+        }
+        
+        log.info("客服接单完成 - 订单ID: {}, 合约匹配: {}", order.getOrderId(), contractMatch.getMatchFound());
+        
+        return CustomerServiceOrderResult.builder()
+            .orderId(order.getOrderId())
+            .success(true)
+            .message("接单成功")
+            .contractMatched(contractMatch.getMatchFound())
+            .contractDetails(contractMatch)
+            .services(services.stream().map(this::mapToServiceDTO).collect(Collectors.toList()))
+            .estimatedAmount(calculateEstimatedAmount(services, request))
+            .build();
+    }
+
+    /**
+     * 获取可用服务项（基于业务类型）
+     */
+    public List<ServiceConfigDTO> getAvailableServices(String businessType, String departmentId) {
+        List<ServiceConfig> services = serviceConfigRepository.findByBusinessTypeAndActiveTrue(businessType);
+        return services.stream()
+            .map(this::mapToServiceDTO)
+            .collect(Collectors.toList());
+    }
+
+    // ==================== 2. 服务派单阶段 ====================
+
+    /**
+     * 服务派单 - 选择操作人员 → 匹配内部协议 → 确认派单 → 发送通知
+     */
+    @Transactional
+    public ServiceAssignmentResult assignServicesToStaff(ServiceAssignmentRequest request) {
+        log.info("服务派单流程开始 - 订单: {}, 服务数量: {}", request.getOrderId(), request.getServiceAssignments().size());
+        
+        // 1. 获取订单
+        Order order = orderRepository.findById(request.getOrderId())
+            .orElseThrow(() -> new RuntimeException("订单不存在: " + request.getOrderId()));
+        
+        // 2. 批量处理服务派单
+        List<ServiceAssignmentResultItem> assignmentResults = new ArrayList<>();
+        
+        for (ServiceAssignmentRequestItem item : request.getServiceAssignments()) {
+            ServiceAssignmentResultItem result = assignSingleService(order, item);
+            assignmentResults.add(result);
+        }
+        
+        // 3. 统计派单结果
+        long successCount = assignmentResults.stream().mapToLong(r -> r.getSuccess() ? 1 : 0).sum();
+        
+        // 4. 发送通知给操作人员
+        sendAssignmentNotifications(assignmentResults);
+        
+        log.info("服务派单完成 - 订单: {}, 成功: {}/{}", request.getOrderId(), successCount, assignmentResults.size());
+        
+        return ServiceAssignmentResult.builder()
+            .orderId(request.getOrderId())
+            .totalServices(assignmentResults.size())
+            .successCount((int) successCount)
+            .failureCount(assignmentResults.size() - (int) successCount)
+            .assignmentResults(assignmentResults)
+            .overallSuccess(successCount == assignmentResults.size())
+            .build();
+    }
+
+    /**
+     * 推荐最佳操作人员
+     */
+    public List<StaffRecommendationDTO> recommendOperationStaff(String serviceCode, String departmentId, String businessType) {
+        // 1. 查找适合的部门
+        List<Department> suitableDepartments = departmentRepository.findByDepartmentTypeAndBusinessType(businessType);
+        
+        // 2. 查找可用人员
+        List<Staff> availableStaff = staffRepository.findByDepartmentIdInAndRoleTypeAndActiveTrue(
+            suitableDepartments.stream().map(Department::getDepartmentId).collect(Collectors.toList()),
+            "OPERATION"
+        );
+        
+        // 3. 计算推荐度
+        return availableStaff.stream()
+            .map(staff -> calculateStaffRecommendation(staff, serviceCode))
+            .sorted((a, b) -> b.getRecommendationScore().compareTo(a.getRecommendationScore()))
+            .collect(Collectors.toList());
+    }
+
+    // ==================== 3. 操作接单阶段 ====================
+
+    /**
+     * 操作人员接单 - 查看派单通知 → 确认协议条款 → 接单确认 → 开始执行
+     */
+    @Transactional
+    public OperationAcceptanceResult acceptServiceAssignment(OperationAcceptanceRequest request) {
+        log.info("操作接单流程开始 - 人员: {}, 服务: {}", request.getStaffId(), request.getOrderServiceIds());
+        
+        List<OperationAcceptanceResultItem> acceptanceResults = new ArrayList<>();
+        
+        for (Long orderServiceId : request.getOrderServiceIds()) {
+            OperationAcceptanceResultItem result = acceptSingleService(orderServiceId, request);
+            acceptanceResults.add(result);
+        }
+        
+        long successCount = acceptanceResults.stream().mapToLong(r -> r.getSuccess() ? 1 : 0).sum();
+        
+        log.info("操作接单完成 - 人员: {}, 成功: {}/{}", request.getStaffId(), successCount, acceptanceResults.size());
+        
+        return OperationAcceptanceResult.builder()
+            .staffId(request.getStaffId())
+            .totalServices(acceptanceResults.size())
+            .successCount((int) successCount)
+            .failureCount(acceptanceResults.size() - (int) successCount)
+            .acceptanceResults(acceptanceResults)
+            .overallSuccess(successCount == acceptanceResults.size())
+            .build();
+    }
+
+    /**
+     * 获取操作人员的派单通知
+     */
+    public List<ServiceAssignmentNotificationDTO> getAssignmentNotifications(String staffId, Boolean unreadOnly) {
+        List<ServiceAssignmentNotification> notifications;
+        
+        if (unreadOnly != null && unreadOnly) {
+            notifications = notificationService.getUnreadNotifications(staffId);
+        } else {
+            notifications = notificationService.getAllNotifications(staffId);
+        }
+        
+        return notifications.stream()
+            .map(this::mapToNotificationDTO)
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * 确认协议条款
+     */
+    @Transactional
+    public ProtocolConfirmationResult confirmProtocolTerms(ProtocolConfirmationRequest request) {
+        log.info("确认协议条款 - 服务: {}, 人员: {}", request.getOrderServiceId(), request.getStaffId());
+        
+        OrderService orderService = orderServiceRepository.findById(request.getOrderServiceId())
+            .orElseThrow(() -> new RuntimeException("订单服务不存在: " + request.getOrderServiceId()));
+        
+        // 验证协议条款
+        if (orderService.getInternalProtocolId() == null) {
+            throw new RuntimeException("该服务未匹配到内部协议");
+        }
+        
+        InternalProtocol protocol = internalProtocolRepository.findById(orderService.getInternalProtocolId())
+            .orElseThrow(() -> new RuntimeException("内部协议不存在"));
+        
+        // 更新状态为协议已确认
+        orderService.setStatus("PROTOCOL_CONFIRMED");
+        orderService.setProtocolConfirmedTime(LocalDateTime.now());
+        orderServiceRepository.save(orderService);
+        
+        return ProtocolConfirmationResult.builder()
+            .orderServiceId(request.getOrderServiceId())
+            .success(true)
+            .protocolId(protocol.getProtocolId())
+            .protocolName(protocol.getProtocolName())
+            .baseCommissionRate(protocol.getBaseCommissionRate())
+            .performanceBonusRate(protocol.getPerformanceBonusRate())
+            .message("协议条款确认成功")
+            .build();
+    }
+
+    // ==================== 辅助方法 ====================
+
+    private void validateCustomerInfo(String customerId) {
+        // 验证客户信息逻辑
+        if (customerId == null || customerId.trim().isEmpty()) {
+            throw new RuntimeException("客户ID不能为空");
+        }
+    }
+
+    private List<ServiceConfig> validateAndGetServices(List<String> serviceCodes, String businessType) {
+        List<ServiceConfig> services = serviceConfigRepository.findByCodes(serviceCodes);
+        
+        if (services.size() != serviceCodes.size()) {
+            throw new RuntimeException("部分服务编码无效");
+        }
+        
+        // 验证服务是否适用于该业务类型
+        for (ServiceConfig service : services) {
+            if (!service.getBusinessType().equals(businessType)) {
+                throw new RuntimeException("服务 " + service.getFeeCode() + " 不适用于业务类型 " + businessType);
+            }
+        }
+        
+        return services;
+    }
+
+    private Order createOrderWithServices(CustomerServiceOrderRequest request, List<ServiceConfig> services) {
+        // 创建订单
+        Order order = new Order();
+        order.setOrderId(generateOrderId());
+        order.setCustomerId(request.getCustomerId());
+        order.setBusinessType(request.getBusinessType());
+        order.setSalesStaffId(request.getSalesStaffId());
+        order.setSalesDepartmentId(request.getSalesDepartmentId());
+        order.setStatus("CREATED");
+        order.setCreatedTime(LocalDateTime.now());
+        order = orderRepository.save(order);
+        
+        // 创建订单服务项
+        for (ServiceConfig service : services) {
+            OrderService orderService = new OrderService();
+            orderService.setOrderId(order.getOrderId());
+            orderService.setServiceCode(service.getFeeCode());
+            orderService.setStatus("PENDING");
+            orderService.setCreatedTime(LocalDateTime.now());
+            orderServiceRepository.save(orderService);
+        }
+        
+        return order;
+    }
+
+    private ServiceAssignmentResultItem assignSingleService(Order order, ServiceAssignmentRequestItem item) {
+        try {
+            // 1. 获取服务
+            OrderService orderService = orderServiceRepository.findByOrderIdAndServiceCode(
+                order.getOrderId(), item.getServiceCode())
+                .orElseThrow(() -> new RuntimeException("订单服务不存在"));
+            
+            // 2. 验证操作人员
+            Staff operationStaff = staffRepository.findById(item.getOperationStaffId())
+                .orElseThrow(() -> new RuntimeException("操作人员不存在: " + item.getOperationStaffId()));
+            
+            // 3. 匹配内部协议
+            List<InternalProtocol> protocols = internalProtocolRepository.findApplicableProtocols(
+                order.getSalesDepartmentId(),
+                operationStaff.getDepartmentId(),
+                item.getServiceCode(),
+                order.getBusinessType()
+            );
+            
+            InternalProtocol selectedProtocol = selectBestProtocol(protocols);
+            
+            // 4. 更新订单服务
+            orderService.setOperationStaffId(item.getOperationStaffId());
+            orderService.setOperationDepartmentId(operationStaff.getDepartmentId());
+            orderService.setInternalProtocolId(selectedProtocol != null ? selectedProtocol.getProtocolId() : null);
+            orderService.setServiceAmount(item.getServiceAmount());
+            orderService.setStatus("ASSIGNED");
+            orderService.setAssignedTime(LocalDateTime.now());
+            orderServiceRepository.save(orderService);
+            
+            return ServiceAssignmentResultItem.builder()
+                .serviceCode(item.getServiceCode())
+                .operationStaffId(item.getOperationStaffId())
+                .operationStaffName(operationStaff.getStaffName())
+                .protocolId(selectedProtocol != null ? selectedProtocol.getProtocolId() : null)
+                .protocolName(selectedProtocol != null ? selectedProtocol.getProtocolName() : null)
+                .success(true)
+                .message("派单成功")
+                .build();
+                
+        } catch (Exception e) {
+            log.error("服务派单失败 - 服务: {}, 错误: {}", item.getServiceCode(), e.getMessage());
+            return ServiceAssignmentResultItem.builder()
+                .serviceCode(item.getServiceCode())
+                .operationStaffId(item.getOperationStaffId())
+                .success(false)
+                .message("派单失败: " + e.getMessage())
+                .build();
+        }
+    }
+
+    private InternalProtocol selectBestProtocol(List<InternalProtocol> protocols) {
+        if (protocols.isEmpty()) {
+            return null;
+        }
+        
+        // 选择佣金率最高的协议（简单策略）
+        return protocols.stream()
+            .max(Comparator.comparing(InternalProtocol::getTotalCommissionRate))
+            .orElse(protocols.get(0));
+    }
+
+    private void sendAssignmentNotifications(List<ServiceAssignmentResultItem> assignments) {
+        for (ServiceAssignmentResultItem assignment : assignments) {
+            if (assignment.getSuccess()) {
+                notificationService.sendAssignmentNotification(
+                    assignment.getOperationStaffId(),
+                    assignment.getServiceCode(),
+                    assignment.getProtocolName()
+                );
+            }
+        }
+    }
+
+    private OperationAcceptanceResultItem acceptSingleService(Long orderServiceId, OperationAcceptanceRequest request) {
+        try {
+            OrderService orderService = orderServiceRepository.findById(orderServiceId)
+                .orElseThrow(() -> new RuntimeException("订单服务不存在: " + orderServiceId));
+            
+            // 验证是否分配给该操作人员
+            if (!request.getStaffId().equals(orderService.getOperationStaffId())) {
+                throw new RuntimeException("该服务未分配给当前操作人员");
+            }
+            
+            // 验证状态
+            if (!"ASSIGNED".equals(orderService.getStatus()) && !"PROTOCOL_CONFIRMED".equals(orderService.getStatus())) {
+                throw new RuntimeException("服务状态不允许接单: " + orderService.getStatus());
+            }
+            
+            // 更新状态
+            orderService.setStatus("IN_PROGRESS");
+            orderService.setStartedTime(LocalDateTime.now());
+            orderService.setNotes(request.getAcceptanceNotes());
+            orderServiceRepository.save(orderService);
+            
+            return OperationAcceptanceResultItem.builder()
+                .orderServiceId(orderServiceId)
+                .serviceCode(orderService.getServiceCode())
+                .success(true)
+                .message("接单成功")
+                .startedTime(orderService.getStartedTime())
+                .build();
+                
+        } catch (Exception e) {
+            log.error("操作接单失败 - 服务: {}, 错误: {}", orderServiceId, e.getMessage());
+            return OperationAcceptanceResultItem.builder()
+                .orderServiceId(orderServiceId)
+                .success(false)
+                .message("接单失败: " + e.getMessage())
+                .build();
+        }
+    }
+
+    // ==================== 映射方法 ====================
+
+    private ServiceConfigDTO mapToServiceDTO(ServiceConfig service) {
+        return ServiceConfigDTO.builder()
+            .feeCode(service.getFeeCode())
+            .feeName(service.getFeeName())
+            .businessType(service.getBusinessType())
+            .feeType(service.getFeeType())
+            .currency(service.getCurrency())
+            .unitPrice(service.getUnitPrice())
+            .build();
+    }
+
+    private StaffRecommendationDTO calculateStaffRecommendation(Staff staff, String serviceCode) {
+        // 简单的推荐算法，实际可以更复杂
+        BigDecimal score = BigDecimal.valueOf(Math.random() * 100);
+        
+        return StaffRecommendationDTO.builder()
+            .staffId(staff.getStaffId())
+            .staffName(staff.getStaffName())
+            .departmentName(staff.getDepartment() != null ? staff.getDepartment().getDepartmentName() : "")
+            .recommendationScore(score)
+            .reasonCode("EXPERIENCE_MATCH")
+            .reasonDescription("基于历史经验匹配")
+            .build();
+    }
+
+    private ServiceAssignmentNotificationDTO mapToNotificationDTO(ServiceAssignmentNotification notification) {
+        return ServiceAssignmentNotificationDTO.builder()
+            .notificationId(notification.getId())
+            .orderId(notification.getOrderId())
+            .serviceCode(notification.getServiceCode())
+            .serviceName(notification.getServiceName())
+            .protocolName(notification.getProtocolName())
+            .assignedTime(notification.getAssignedTime())
+            .isRead(notification.getIsRead())
+            .priority(notification.getPriority())
+            .build();
+    }
+
+    private BigDecimal calculateEstimatedAmount(List<ServiceConfig> services, CustomerServiceOrderRequest request) {
+        return services.stream()
+            .map(service -> service.getUnitPrice() != null ? service.getUnitPrice() : BigDecimal.ZERO)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private String generateOrderId() {
+        return "ORD" + System.currentTimeMillis();
+    }
+}

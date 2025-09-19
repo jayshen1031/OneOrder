@@ -1,0 +1,617 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - navigation [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - heading " OneOrder" [level=4] [ref=e7]:
+            - generic [ref=e8]: 
+            - text: OneOrder
+          - generic [ref=e9]: 货代订单管理系统
+        - list [ref=e10]:
+          - listitem [ref=e11]:
+            - link " 仪表盘" [ref=e12] [cursor=pointer]:
+              - /url: "#dashboard"
+              - generic [ref=e13] [cursor=pointer]: 
+              - text: 仪表盘
+          - listitem [ref=e14]:
+            - link " 订单管理" [ref=e15] [cursor=pointer]:
+              - /url: "#orders"
+              - generic [ref=e16] [cursor=pointer]: 
+              - text: 订单管理
+          - listitem [ref=e17]:
+            - link " 服务配置管理 " [ref=e18] [cursor=pointer]:
+              - /url: service-config.html
+              - generic [ref=e19] [cursor=pointer]: 
+              - text: 服务配置管理
+              - generic [ref=e20] [cursor=pointer]: 
+          - listitem [ref=e21]:
+            - link " 服务总览" [ref=e22] [cursor=pointer]:
+              - /url: "#services"
+              - generic [ref=e23] [cursor=pointer]: 
+              - text: 服务总览
+          - listitem [ref=e24]:
+            - link " 内部协议" [ref=e25] [cursor=pointer]:
+              - /url: "#protocols"
+              - generic [ref=e26] [cursor=pointer]: 
+              - text: 内部协议
+          - listitem [ref=e27]:
+            - link " 任务管理" [ref=e28] [cursor=pointer]:
+              - /url: "#tasks"
+              - generic [ref=e29] [cursor=pointer]: 
+              - text: 任务管理
+          - listitem [ref=e30]:
+            - link " 清分管理" [ref=e31] [cursor=pointer]:
+              - /url: "#clearing"
+              - generic [ref=e32] [cursor=pointer]: 
+              - text: 清分管理
+          - listitem [ref=e33]:
+            - link " 财务报表" [ref=e34] [cursor=pointer]:
+              - /url: "#reports"
+              - generic [ref=e35] [cursor=pointer]: 
+              - text: 财务报表
+          - listitem [ref=e36]:
+            - link " 客户管理" [ref=e37] [cursor=pointer]:
+              - /url: "#customers"
+              - generic [ref=e38] [cursor=pointer]: 
+              - text: 客户管理
+    - main [ref=e39]:
+      - text:  +                
+      - generic [ref=e40]:
+        - generic [ref=e41]:
+          - heading " 订单管理" [level=1] [ref=e42]:
+            - generic [ref=e43]: 
+            - text: 订单管理
+          - button "+ 新建订单" [ref=e45] [cursor=pointer]:
+            - generic [ref=e46] [cursor=pointer]: +
+            - text: 新建订单
+        - generic [ref=e47]:
+          - heading "+ 新建货代订单" [level=5] [ref=e49]:
+            - generic [ref=e50]: +
+            - text: 新建货代订单
+          - generic [ref=e52]:
+            - generic [ref=e53]:
+              - generic [ref=e54]:
+                - heading " 基本信息" [level=6] [ref=e55]:
+                  - generic [ref=e56]: 
+                  - text: 基本信息
+                - separator [ref=e57]
+              - generic [ref=e58]:
+                - generic [ref=e59]: 订单号
+                - textbox [ref=e60]: ORD20250916752216
+              - generic [ref=e61]:
+                - generic [ref=e62]: 客户名称 *
+                - combobox [ref=e63]:
+                  - option "请选择客户" [selected]
+                  - option "华为技术有限公司 (制造业)"
+                  - option "阿里巴巴集团 (电商)"
+                  - option "比亚迪股份 (汽车)"
+                  - option "海康威视 (安防)"
+                  - option "小米科技 (电子)"
+              - generic [ref=e64]:
+                - generic [ref=e65]: 业务类型 *
+                - combobox [ref=e66]:
+                  - option "请选择业务类型" [selected]
+                  - option "海运"
+                  - option "空运"
+                  - option "陆运"
+                  - option "铁运"
+                  - option "多式联运"
+            - generic [ref=e67]:
+              - generic [ref=e68]:
+                - heading " 运输信息" [level=6] [ref=e69]:
+                  - generic [ref=e70]: 
+                  - text: 运输信息
+                - separator [ref=e71]
+              - generic [ref=e72]:
+                - generic [ref=e73]: 起运港/地 *
+                - textbox [ref=e74]
+              - generic [ref=e75]:
+                - generic [ref=e76]: 目的港/地 *
+                - textbox [ref=e77]
+              - generic [ref=e78]:
+                - generic [ref=e79]: 预计开船/起运日期
+                - textbox [ref=e80]
+              - generic [ref=e81]:
+                - generic [ref=e82]: 预计到达日期
+                - textbox [ref=e83]
+            - generic [ref=e84]:
+              - generic [ref=e85]:
+                - heading " 货物信息" [level=6] [ref=e86]:
+                  - generic [ref=e87]: 
+                  - text: 货物信息
+                - separator [ref=e88]
+              - generic [ref=e89]:
+                - generic [ref=e90]: 货物描述
+                - textbox [ref=e91]
+              - generic [ref=e92]:
+                - generic [ref=e93]: 件数
+                - spinbutton [ref=e94]
+              - generic [ref=e95]:
+                - generic [ref=e96]: 重量 (KG)
+                - spinbutton [ref=e97]
+              - generic [ref=e98]:
+                - generic [ref=e99]: 体积 (CBM)
+                - spinbutton [ref=e100]
+            - generic [ref=e102]:
+              - heading " 服务选择" [level=6] [ref=e103]:
+                - generic [ref=e104]: 
+                - text: 服务选择
+              - separator [ref=e105]
+            - generic [ref=e106]:
+              - generic [ref=e107]:
+                - heading " 费用明细" [level=6] [ref=e108]:
+                  - generic [ref=e109]: 
+                  - text: 费用明细
+                - separator [ref=e110]
+              - 'heading "总金额: ¥ 0.00" [level=5] [ref=e113]':
+                - text: "总金额:"
+                - generic [ref=e114]: ¥ 0.00
+            - generic [ref=e116]:
+              - generic [ref=e117]:
+                - button " 计算费用" [ref=e118] [cursor=pointer]:
+                  - generic [ref=e119] [cursor=pointer]: 
+                  - text: 计算费用
+                - button " 保存订单" [ref=e120] [cursor=pointer]:
+                  - generic [ref=e121] [cursor=pointer]: 
+                  - text: 保存订单
+                - button " 提交订单" [ref=e122] [cursor=pointer]:
+                  - generic [ref=e123] [cursor=pointer]: 
+                  - text: 提交订单
+              - button " 取消" [ref=e124] [cursor=pointer]:
+                - generic [ref=e125] [cursor=pointer]: 
+                - text: 取消
+        - generic [ref=e126]:
+          - generic [ref=e127]:
+            - heading " 订单列表" [level=5] [ref=e128]:
+              - generic [ref=e129]: 
+              - text: 订单列表
+            - generic [ref=e130]:
+              - combobox [ref=e131]:
+                - option "全部状态" [selected]
+                - option "待确认"
+                - option "已确认"
+                - option "已发运"
+                - option "已送达"
+                - option "已完成"
+              - button " 刷新" [ref=e132] [cursor=pointer]:
+                - generic [ref=e133] [cursor=pointer]: 
+                - text: 刷新
+          - table [ref=e136]:
+            - rowgroup [ref=e137]:
+              - row "订单号 客户 业务类型 起始地 目的地 金额 状态 创建时间 操作" [ref=e138]:
+                - cell "订单号" [ref=e139]
+                - cell "客户" [ref=e140]
+                - cell "业务类型" [ref=e141]
+                - cell "起始地" [ref=e142]
+                - cell "目的地" [ref=e143]
+                - cell "金额" [ref=e144]
+                - cell "状态" [ref=e145]
+                - cell "创建时间" [ref=e146]
+                - cell "操作" [ref=e147]
+            - rowgroup [ref=e148]:
+              - row "ORD2025750785 华为技术有限公司 铁运 上海 洛杉矶 ¥47,547 已送达 2025/9/15 02:57:59   " [ref=e149]:
+                - cell "ORD2025750785" [ref=e150]:
+                  - code [ref=e151]: ORD2025750785
+                - cell "华为技术有限公司" [ref=e152]
+                - cell "铁运" [ref=e153]:
+                  - generic [ref=e154]: 铁运
+                - cell "上海" [ref=e155]
+                - cell "洛杉矶" [ref=e156]
+                - cell "¥47,547" [ref=e157]:
+                  - strong [ref=e158]: ¥47,547
+                - cell "已送达" [ref=e159]:
+                  - generic [ref=e160]: 已送达
+                - cell "2025/9/15 02:57:59" [ref=e161]
+                - cell "  " [ref=e162]:
+                  - generic [ref=e163]:
+                    - button "" [ref=e164] [cursor=pointer]:
+                      - generic [ref=e165] [cursor=pointer]: 
+                    - button "" [ref=e166] [cursor=pointer]:
+                      - generic [ref=e167] [cursor=pointer]: 
+                    - button "" [disabled]:
+                      - generic: 
+              - row "ORD2025750781 华为技术有限公司 海运 深圳 新加坡 ¥44,096 已发运 2025/9/7 23:50:45   " [ref=e168]:
+                - cell "ORD2025750781" [ref=e169]:
+                  - code [ref=e170]: ORD2025750781
+                - cell "华为技术有限公司" [ref=e171]
+                - cell "海运" [ref=e172]:
+                  - generic [ref=e173]: 海运
+                - cell "深圳" [ref=e174]
+                - cell "新加坡" [ref=e175]
+                - cell "¥44,096" [ref=e176]:
+                  - strong [ref=e177]: ¥44,096
+                - cell "已发运" [ref=e178]:
+                  - generic [ref=e179]: 已发运
+                - cell "2025/9/7 23:50:45" [ref=e180]
+                - cell "  " [ref=e181]:
+                  - generic [ref=e182]:
+                    - button "" [ref=e183] [cursor=pointer]:
+                      - generic [ref=e184] [cursor=pointer]: 
+                    - button "" [ref=e185] [cursor=pointer]:
+                      - generic [ref=e186] [cursor=pointer]: 
+                    - button "" [disabled]:
+                      - generic: 
+              - row "ORD2025750791 阿里巴巴集团 海运 大连 釜山 ¥19,088 已发运 2025/9/7 21:22:33   " [ref=e187]:
+                - cell "ORD2025750791" [ref=e188]:
+                  - code [ref=e189]: ORD2025750791
+                - cell "阿里巴巴集团" [ref=e190]
+                - cell "海运" [ref=e191]:
+                  - generic [ref=e192]: 海运
+                - cell "大连" [ref=e193]
+                - cell "釜山" [ref=e194]
+                - cell "¥19,088" [ref=e195]:
+                  - strong [ref=e196]: ¥19,088
+                - cell "已发运" [ref=e197]:
+                  - generic [ref=e198]: 已发运
+                - cell "2025/9/7 21:22:33" [ref=e199]
+                - cell "  " [ref=e200]:
+                  - generic [ref=e201]:
+                    - button "" [ref=e202] [cursor=pointer]:
+                      - generic [ref=e203] [cursor=pointer]: 
+                    - button "" [ref=e204] [cursor=pointer]:
+                      - generic [ref=e205] [cursor=pointer]: 
+                    - button "" [disabled]:
+                      - generic: 
+              - row "ORD2025750794 小米科技 陆运 广州 新加坡 ¥5,652 已送达 2025/9/5 22:34:11   " [ref=e206]:
+                - cell "ORD2025750794" [ref=e207]:
+                  - code [ref=e208]: ORD2025750794
+                - cell "小米科技" [ref=e209]
+                - cell "陆运" [ref=e210]:
+                  - generic [ref=e211]: 陆运
+                - cell "广州" [ref=e212]
+                - cell "新加坡" [ref=e213]
+                - cell "¥5,652" [ref=e214]:
+                  - strong [ref=e215]: ¥5,652
+                - cell "已送达" [ref=e216]:
+                  - generic [ref=e217]: 已送达
+                - cell "2025/9/5 22:34:11" [ref=e218]
+                - cell "  " [ref=e219]:
+                  - generic [ref=e220]:
+                    - button "" [ref=e221] [cursor=pointer]:
+                      - generic [ref=e222] [cursor=pointer]: 
+                    - button "" [ref=e223] [cursor=pointer]:
+                      - generic [ref=e224] [cursor=pointer]: 
+                    - button "" [disabled]:
+                      - generic: 
+              - row "ORD2025750778 比亚迪股份 空运 青岛 鹿特丹 ¥9,929 待确认 2025/9/5 05:16:11   " [ref=e225]:
+                - cell "ORD2025750778" [ref=e226]:
+                  - code [ref=e227]: ORD2025750778
+                - cell "比亚迪股份" [ref=e228]
+                - cell "空运" [ref=e229]:
+                  - generic [ref=e230]: 空运
+                - cell "青岛" [ref=e231]
+                - cell "鹿特丹" [ref=e232]
+                - cell "¥9,929" [ref=e233]:
+                  - strong [ref=e234]: ¥9,929
+                - cell "待确认" [ref=e235]:
+                  - generic [ref=e236]: 待确认
+                - cell "2025/9/5 05:16:11" [ref=e237]
+                - cell "  " [ref=e238]:
+                  - generic [ref=e239]:
+                    - button "" [ref=e240] [cursor=pointer]:
+                      - generic [ref=e241] [cursor=pointer]: 
+                    - button "" [ref=e242] [cursor=pointer]:
+                      - generic [ref=e243] [cursor=pointer]: 
+                    - button "" [disabled]:
+                      - generic: 
+              - row "ORD2025750780 华为技术有限公司 陆运 宁波 鹿特丹 ¥24,915 已完成 2025/9/3 05:36:31   " [ref=e244]:
+                - cell "ORD2025750780" [ref=e245]:
+                  - code [ref=e246]: ORD2025750780
+                - cell "华为技术有限公司" [ref=e247]
+                - cell "陆运" [ref=e248]:
+                  - generic [ref=e249]: 陆运
+                - cell "宁波" [ref=e250]
+                - cell "鹿特丹" [ref=e251]
+                - cell "¥24,915" [ref=e252]:
+                  - strong [ref=e253]: ¥24,915
+                - cell "已完成" [ref=e254]:
+                  - generic [ref=e255]: 已完成
+                - cell "2025/9/3 05:36:31" [ref=e256]
+                - cell "  " [ref=e257]:
+                  - generic [ref=e258]:
+                    - button "" [ref=e259] [cursor=pointer]:
+                      - generic [ref=e260] [cursor=pointer]: 
+                    - button "" [ref=e261] [cursor=pointer]:
+                      - generic [ref=e262] [cursor=pointer]: 
+                    - button "" [ref=e263] [cursor=pointer]:
+                      - generic [ref=e264] [cursor=pointer]: 
+              - row "ORD2025750788 海康威视 陆运 上海 悉尼 ¥35,542 已送达 2025/8/30 14:10:45   " [ref=e265]:
+                - cell "ORD2025750788" [ref=e266]:
+                  - code [ref=e267]: ORD2025750788
+                - cell "海康威视" [ref=e268]
+                - cell "陆运" [ref=e269]:
+                  - generic [ref=e270]: 陆运
+                - cell "上海" [ref=e271]
+                - cell "悉尼" [ref=e272]
+                - cell "¥35,542" [ref=e273]:
+                  - strong [ref=e274]: ¥35,542
+                - cell "已送达" [ref=e275]:
+                  - generic [ref=e276]: 已送达
+                - cell "2025/8/30 14:10:45" [ref=e277]
+                - cell "  " [ref=e278]:
+                  - generic [ref=e279]:
+                    - button "" [ref=e280] [cursor=pointer]:
+                      - generic [ref=e281] [cursor=pointer]: 
+                    - button "" [ref=e282] [cursor=pointer]:
+                      - generic [ref=e283] [cursor=pointer]: 
+                    - button "" [disabled]:
+                      - generic: 
+              - row "ORD2025750795 小米科技 空运 大连 鹿特丹 ¥45,099 已完成 2025/8/30 10:52:21   " [ref=e284]:
+                - cell "ORD2025750795" [ref=e285]:
+                  - code [ref=e286]: ORD2025750795
+                - cell "小米科技" [ref=e287]
+                - cell "空运" [ref=e288]:
+                  - generic [ref=e289]: 空运
+                - cell "大连" [ref=e290]
+                - cell "鹿特丹" [ref=e291]
+                - cell "¥45,099" [ref=e292]:
+                  - strong [ref=e293]: ¥45,099
+                - cell "已完成" [ref=e294]:
+                  - generic [ref=e295]: 已完成
+                - cell "2025/8/30 10:52:21" [ref=e296]
+                - cell "  " [ref=e297]:
+                  - generic [ref=e298]:
+                    - button "" [ref=e299] [cursor=pointer]:
+                      - generic [ref=e300] [cursor=pointer]: 
+                    - button "" [ref=e301] [cursor=pointer]:
+                      - generic [ref=e302] [cursor=pointer]: 
+                    - button "" [ref=e303] [cursor=pointer]:
+                      - generic [ref=e304] [cursor=pointer]: 
+              - row "ORD2025750777 华为技术有限公司 海运 大连 洛杉矶 ¥19,140 已完成 2025/8/29 10:43:13   " [ref=e305]:
+                - cell "ORD2025750777" [ref=e306]:
+                  - code [ref=e307]: ORD2025750777
+                - cell "华为技术有限公司" [ref=e308]
+                - cell "海运" [ref=e309]:
+                  - generic [ref=e310]: 海运
+                - cell "大连" [ref=e311]
+                - cell "洛杉矶" [ref=e312]
+                - cell "¥19,140" [ref=e313]:
+                  - strong [ref=e314]: ¥19,140
+                - cell "已完成" [ref=e315]:
+                  - generic [ref=e316]: 已完成
+                - cell "2025/8/29 10:43:13" [ref=e317]
+                - cell "  " [ref=e318]:
+                  - generic [ref=e319]:
+                    - button "" [ref=e320] [cursor=pointer]:
+                      - generic [ref=e321] [cursor=pointer]: 
+                    - button "" [ref=e322] [cursor=pointer]:
+                      - generic [ref=e323] [cursor=pointer]: 
+                    - button "" [ref=e324] [cursor=pointer]:
+                      - generic [ref=e325] [cursor=pointer]: 
+              - row "ORD2025750783 华为技术有限公司 铁运 大连 悉尼 ¥33,879 已送达 2025/8/27 20:41:25   " [ref=e326]:
+                - cell "ORD2025750783" [ref=e327]:
+                  - code [ref=e328]: ORD2025750783
+                - cell "华为技术有限公司" [ref=e329]
+                - cell "铁运" [ref=e330]:
+                  - generic [ref=e331]: 铁运
+                - cell "大连" [ref=e332]
+                - cell "悉尼" [ref=e333]
+                - cell "¥33,879" [ref=e334]:
+                  - strong [ref=e335]: ¥33,879
+                - cell "已送达" [ref=e336]:
+                  - generic [ref=e337]: 已送达
+                - cell "2025/8/27 20:41:25" [ref=e338]
+                - cell "  " [ref=e339]:
+                  - generic [ref=e340]:
+                    - button "" [ref=e341] [cursor=pointer]:
+                      - generic [ref=e342] [cursor=pointer]: 
+                    - button "" [ref=e343] [cursor=pointer]:
+                      - generic [ref=e344] [cursor=pointer]: 
+                    - button "" [disabled]:
+                      - generic: 
+              - row "ORD2025750784 比亚迪股份 陆运 上海 釜山 ¥26,792 待确认 2025/8/26 17:37:06   " [ref=e345]:
+                - cell "ORD2025750784" [ref=e346]:
+                  - code [ref=e347]: ORD2025750784
+                - cell "比亚迪股份" [ref=e348]
+                - cell "陆运" [ref=e349]:
+                  - generic [ref=e350]: 陆运
+                - cell "上海" [ref=e351]
+                - cell "釜山" [ref=e352]
+                - cell "¥26,792" [ref=e353]:
+                  - strong [ref=e354]: ¥26,792
+                - cell "待确认" [ref=e355]:
+                  - generic [ref=e356]: 待确认
+                - cell "2025/8/26 17:37:06" [ref=e357]
+                - cell "  " [ref=e358]:
+                  - generic [ref=e359]:
+                    - button "" [ref=e360] [cursor=pointer]:
+                      - generic [ref=e361] [cursor=pointer]: 
+                    - button "" [ref=e362] [cursor=pointer]:
+                      - generic [ref=e363] [cursor=pointer]: 
+                    - button "" [disabled]:
+                      - generic: 
+              - row "ORD2025750789 比亚迪股份 陆运 天津 纽约 ¥28,845 已确认 2025/8/26 07:23:40   " [ref=e364]:
+                - cell "ORD2025750789" [ref=e365]:
+                  - code [ref=e366]: ORD2025750789
+                - cell "比亚迪股份" [ref=e367]
+                - cell "陆运" [ref=e368]:
+                  - generic [ref=e369]: 陆运
+                - cell "天津" [ref=e370]
+                - cell "纽约" [ref=e371]
+                - cell "¥28,845" [ref=e372]:
+                  - strong [ref=e373]: ¥28,845
+                - cell "已确认" [ref=e374]:
+                  - generic [ref=e375]: 已确认
+                - cell "2025/8/26 07:23:40" [ref=e376]
+                - cell "  " [ref=e377]:
+                  - generic [ref=e378]:
+                    - button "" [ref=e379] [cursor=pointer]:
+                      - generic [ref=e380] [cursor=pointer]: 
+                    - button "" [ref=e381] [cursor=pointer]:
+                      - generic [ref=e382] [cursor=pointer]: 
+                    - button "" [disabled]:
+                      - generic: 
+              - row "ORD2025750792 小米科技 铁运 大连 纽约 ¥7,285 已送达 2025/8/25 10:27:30   " [ref=e383]:
+                - cell "ORD2025750792" [ref=e384]:
+                  - code [ref=e385]: ORD2025750792
+                - cell "小米科技" [ref=e386]
+                - cell "铁运" [ref=e387]:
+                  - generic [ref=e388]: 铁运
+                - cell "大连" [ref=e389]
+                - cell "纽约" [ref=e390]
+                - cell "¥7,285" [ref=e391]:
+                  - strong [ref=e392]: ¥7,285
+                - cell "已送达" [ref=e393]:
+                  - generic [ref=e394]: 已送达
+                - cell "2025/8/25 10:27:30" [ref=e395]
+                - cell "  " [ref=e396]:
+                  - generic [ref=e397]:
+                    - button "" [ref=e398] [cursor=pointer]:
+                      - generic [ref=e399] [cursor=pointer]: 
+                    - button "" [ref=e400] [cursor=pointer]:
+                      - generic [ref=e401] [cursor=pointer]: 
+                    - button "" [disabled]:
+                      - generic: 
+              - row "ORD2025750787 华为技术有限公司 陆运 天津 新加坡 ¥13,221 待确认 2025/8/25 10:21:48   " [ref=e402]:
+                - cell "ORD2025750787" [ref=e403]:
+                  - code [ref=e404]: ORD2025750787
+                - cell "华为技术有限公司" [ref=e405]
+                - cell "陆运" [ref=e406]:
+                  - generic [ref=e407]: 陆运
+                - cell "天津" [ref=e408]
+                - cell "新加坡" [ref=e409]
+                - cell "¥13,221" [ref=e410]:
+                  - strong [ref=e411]: ¥13,221
+                - cell "待确认" [ref=e412]:
+                  - generic [ref=e413]: 待确认
+                - cell "2025/8/25 10:21:48" [ref=e414]
+                - cell "  " [ref=e415]:
+                  - generic [ref=e416]:
+                    - button "" [ref=e417] [cursor=pointer]:
+                      - generic [ref=e418] [cursor=pointer]: 
+                    - button "" [ref=e419] [cursor=pointer]:
+                      - generic [ref=e420] [cursor=pointer]: 
+                    - button "" [disabled]:
+                      - generic: 
+              - row "ORD2025750790 海康威视 铁运 青岛 洛杉矶 ¥41,484 待确认 2025/8/24 23:35:38   " [ref=e421]:
+                - cell "ORD2025750790" [ref=e422]:
+                  - code [ref=e423]: ORD2025750790
+                - cell "海康威视" [ref=e424]
+                - cell "铁运" [ref=e425]:
+                  - generic [ref=e426]: 铁运
+                - cell "青岛" [ref=e427]
+                - cell "洛杉矶" [ref=e428]
+                - cell "¥41,484" [ref=e429]:
+                  - strong [ref=e430]: ¥41,484
+                - cell "待确认" [ref=e431]:
+                  - generic [ref=e432]: 待确认
+                - cell "2025/8/24 23:35:38" [ref=e433]
+                - cell "  " [ref=e434]:
+                  - generic [ref=e435]:
+                    - button "" [ref=e436] [cursor=pointer]:
+                      - generic [ref=e437] [cursor=pointer]: 
+                    - button "" [ref=e438] [cursor=pointer]:
+                      - generic [ref=e439] [cursor=pointer]: 
+                    - button "" [disabled]:
+                      - generic: 
+              - row "ORD2025750779 海康威视 海运 广州 鹿特丹 ¥6,384 已完成 2025/8/24 13:24:21   " [ref=e440]:
+                - cell "ORD2025750779" [ref=e441]:
+                  - code [ref=e442]: ORD2025750779
+                - cell "海康威视" [ref=e443]
+                - cell "海运" [ref=e444]:
+                  - generic [ref=e445]: 海运
+                - cell "广州" [ref=e446]
+                - cell "鹿特丹" [ref=e447]
+                - cell "¥6,384" [ref=e448]:
+                  - strong [ref=e449]: ¥6,384
+                - cell "已完成" [ref=e450]:
+                  - generic [ref=e451]: 已完成
+                - cell "2025/8/24 13:24:21" [ref=e452]
+                - cell "  " [ref=e453]:
+                  - generic [ref=e454]:
+                    - button "" [ref=e455] [cursor=pointer]:
+                      - generic [ref=e456] [cursor=pointer]: 
+                    - button "" [ref=e457] [cursor=pointer]:
+                      - generic [ref=e458] [cursor=pointer]: 
+                    - button "" [ref=e459] [cursor=pointer]:
+                      - generic [ref=e460] [cursor=pointer]: 
+              - row "ORD2025750786 华为技术有限公司 空运 宁波 新加坡 ¥26,010 已确认 2025/8/22 22:12:53   " [ref=e461]:
+                - cell "ORD2025750786" [ref=e462]:
+                  - code [ref=e463]: ORD2025750786
+                - cell "华为技术有限公司" [ref=e464]
+                - cell "空运" [ref=e465]:
+                  - generic [ref=e466]: 空运
+                - cell "宁波" [ref=e467]
+                - cell "新加坡" [ref=e468]
+                - cell "¥26,010" [ref=e469]:
+                  - strong [ref=e470]: ¥26,010
+                - cell "已确认" [ref=e471]:
+                  - generic [ref=e472]: 已确认
+                - cell "2025/8/22 22:12:53" [ref=e473]
+                - cell "  " [ref=e474]:
+                  - generic [ref=e475]:
+                    - button "" [ref=e476] [cursor=pointer]:
+                      - generic [ref=e477] [cursor=pointer]: 
+                    - button "" [ref=e478] [cursor=pointer]:
+                      - generic [ref=e479] [cursor=pointer]: 
+                    - button "" [disabled]:
+                      - generic: 
+              - row "ORD2025750796 比亚迪股份 铁运 广州 鹿特丹 ¥17,357 待确认 2025/8/20 11:52:10   " [ref=e480]:
+                - cell "ORD2025750796" [ref=e481]:
+                  - code [ref=e482]: ORD2025750796
+                - cell "比亚迪股份" [ref=e483]
+                - cell "铁运" [ref=e484]:
+                  - generic [ref=e485]: 铁运
+                - cell "广州" [ref=e486]
+                - cell "鹿特丹" [ref=e487]
+                - cell "¥17,357" [ref=e488]:
+                  - strong [ref=e489]: ¥17,357
+                - cell "待确认" [ref=e490]:
+                  - generic [ref=e491]: 待确认
+                - cell "2025/8/20 11:52:10" [ref=e492]
+                - cell "  " [ref=e493]:
+                  - generic [ref=e494]:
+                    - button "" [ref=e495] [cursor=pointer]:
+                      - generic [ref=e496] [cursor=pointer]: 
+                    - button "" [ref=e497] [cursor=pointer]:
+                      - generic [ref=e498] [cursor=pointer]: 
+                    - button "" [disabled]:
+                      - generic: 
+              - row "ORD2025750793 华为技术有限公司 海运 广州 鹿特丹 ¥30,179 已发运 2025/8/18 17:16:39   " [ref=e499]:
+                - cell "ORD2025750793" [ref=e500]:
+                  - code [ref=e501]: ORD2025750793
+                - cell "华为技术有限公司" [ref=e502]
+                - cell "海运" [ref=e503]:
+                  - generic [ref=e504]: 海运
+                - cell "广州" [ref=e505]
+                - cell "鹿特丹" [ref=e506]
+                - cell "¥30,179" [ref=e507]:
+                  - strong [ref=e508]: ¥30,179
+                - cell "已发运" [ref=e509]:
+                  - generic [ref=e510]: 已发运
+                - cell "2025/8/18 17:16:39" [ref=e511]
+                - cell "  " [ref=e512]:
+                  - generic [ref=e513]:
+                    - button "" [ref=e514] [cursor=pointer]:
+                      - generic [ref=e515] [cursor=pointer]: 
+                    - button "" [ref=e516] [cursor=pointer]:
+                      - generic [ref=e517] [cursor=pointer]: 
+                    - button "" [disabled]:
+                      - generic: 
+              - row "ORD2025750782 小米科技 空运 深圳 汉堡 ¥47,125 已确认 2025/8/18 09:19:34   " [ref=e518]:
+                - cell "ORD2025750782" [ref=e519]:
+                  - code [ref=e520]: ORD2025750782
+                - cell "小米科技" [ref=e521]
+                - cell "空运" [ref=e522]:
+                  - generic [ref=e523]: 空运
+                - cell "深圳" [ref=e524]
+                - cell "汉堡" [ref=e525]
+                - cell "¥47,125" [ref=e526]:
+                  - strong [ref=e527]: ¥47,125
+                - cell "已确认" [ref=e528]:
+                  - generic [ref=e529]: 已确认
+                - cell "2025/8/18 09:19:34" [ref=e530]
+                - cell "  " [ref=e531]:
+                  - generic [ref=e532]:
+                    - button "" [ref=e533] [cursor=pointer]:
+                      - generic [ref=e534] [cursor=pointer]: 
+                    - button "" [ref=e535] [cursor=pointer]:
+                      - generic [ref=e536] [cursor=pointer]: 
+                    - button "" [disabled]:
+                      - generic: 
+      - text:             +                                                      +   
+  - text:  
+```

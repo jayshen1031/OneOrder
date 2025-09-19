@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>通知系统调试</title>
+</head>
+<body>
+    <h1>通知系统调试</h1>
+    <button onclick="clearNotifications()">清空本地通知数据</button>
+    <button onclick="checkNotifications()">检查本地通知数据</button>
+    <button onclick="testPage()">测试主页面</button>
+    
+    <div id="output"></div>
+    
+    <script>
+        function clearNotifications() {
+            localStorage.removeItem('oneorder_notifications');
+            document.getElementById('output').innerHTML = '<p>已清空本地通知数据</p>';
+        }
+        
+        function checkNotifications() {
+            const stored = localStorage.getItem('oneorder_notifications');
+            const output = document.getElementById('output');
+            if (stored) {
+                try {
+                    const data = JSON.parse(stored);
+                    output.innerHTML = '<h3>本地通知数据:</h3><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                } catch (error) {
+                    output.innerHTML = '<p>解析通知数据失败: ' + error.message + '</p>';
+                }
+            } else {
+                output.innerHTML = '<p>没有本地通知数据</p>';
+            }
+        }
+        
+        function testPage() {
+            window.open('/api/freight-order.html', '_blank');
+        }
+    </script>
+</body>
+</html>

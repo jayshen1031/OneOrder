@@ -1,0 +1,91 @@
+全局费用编码,中文费用名称,英文费用名称,助记符,默认币种,默认应/免税,可选开票类型,所属费用分类,对应的服务,对应的供应商类型,对应的财务科目,需提供的单据,科目说明,收付方向,原系统编码,科目说明英文
+FCL001,海运费,Ocean Freight,OF,USD,应税,增值税专票,跨境运输费用,MBL,船公司,营业收入,提单/运单,集装箱海上运输基本运费，按柜型收取,应收,SEAN079,Basic ocean freight for container transportation charged by container type
+FCL002,燃油附加费,Bunker Adjustment Factor,BAF,USD,应税,增值税专票,跨境运输费用,MBL,船公司,营业收入,燃油附加费通知,因燃油价格波动产生的附加费用,应收,"SEAN0923,SEA01001",Additional charge due to bunker fuel price fluctuations
+FCL003,码头操作费(起运港),Origin Terminal Handling Charge,OTHC,CNY,应税,增值税专票,码头/港口/场站费用,内装,码头/场站,营业成本,码头费用清单,起运港码头装卸及相关操作费用,应付,"SEA01002,55119",Terminal handling charges at origin port for loading operations
+FCL004,码头操作费(目的港),Destination Terminal Handling Charge,DTHC,USD,应税,增值税专票,码头/港口/场站费用,换单,码头/场站,营业收入,码头费用清单,目的港码头卸货及相关操作费用,应收,"SEAN074,55119",Terminal handling charges at destination port for discharge operations
+FCL005,报关费,Customs Declaration Fee,CDF,CNY,应税,增值税专票,关检费用,报关,报关行,营业成本,报关委托书,出口报关代理服务费,应付,CS001001,Export customs declaration agency service fee
+FCL006,拖车费,Trucking Fee,TKF,CNY,应税,增值税专票,境内运输费用,拖车,运输公司,营业成本,运输合同,货物从发货地到港口的陆路运输费,应付,"SEA01087,TR001012",Inland trucking from shipper to port
+FCL007,仓储费,Warehouse Storage Fee,WSF,CNY,应税,增值税专票,仓储费用,仓储,仓储公司,营业成本,仓储单据,货物在仓库存储期间产生的费用,应付,"WMS01005,55129",Storage charges for goods in warehouse
+FCL008,装箱费,Container Loading Fee,CLF,CNY,应税,增值税专票,装卸费用,内装,装卸公司,营业成本,装箱单据,货物装入集装箱的作业费用,应付,SEAN086,Fee for loading cargo into containers
+FCL009,单证费,Documentation Fee,DOC,CNY,应税,增值税专票,单证文件费用,MBL,货代公司,营业收入,相关单证,制作和处理各类出口单证文件费用,应收,"OP009001,SEA01006",Fee for preparing and processing export documentation
+FCL010,保险费,Marine Insurance Premium,INS,CNY,应税,增值税专票,保险费用,保险,保险公司,营业成本,保险单,货物运输保险费,应付,OPN066,Marine cargo insurance premium
+FCL011,VGM费,Verified Gross Mass Fee,VGM,CNY,应税,增值税专票,单证文件费用,内装,码头/场站,营业成本,VGM证书,集装箱核实总重量申报费,应付,55914,Fee for container verified gross mass declaration
+FCL012,舱单费,Manifest Fee,MNF,USD,应税,增值税专票,单证文件费用,舱单,船公司,营业成本,舱单文件,向海关申报舱单信息费用,应付,CS001012,Fee for manifest declaration to customs
+FCL013,AMS费,Automated Manifest System Fee,AMS,USD,应税,增值税专票,单证文件费用,舱单,船公司,营业成本,AMS申报单,美国自动舱单系统申报费,应付,SEA01109,Fee for US Automated Manifest System filing
+FCL014,换单费,Bill of Lading Release Fee,D/O,USD,应税,增值税专票,单证文件费用,换单,船代,营业收入,换单凭证,目的港换取提货单费用,应收,OP001002,Fee for exchanging B/L for delivery order at destination
+FCL015,电放费,Telex Release Fee,TLX,USD,应税,增值税专票,单证文件费用,MBL,船公司,营业收入,电放通知,提单电放服务费,应收,SEA01005,Fee for telex release of bill of lading
+FCL016,订舱费,Booking Fee,BKG,CNY,应税,增值税专票,跨境运输费用,订舱,船公司,营业成本,订舱确认书,向船公司申请舱位费用,应付,SEAN090,Fee for booking container space with shipping line
+FCL017,改单费,Bill Amendment Fee,AMD,CNY,应税,增值税专票,单证文件费用,MBL,船公司,营业成本,改单申请,修改提单信息费用,应付,CS001007,Fee for amending bill of lading information
+FCL018,超期箱使费,Container Demurrage,DEM,USD,应税,增值税专票,集装箱费用,换单,船公司,营业成本,超期费通知,集装箱超过免费使用期产生的费用,应付,TR001013,Charges for container usage beyond free time
+FCL019,提箱费,Container Pick-up Fee,CPU,CNY,应税,增值税专票,集装箱费用,内装,码头/场站,营业成本,设备交接单,从堆场提取空箱费用,应付,55161,Fee for picking up empty container from yard
+FCL020,还箱费,Container Return Fee,CRT,CNY,应税,增值税专票,集装箱费用,拖车,码头/场站,营业成本,设备交接单,重箱还场费用,应付,655239,Fee for returning loaded container to yard
+FCL021,铅封费,Container Seal Fee,SEAL,CNY,应税,增值税专票,集装箱费用,内装,供应商,营业成本,铅封凭证,集装箱铅封费用,应付,CS001024,Fee for container sealing
+FCL022,设备交接单费,Equipment Interchange Receipt Fee,EIR,CNY,应税,增值税专票,集装箱费用,内装,码头/场站,营业成本,设备交接单,集装箱设备交接单据费,应付,CSN052,Fee for equipment interchange receipt
+FCL023,危险品申报费,Dangerous Goods Declaration Fee,DGR,CNY,应税,增值税专票,单证文件费用,内装,海事部门,营业成本,危申报告,危险品货物申报费用,应付,SEA01066,Fee for dangerous goods declaration
+FCL024,港杂费,Port Miscellaneous Charges,PMC,CNY,应税,增值税专票,码头/港口/场站费用,内装,码头/场站,营业成本,港务费清单,港口各项杂费,应付,SEA01003,Various port charges and fees
+FCL025,安保费,Security Fee,SEC,USD,应税,增值税专票,码头/港口/场站费用,MBL,码头/场站,营业成本,安保费通知,港口安全设施费,应付,55061,Port security facility charges
+FCL026,快递费,Courier Fee,EXP,CNY,应税,增值税专票,境内运输费用,MBL,快递公司,营业成本,快递单,文件快递费用,应付,OP001009,Fee for courier service of documents
+FCL027,过磅费,Weighing Fee,WGH,CNY,应税,增值税专票,增值服务费用,内装,码头/场站,营业成本,过磅单,货物称重服务费,应付,OPN056,Fee for cargo weighing service
+FCL028,装卸费,Loading/Discharging Fee,L/D,CNY,应税,增值税专票,装卸费用,内装,装卸公司,营业成本,装卸单据,货物装卸作业费,应付,WMS01004,Fee for loading and discharging cargo
+FCL029,熏蒸费,Fumigation Fee,FUM,CNY,应税,增值税专票,增值服务费用,内装,检疫部门,营业成本,熏蒸证书,木质包装熏蒸处理费,应付,CQ001002,Fee for fumigation treatment of wooden packaging
+FCL030,检验费,Inspection Fee,INS,CNY,应税,增值税专票,增值服务费用,内装,检验机构,营业成本,检验证书,货物检验服务费,应付,OPN058,Fee for cargo inspection services
+FCL031,代垫手续费,Agency Handling Fee,AHF,CNY,应税,增值税专票,关检费用,报关,货代公司,营业收入,代垫清单,代垫各项费用的手续费,应收,55123,Handling fee for advance payments
+FCL032,运抵费,Arrival Notice Fee,ARR,CNY,应税,增值税专票,单证文件费用,内装,码头/场站,营业成本,运抵报告,货物运抵港口申报费,应付,SEA01031,Fee for cargo arrival notification
+FCL033,港务费,Port Dues,PRT,CNY,应税,增值税专票,码头/港口/场站费用,内装,港务局,营业成本,港务费通知,港务管理费用,应付,CSN051,Port authority management fees
+FCL034,信息费,Information Fee,INF,CNY,应税,增值税专票,单证文件费用,舱单,船代,营业成本,信息传输单,各类信息传输费用,应付,0386,Fee for various information transmission
+FCL035,条码费,Barcode Fee,BCF,CNY,应税,增值税专票,单证文件费用,内装,码头/场站,营业成本,条码标签,集装箱条码标识费,应付,55269,Fee for container barcode labeling
+FCL036,舱单录入费,Manifest Entry Fee,MEF,CNY,应税,增值税专票,单证文件费用,舱单,货代公司,营业成本,舱单录入单,舱单信息录入费,应付,55831,Fee for manifest information entry
+FCL037,出入库费,Warehouse In/Out Fee,W/O,CNY,应税,增值税专票,仓储费用,仓储,仓储公司,营业成本,出入库单,货物出入库作业费,应付,WMS01001,Fee for warehouse in/out operations
+FCL038,叉车费,Forklift Fee,FLT,CNY,应税,增值税专票,设备使用及租赁费用,内装,设备租赁公司,营业成本,叉车使用单,叉车使用费,应付,WMS01003,Fee for forklift usage
+FCL039,吊机费,Crane Fee,CRN,CNY,应税,增值税专票,码头/港口/场站费用,内装,码头/场站,营业成本,吊机使用单,起重机使用费,应付,SEA01057,Fee for crane usage
+FCL040,托盘费,Pallet Fee,PLT,CNY,应税,增值税专票,增值服务费用,托盘,托盘供应商,营业成本,托盘单据,托盘使用或购买费,应付,WMS01013,Fee for pallet usage or purchase
+FCL041,包装费,Packing Fee,PKG,CNY,应税,增值税专票,增值服务费用,内装,包装公司,营业成本,包装单据,货物包装服务费,应付,0326,Fee for cargo packing service
+FCL042,加固费,Securing Fee,SEC,CNY,应税,增值税专票,增值服务费用,加固,加固服务商,营业成本,加固方案,货物加固服务费,应付,SEAN097,Fee for cargo securing service
+FCL043,贴标费,Labeling Fee,LBL,CNY,应税,增值税专票,增值服务费用,贴唛,标签供应商,营业成本,标签清单,货物贴标服务费,应付,55759,Fee for cargo labeling service
+FCL044,人工费,Labor Cost,LBR,CNY,应税,增值税专票,人工费用,内装,自有员工,营业成本,工时记录,现场作业人工费,应付,OP001012,Labor cost for on-site operations
+FCL045,多点提/送费,Multiple Pick-up/Delivery Fee,MPD,CNY,应税,增值税专票,境内运输费用,拖车,运输公司,营业成本,运输协议,多点提货或送货附加费,应付,TR001014,Additional fee for multiple pick-up or delivery points
+FCL046,待时费,Waiting Time Fee,WTF,CNY,应税,增值税专票,境内运输费用,拖车,运输公司,营业成本,待时记录,车辆等待时间费用,应付,TR001010,Fee for vehicle waiting time
+FCL047,停车费,Parking Fee,PK,CNY,应税,增值税专票,境内运输费用,拖车,停车场,营业成本,停车票据,车辆停车费用,应付,SEA01119,Vehicle parking charges
+FCL048,过路过桥费,Toll Fee,TOLL,CNY,应税,增值税专票,境内运输费用,拖车,收费站,营业成本,过路费票据,车辆通行费,应付,TRN081,Vehicle toll charges
+FCL049,油费,Fuel Cost,FUEL,CNY,应税,增值税专票,境内运输费用,拖车,加油站,营业成本,加油票据,车辆燃油费用,应付,TRN082,Vehicle fuel cost
+FCL050,落箱费,Container Discharge Fee,CDF,CNY,应税,增值税专票,码头/港口/场站费用,换单,码头/场站,营业成本,落箱通知,集装箱卸船落场费,应付,55307,Fee for discharging container from vessel to yard
+FCL051,堆存费,Storage Fee,STG,CNY,应税,增值税专票,码头/港口/场站费用,仓储,码头/场站,营业成本,堆存单据,货物在码头堆场存储费,应付,WMSN084,Fee for cargo storage at terminal yard
+FCL052,疏港费,Port Clearance Fee,PCF,CNY,应税,增值税专票,码头/港口/场站费用,拖车,码头/场站,营业成本,疏港通知,货物离港疏散费,应付,SEA01075,Fee for cargo clearance from port
+FCL053,场站费,Container Yard Fee,CYF,CNY,应税,增值税专票,码头/港口/场站费用,内装,场站,营业成本,场站服务单,集装箱场站服务费,应付,WMS01012,Container yard service charges
+FCL054,出口服务费,Export Service Fee,ESF,CNY,应税,增值税专票,跨境运输费用,MBL,货代公司,营业收入,服务协议,出口综合服务费,应收,55258,Comprehensive export service fee
+FCL055,代理费,Agency Fee,AGF,CNY,应税,增值税专票,跨境运输费用,MBL,代理公司,营业成本,代理协议,各类代理服务费,应付,OP009006,Various agency service fees
+FCL056,银行手续费,Bank Handling Fee,BHF,CNY,应税,增值税专票,特殊科目,MBL,银行,营业成本,银行单据,银行业务手续费,应付,HY202303,Bank transaction handling fees
+FCL057,制单费,Document Preparation Fee,DPF,CNY,应税,增值税专票,单证文件费用,MBL,货代公司,营业收入,制单清单,各类单据制作费,应收,OP001018,Fee for document preparation
+FCL058,综合服务费,Comprehensive Service Fee,CSF,CNY,应税,增值税专票,特殊科目,MBL,货代公司,营业收入,服务清单,综合服务打包费,应收,55846,Comprehensive service package fee
+FCL059,清关费,Customs Clearance Fee,CCF,USD,应税,增值税专票,关检费用,清关,报关行,营业收入,清关单据,目的港清关服务费,应收,CS001034,Destination customs clearance service fee
+FCL060,派送费,Delivery Fee,DEL,USD,应税,增值税专票,境内运输费用,派送,运输公司,营业收入,派送单据,目的港货物派送费,应收,0039,Delivery fee at destination
+FCL061,关税,Customs Duty,CD,USD,免税,无,税费,清关,海关,代垫费用,完税证明,进口关税,代垫,CS001005,Import customs duty
+FCL062,增值税,Value Added Tax,VAT,CNY,免税,无,税费,清关,税务局,代垫费用,完税证明,进口增值税,代垫,CS001014,Import value added tax
+FCL063,租箱费,Container Rental Fee,CRF,USD,应税,增值税专票,集装箱费用,MBL,船公司,营业成本,租箱协议,集装箱租赁费,应付,55848,Container rental charges
+FCL064,洗箱费,Container Cleaning Fee,CCF,CNY,应税,增值税专票,集装箱费用,内装,清洗公司,营业成本,洗箱单据,集装箱清洗费,应付,SEAN076,Container cleaning charges
+FCL065,修箱费,Container Repair Fee,CRF,CNY,应税,增值税专票,集装箱费用,内装,修理厂,营业成本,修箱报告,集装箱维修费,应付,WMSN083,Container repair charges
+FCL066,拆箱费,Container Stripping Fee,CSF,USD,应税,增值税专票,装卸费用,换单,装卸公司,营业收入,拆箱单据,目的港拆箱作业费,应收,WMSN089,Fee for container stripping at destination
+FCL067,理货费,Tally Fee,TLF,CNY,应税,增值税专票,装卸费用,内装,理货公司,营业成本,理货单据,货物理货服务费,应付,WMS01002,Tally service charges
+FCL068,搬倒费,Restow Fee,RSF,CNY,应税,增值税专票,码头/港口/场站费用,内装,码头/场站,营业成本,搬倒通知,集装箱搬倒费,应付,WMSN088,Container restowing charges
+FCL069,安检费,Security Inspection Fee,SIF,CNY,应税,增值税专票,码头/港口/场站费用,内装,安检部门,营业成本,安检报告,货物安全检查费,应付,WMS01009,Cargo security inspection fee
+FCL070,三检费,Three Inspection Fee,TIF,CNY,应税,增值税专票,码头/港口/场站费用,内装,检验检疫,营业成本,检验报告,商检/动检/植检费用,应付,SEAN075,Commodity/Animal/Plant inspection fees
+FCL071,磁检费,Magnetic Test Fee,MTF,CNY,应税,增值税专票,码头/港口/场站费用,内装,检测机构,营业成本,磁检报告,货物磁性检测费,应付,655226,Magnetic test fee for cargo
+FCL072,转关费,Transit Fee,TRF,CNY,应税,增值税专票,关检费用,报关,报关行,营业成本,转关单据,转关运输费用,应付,CS001028,Transit transportation charges
+FCL073,报关单费,Customs Declaration Form Fee,CDF,CNY,应税,增值税专票,关检费用,报关,海关,营业成本,报关单,报关单工本费,应付,CSN032,Customs declaration form charges
+FCL074,查验费,Customs Examination Fee,CEF,CNY,应税,增值税专票,关检费用,报关,报关行,营业成本,查验通知,海关查验服务费,应付,55825,Customs examination service fee
+FCL075,滞报金,Late Declaration Fine,LDF,CNY,免税,无,关检费用,报关,海关,营业成本,滞报通知,报关单超期罚金,应付,CS001015,Fine for late customs declaration
+FCL076,运抵更改费,Arrival Amendment Fee,AAF,CNY,应税,增值税专票,单证文件费用,内装,码头/场站,营业成本,更改通知,运抵信息修改费,应付,655237,Fee for amending arrival information
+FCL077,指箱号费,Container Nomination Fee,CNF,CNY,应税,增值税专票,集装箱费用,订舱,船公司,营业成本,指箱通知,指定集装箱号费,应付,SEAN095,Fee for container number nomination
+FCL078,预提费,Pre-pulling Fee,PPF,CNY,应税,增值税专票,境内运输费用,拖车,运输公司,营业成本,预提通知,提前提箱费用,应付,55277,Fee for early container pick-up
+FCL079,放箱费,Gate-out Fee,GOF,CNY,应税,增值税专票,集装箱费用,内装,码头/场站,营业成本,放箱单据,空箱放行费,应付,0061,Empty container gate-out fee
+FCL080,进港费,Port Entry Fee,PEF,CNY,应税,增值税专票,码头/港口/场站费用,内装,港务局,营业成本,进港通知,货物进港费用,应付,655245,Cargo port entry charges
+FCL081,操作费,Handling Fee,HDF,CNY,应税,增值税专票,跨境运输费用,内装,货代公司,营业收入,操作清单,货物操作服务费,应收,OP009004,Cargo handling service fee
+FCL082,改配费,Space Change Fee,SCF,CNY,应税,增值税专票,跨境运输费用,订舱,船公司,营业成本,改配通知,舱位变更费用,应付,655236,Fee for booking space change
+FCL083,加急费,Rush Fee,RSH,CNY,应税,增值税专票,码头/港口/场站费用,内装,服务商,营业成本,加急通知,加急处理费用,应付,OPN052,Rush processing charges
+FCL084,箱单费,Container List Fee,CLF,CNY,应税,增值税专票,单证文件费用,内装,货代公司,营业收入,箱单文件,装箱单制作费,应收,55273,Container packing list preparation fee
+FCL085,HBL费,House Bill of Lading Fee,HBL,CNY,应税,增值税专票,单证文件费用,HBL,货代公司,营业收入,HBL单据,货代提单制作费,应收,55215,House bill of lading preparation fee
+FCL086,转栈费,Transfer Fee,TFF,CNY,应税,增值税专票,码头/港口/场站费用,内装,码头/场站,营业成本,转栈通知,货物转栈费用,应付,SEA01074,Cargo transfer charges
+FCL087,底盘费,Chassis Fee,CHF,CNY,应税,增值税专票,境内运输费用,拖车,运输公司,营业成本,底盘使用单,拖车底盘使用费,应付,550023,Truck chassis usage fee
+FCL088,危标费,Dangerous Goods Label Fee,DGL,CNY,应税,增值税专票,增值服务费用,内装,标签供应商,营业成本,危标清单,危险品标识费,应付,55271,Dangerous goods labeling fee
+FCL089,材料费,Material Cost,MAT,CNY,应税,增值税专票,增值服务费用,内装,材料供应商,营业成本,材料清单,包装材料费用,应付,OP001019,Packaging material cost
+FCL090,监管费,Supervision Fee,SPF,CNY,应税,增值税专票,关检费用,报关,海关,营业成本,监管通知,海关监管服务费,应付,55154,Customs supervision service fee

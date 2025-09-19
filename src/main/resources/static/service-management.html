@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>服务管理 - OneOrder</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .service-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+        .service-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+        .service-card.active {
+            border-left-color: #28a745;
+        }
+        .service-card.inactive {
+            border-left-color: #dc3545;
+            opacity: 0.7;
+        }
+        .service-category {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .service-type-badge {
+            font-size: 0.8em;
+            padding: 0.25rem 0.5rem;
+        }
+        .search-toolbar {
+            background: #f8f9fc;
+            border-radius: 0.35rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .stats-grid {
+            margin-bottom: 2rem;
+        }
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+        }
+        .service-form-section {
+            background: #f8f9fc;
+            border-radius: 0.35rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .workflow-step {
+            position: relative;
+            padding: 1rem;
+            border-left: 3px solid #dee2e6;
+        }
+        .workflow-step.active {
+            border-left-color: #0d6efd;
+            background: #f8f9fc;
+        }
+        .workflow-step::before {
+            content: '';
+            position: absolute;
+            left: -6px;
+            top: 1.5rem;
+            width: 9px;
+            height: 9px;
+            background: #dee2e6;
+            border-radius: 50%;
+        }
+        .workflow-step.active::before {
+            background: #0d6efd;
+        }
+        .dependency-tree {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            padding: 1rem;
+        }
+        .dependency-item {
+            padding: 0.5rem;
+            margin: 0.25rem 0;
+            background: #f8f9fa;
+            border-radius: 0.25rem;
+            display: flex;
+            justify-content: between;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-cogs me-2"></i>服务管理
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="freight-order.html#assignment">
+                    <i class="fas fa-tasks me-1"></i>服务派单
+                </a>
+                <a class="nav-link" href="protocol-admin.html">
+                    <i class="fas fa-handshake me-1"></i>协议管理
+                </a>
+                <a class="nav-link" href="freight-order.html">
+                    <i class="fas fa-arrow-left me-1"></i>返回订单管理
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-3">
+        <!-- 统计概览 -->
+        <div class="stats-grid">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="card stats-card">
+                        <div class="card-body text-center">
+                            <h3 class="mb-0" id="totalServices">-</h3>
+                            <small>总服务数</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body text-center">
+                            <h3 class="mb-0" id="activeServices">-</h3>
+                            <small>启用服务</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body text-center">
+                            <h3 class="mb-0" id="serviceCategories">-</h3>
+                            <small>服务分类</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body text-center">
+                            <h3 class="mb-0" id="workflowSteps">-</h3>
+                            <small>工作流步骤</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 搜索和操作工具栏 -->
+        <div class="search-toolbar">
+            <div class="row align-items-center">
+                <div class="col-md-3">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" class="form-control" id="searchKeyword" placeholder="搜索服务名称或代码...">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="businessTypeFilter">
+                        <option value="">全部业务类型</option>
+                        <option value="OCEAN">海运</option>
+                        <option value="AIR">空运</option>
+                        <option value="TRUCK">陆运</option>
+                        <option value="RAIL">铁运</option>
+                        <option value="MULTIMODAL">多式联运</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="statusFilter">
+                        <option value="">全部状态</option>
+                        <option value="active">启用</option>
+                        <option value="inactive">禁用</option>
+                        <option value="draft">草稿</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="categoryFilter">
+                        <option value="">全部分类</option>
+                        <option value="CORE">核心服务</option>
+                        <option value="ADDON">增值服务</option>
+                        <option value="SUPPORT">支持服务</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-primary me-2" onclick="searchServices()">
+                        <i class="fas fa-search me-1"></i>搜索
+                    </button>
+                    <button class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#serviceModal" onclick="showCreateServiceForm()">
+                        <i class="fas fa-plus me-1"></i>新建服务
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="loadServices()">
+                        <i class="fas fa-refresh me-1"></i>刷新
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 服务列表 -->
+        <div id="servicesList">
+            <!-- 服务卡片将在这里动态生成 -->
+        </div>
+
+        <!-- 加载状态 -->
+        <div id="loadingSpinner" class="text-center py-5" style="display: none;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">加载中...</span>
+            </div>
+            <p class="mt-2">正在加载服务信息...</p>
+        </div>
+
+        <!-- 空状态 -->
+        <div id="emptyState" class="text-center py-5" style="display: none;">
+            <i class="fas fa-cogs fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">暂无服务信息</h5>
+            <p class="text-muted">点击上方"新建服务"按钮创建第一个服务项目</p>
+        </div>
+    </div>
+
+    <!-- 服务编辑模态框 -->
+    <div class="modal fade" id="serviceModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="serviceModalTitle">
+                        <i class="fas fa-cogs me-2"></i>新建服务
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="serviceForm">
+                        <div class="row">
+                            <!-- 左侧：基本信息 -->
+                            <div class="col-lg-6">
+                                <!-- 基本信息 -->
+                                <div class="service-form-section">
+                                    <h6 class="mb-3"><i class="fas fa-info-circle me-2"></i>基本信息</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label class="form-label">服务代码 *</label>
+                                            <input type="text" class="form-control" id="serviceCode" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">服务名称 *</label>
+                                            <input type="text" class="form-control" id="serviceName" required>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">英文名称</label>
+                                            <input type="text" class="form-control" id="serviceNameEn">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">助记符</label>
+                                            <input type="text" class="form-control" id="abbreviation">
+                                        </div>
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col-md-12">
+                                            <label class="form-label">服务描述</label>
+                                            <textarea class="form-control" id="serviceDescription" rows="2"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 分类信息 -->
+                                <div class="service-form-section">
+                                    <h6 class="mb-3"><i class="fas fa-tags me-2"></i>分类信息</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label class="form-label">业务类型 *</label>
+                                            <select class="form-select" id="businessType" required>
+                                                <option value="">请选择业务类型</option>
+                                                <option value="OCEAN">海运</option>
+                                                <option value="AIR">空运</option>
+                                                <option value="TRUCK">陆运</option>
+                                                <option value="RAIL">铁运</option>
+                                                <option value="MULTIMODAL">多式联运</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">服务分类 *</label>
+                                            <select class="form-select" id="serviceCategory" required>
+                                                <option value="">请选择服务分类</option>
+                                                <option value="CORE">核心服务</option>
+                                                <option value="ADDON">增值服务</option>
+                                                <option value="SUPPORT">支持服务</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">优先级</label>
+                                            <select class="form-select" id="priority">
+                                                <option value="1">高优先级</option>
+                                                <option value="2" selected>普通优先级</option>
+                                                <option value="3">低优先级</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">处理方式</label>
+                                            <select class="form-select" id="processingType">
+                                                <option value="MANUAL">手动处理</option>
+                                                <option value="AUTO">自动处理</option>
+                                                <option value="HYBRID">混合处理</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 执行参数 -->
+                                <div class="service-form-section">
+                                    <h6 class="mb-3"><i class="fas fa-sliders-h me-2"></i>执行参数</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label class="form-label">预计耗时(小时)</label>
+                                            <input type="number" class="form-control" id="estimatedDuration" min="0" step="0.5">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">最大并发数</label>
+                                            <input type="number" class="form-control" id="maxConcurrency" min="1" value="1">
+                                        </div>
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">需要技能标签</label>
+                                            <input type="text" class="form-control" id="requiredSkills" placeholder="如：清关,单证,系统操作">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">风险等级</label>
+                                            <select class="form-select" id="riskLevel">
+                                                <option value="LOW">低风险</option>
+                                                <option value="MEDIUM" selected>中等风险</option>
+                                                <option value="HIGH">高风险</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 右侧：工作流和依赖 -->
+                            <div class="col-lg-6">
+                                <!-- 工作流步骤 -->
+                                <div class="service-form-section">
+                                    <h6 class="mb-3"><i class="fas fa-list-ol me-2"></i>工作流步骤</h6>
+                                    <div id="workflowStepsContainer">
+                                        <div class="workflow-step active" data-step="1">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <strong>步骤 1</strong>
+                                                    <input type="text" class="form-control form-control-sm mt-1" placeholder="步骤名称" name="stepName">
+                                                </div>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeWorkflowStep(1)">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                            <textarea class="form-control form-control-sm mt-2" placeholder="步骤描述" rows="2" name="stepDescription"></textarea>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addWorkflowStep()">
+                                        <i class="fas fa-plus me-1"></i>添加步骤
+                                    </button>
+                                </div>
+
+                                <!-- 服务依赖 -->
+                                <div class="service-form-section">
+                                    <h6 class="mb-3"><i class="fas fa-project-diagram me-2"></i>服务依赖</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label class="form-label">前置依赖服务</label>
+                                            <select class="form-select" id="dependencySelector" multiple size="4">
+                                                <!-- 动态加载其他服务 -->
+                                            </select>
+                                            <small class="text-muted">按住Ctrl选择多个</small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">已选依赖</label>
+                                            <div class="dependency-tree" id="selectedDependencies">
+                                                <div class="text-muted text-center">暂无依赖服务</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 状态设置 -->
+                                <div class="service-form-section">
+                                    <h6 class="mb-3"><i class="fas fa-toggle-on me-2"></i>状态设置</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="isActive" checked>
+                                                <label class="form-check-label" for="isActive">
+                                                    启用服务
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="autoAssign">
+                                                <label class="form-check-label" for="autoAssign">
+                                                    自动派单
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-2">
+                                        <div class="col-md-6">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="requiresApproval">
+                                                <label class="form-check-label" for="requiresApproval">
+                                                    需要审批
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="trackable" checked>
+                                                <label class="form-check-label" for="trackable">
+                                                    可追踪状态
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <input type="hidden" id="serviceId">
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="saveService()">
+                        <i class="fas fa-save me-1"></i>保存
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 删除确认模态框 -->
+    <div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>确认删除
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>确定要删除服务 "<span id="deleteServiceName" class="fw-bold"></span>" 吗？</p>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>注意：</strong>删除后将无法恢复，且可能影响相关的派单和依赖服务。
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-danger" onclick="confirmDeleteService()">
+                        <i class="fas fa-trash me-1"></i>确认删除
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast 通知 -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="notificationToast" class="toast" role="alert">
+            <div class="toast-header">
+                <i id="toastIcon" class="me-2"></i>
+                <strong class="me-auto" id="toastTitle">通知</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body" id="toastMessage">
+                <!-- 消息内容 -->
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/service-management.js?v=20250918-1500"></script>
+</body>
+</html>

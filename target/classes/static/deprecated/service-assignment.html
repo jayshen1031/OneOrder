@@ -1,0 +1,3520 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OneOrder - 接派单管理</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .navbar-brand {
+            font-weight: bold;
+            color: #2c3e50 !important;
+        }
+        .main-content {
+            margin-top: 20px;
+        }
+        .service-card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+        .service-card:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+        }
+        .status-pending { background-color: #ffc107; color: #000; }
+        .status-assigned { background-color: #17a2b8; color: #fff; }
+        .status-confirmed { background-color: #28a745; color: #fff; }
+        .status-rejected { background-color: #dc3545; color: #fff; }
+        .operator-select {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .workload-bar {
+            height: 6px;
+            border-radius: 3px;
+        }
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #dc3545;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .tab-content {
+            border: 1px solid #dee2e6;
+            border-top: none;
+            padding: 20px;
+            background: #fff;
+        }
+        .nav-tabs .nav-link.active {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        
+        /* 订单号显示优化 */
+        .table .order-no-cell {
+            word-break: break-all;
+            min-width: 200px;
+            max-width: 250px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .table .order-no-cell:hover {
+            white-space: normal;
+        }
+        
+        /* 我的任务样式 */
+        .task-card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+        .task-card:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .task-card.task-pending {
+            border-left: 4px solid #007bff;
+        }
+        .task-card.task-progress {
+            border-left: 4px solid #ffc107;
+        }
+        .task-card.task-completed {
+            border-left: 4px solid #28a745;
+        }
+        .task-card.task-blocked {
+            border-left: 4px solid #dc3545;
+        }
+        .task-priority {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+        .task-deadline {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .workflow-step {
+            background: #f8f9fa;
+            border-radius: 4px;
+            padding: 8px 12px;
+            margin: 4px 0;
+            border-left: 3px solid #dee2e6;
+        }
+        .workflow-step.current {
+            border-left-color: #007bff;
+            background: #e3f2fd;
+        }
+        .workflow-step.completed {
+            border-left-color: #28a745;
+            background: #e8f5e8;
+        }
+        .task-actions {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .task-card:hover .task-actions {
+            opacity: 1;
+        }
+            overflow: visible;
+            text-overflow: initial;
+            background-color: #f8f9fa;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .form-select {
+            min-width: 300px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-ship"></i> OneOrder
+            </a>
+            
+            <!-- 当前用户信息 -->
+            <div class="navbar-text mx-3">
+                <div class="d-flex align-items-center">
+                    <div class="me-3">
+                        <i class="fas fa-user-headset text-primary"></i>
+                        <span class="fw-bold">客服：</span>
+                        <span id="currentCustomerServiceName" class="text-primary">张丽丽</span>
+                        <span class="badge bg-success ms-1" id="currentCustomerServiceStatus">在线</span>
+                    </div>
+                    <div class="vr me-3"></div>
+                    <div class="me-3">
+                        <small class="text-muted">
+                            <i class="fas fa-building"></i> 
+                            <span id="currentCustomerServiceDept">海运销售一部</span>
+                        </small>
+                    </div>
+                    <!-- 用户切换已移至主页面统一控制 -->
+                </div>
+            </div>
+            
+        </div>
+    </nav>
+
+    <div class="container-fluid main-content">
+        <div class="row">
+            <!-- 左侧：订单选择和信息 -->
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-clipboard-list"></i> 订单选择</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">选择订单</label>
+                            <div class="input-group">
+                                <select class="form-select" id="orderSelect" onchange="loadOrderServices()">
+                                    <option value="">请选择订单</option>
+                                </select>
+                                <button class="btn btn-outline-secondary" type="button" onclick="loadOrderList()" title="刷新订单列表">
+                                    <i class="fas fa-refresh"></i>
+                                </button>
+                            </div>
+                            <small class="text-muted">从货代订单API实时加载真实订单数据</small>
+                        </div>
+                        
+                        <!-- 订单信息 -->
+                        <div id="orderInfo" style="display: none;">
+                            <h6>订单信息</h6>
+                            <table class="table table-sm">
+                                <tr><td>客户:</td><td id="customerName">-</td></tr>
+                                <tr><td>业务类型:</td><td id="businessType">-</td></tr>
+                                <tr><td>起运港:</td><td id="portOfLoading">-</td></tr>
+                                <tr><td>目的港:</td><td id="portOfDischarge">-</td></tr>
+                            </table>
+                        </div>
+
+                        <!-- 派单进度 -->
+                        <div id="assignmentProgress" style="display: none;">
+                            <h6>派单进度</h6>
+                            <div class="progress mb-2" style="height: 20px;">
+                                <div class="progress-bar" id="progressBar" role="progressbar" style="width: 0%">0%</div>
+                            </div>
+                            <small class="text-muted">
+                                <span id="completedCount">0</span> / <span id="totalCount">0</span> 服务已派单
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 快速操作 -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h6><i class="fas fa-bolt"></i> 快速操作</h6>
+                    </div>
+                    <div class="card-body">
+                        <button class="btn btn-primary btn-sm w-100 mb-2" onclick="autoAssignAll()">
+                            <i class="fas fa-magic"></i> 智能批量派单
+                        </button>
+                        <button class="btn btn-success btn-sm w-100 mb-2" onclick="batchAssign()">
+                            <i class="fas fa-tasks"></i> 批量派单
+                        </button>
+                        <button class="btn btn-info btn-sm w-100" onclick="refreshAssignments()">
+                            <i class="fas fa-sync-alt"></i> 刷新状态
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：主要内容区域 -->
+            <div class="col-md-9">
+                <!-- 标签页导航 -->
+                <ul class="nav nav-tabs" id="mainTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="services-tab" data-bs-toggle="tab" data-bs-target="#services" type="button" role="tab">
+                            <i class="fas fa-cogs"></i> 服务派单
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="mytasks-tab" data-bs-toggle="tab" data-bs-target="#mytasks" type="button" role="tab">
+                            <i class="fas fa-clipboard-list"></i> 我的待办服务
+                            <span class="badge bg-danger ms-1" id="myTasksCount">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="operators-tab" data-bs-toggle="tab" data-bs-target="#operators" type="button" role="tab">
+                            <i class="fas fa-users"></i> 操作人员
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="protocols-tab" data-bs-toggle="tab" data-bs-target="#protocols" type="button" role="tab">
+                            <i class="fas fa-handshake"></i> 内部协议
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab">
+                            <i class="fas fa-history"></i> 派单历史
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- 标签页内容 -->
+                <div class="tab-content" id="mainTabContent">
+                    <!-- 服务派单标签页 -->
+                    <div class="tab-pane fade show active" id="services" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5>服务项目派单</h5>
+                            <div>
+                                <button class="btn btn-outline-primary btn-sm" onclick="loadAvailableOperators()">
+                                    <i class="fas fa-refresh"></i> 刷新操作员
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="servicesContainer">
+                            <div class="text-center py-5">
+                                <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">请先选择订单以加载服务项目</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 我的任务标签页 -->
+                    <div class="tab-pane fade" id="mytasks" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5>我的待办服务</h5>
+                            <div>
+                                <select class="form-select form-select-sm d-inline-block w-auto me-2" id="taskStatusFilter" onchange="filterMyTasks()">
+                                    <option value="">全部状态</option>
+                                    <option value="PENDING">待处理</option>
+                                    <option value="IN_PROGRESS">进行中</option>
+                                    <option value="COMPLETED">已完成</option>
+                                    <option value="BLOCKED">遇到问题</option>
+                                </select>
+                                <button class="btn btn-outline-primary btn-sm" onclick="loadMyTasks()">
+                                    <i class="fas fa-refresh"></i> 刷新
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 任务统计卡片 -->
+                        <div class="row mb-3">
+                            <div class="col-md-3">
+                                <div class="card bg-primary text-white">
+                                    <div class="card-body text-center">
+                                        <h4 class="mb-0" id="pendingTasksCount">0</h4>
+                                        <small>待处理</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-warning text-white">
+                                    <div class="card-body text-center">
+                                        <h4 class="mb-0" id="inProgressTasksCount">0</h4>
+                                        <small>进行中</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-success text-white">
+                                    <div class="card-body text-center">
+                                        <h4 class="mb-0" id="completedTasksCount">0</h4>
+                                        <small>已完成</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-danger text-white">
+                                    <div class="card-body text-center">
+                                        <h4 class="mb-0" id="blockedTasksCount">0</h4>
+                                        <small>遇到问题</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="myTasksContainer">
+                            <div class="text-center py-5">
+                                <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">暂无分配的任务</p>
+                                <small class="text-muted">任务将通过派单系统自动分配到您的任务列表</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 操作人员标签页 -->
+                    <div class="tab-pane fade" id="operators" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5>可用操作人员</h5>
+                            <div>
+                                <select class="form-select form-select-sm d-inline-block w-auto me-2" id="deptFilter" onchange="filterOperators()">
+                                    <option value="">全部部门</option>
+                                    <option value="海运操作部">海运操作部</option>
+                                    <option value="内装操作部">内装操作部</option>
+                                    <option value="报关部">报关部</option>
+                                </select>
+                                <button class="btn btn-outline-primary btn-sm" onclick="loadAvailableOperators()">
+                                    <i class="fas fa-refresh"></i> 刷新
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="operatorsContainer">
+                            <div class="text-center py-5">
+                                <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">点击刷新按钮加载操作人员信息</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 内部协议标签页 -->
+                    <div class="tab-pane fade" id="protocols" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5>内部协议配置</h5>
+                            <button class="btn btn-primary btn-sm" onclick="addNewProtocol()">
+                                <i class="fas fa-plus"></i> 新增协议
+                            </button>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>协议名称</th>
+                                        <th>业务类型</th>
+                                        <th>适用服务</th>
+                                        <th>客服部门</th>
+                                        <th>操作部门</th>
+                                        <th>SLA(小时)</th>
+                                        <th>状态</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="protocolsTable">
+                                    <tr>
+                                        <td>海运MBL处理标准协议</td>
+                                        <td><span class="badge bg-info">海运</span></td>
+                                        <td>MBL处理</td>
+                                        <td>海运销售部</td>
+                                        <td>海运操作部</td>
+                                        <td>48</td>
+                                        <td><span class="badge bg-success">启用</span></td>
+                                        <td>
+                                            <button class="btn btn-outline-primary btn-sm" onclick="editProtocol(1)">编辑</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>海运内装服务协议</td>
+                                        <td><span class="badge bg-info">海运</span></td>
+                                        <td>内装</td>
+                                        <td>海运销售部</td>
+                                        <td>内装操作部</td>
+                                        <td>24</td>
+                                        <td><span class="badge bg-success">启用</span></td>
+                                        <td>
+                                            <button class="btn btn-outline-primary btn-sm" onclick="editProtocol(2)">编辑</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 派单历史标签页 -->
+                    <div class="tab-pane fade" id="history" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5>派单历史记录</h5>
+                            <div>
+                                <input type="date" class="form-control form-control-sm d-inline-block w-auto me-2" id="dateFilter">
+                                <button class="btn btn-outline-danger btn-sm me-2" onclick="clearAssignmentHistory()" title="清空所有历史记录（用于测试）">
+                                    <i class="fas fa-trash"></i> 清空
+                                </button>
+                                <button class="btn btn-outline-primary btn-sm" onclick="loadAssignmentHistory()">
+                                    <i class="fas fa-search"></i> 查询
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>时间</th>
+                                        <th style="min-width: 180px;">订单号</th>
+                                        <th>服务项目</th>
+                                        <th>指派客服</th>
+                                        <th>操作人员</th>
+                                        <th>应用协议</th>
+                                        <th>状态变更</th>
+                                        <th>备注</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="historyTable">
+                                    <!-- 历史记录将在这里动态加载 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 服务派单模态框 -->
+    <div class="modal fade" id="assignServiceModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">服务派单 - 协议匹配</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- 进度指示器 -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between">
+                                <div class="text-center" id="step1Indicator">
+                                    <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">1</div>
+                                    <div class="small mt-1">选择操作人员</div>
+                                </div>
+                                <div class="text-center" id="step2Indicator">
+                                    <div class="rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">2</div>
+                                    <div class="small mt-1">匹配协议</div>
+                                </div>
+                                <div class="text-center" id="step3Indicator">
+                                    <div class="rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">3</div>
+                                    <div class="small mt-1">确认派单</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form id="assignServiceForm">
+                        <!-- 步骤1: 服务信息和操作人员选择 -->
+                        <div id="assignStep1">
+                            <!-- 客服指派信息 -->
+                            <div class="alert alert-primary">
+                                <div class="row align-items-center">
+                                    <div class="col-md-8">
+                                        <h6 class="mb-1"><i class="fas fa-user-headset me-2"></i>客服指派操作</h6>
+                                        <small>客服 <strong id="assigningCustomerServiceName">张丽丽</strong> 正在为以下服务指派操作人员</small>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock me-1"></i>指派时间<br>
+                                            <span id="assignmentTimestamp">2025-09-18 14:30:25</span>
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">服务项目</label>
+                                <input type="text" class="form-control" id="serviceNameDisplay" readonly>
+                                <input type="hidden" id="serviceCodeInput">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">客服指派操作人员</label>
+                                <select class="form-select" id="operatorSelect" required onchange="loadMatchingProtocols()">
+                                    <option value="">请选择要指派的操作人员</option>
+                                </select>
+                                <small class="text-muted">作为客服，您需要为此服务选择合适的操作人员，系统将自动匹配可用的内部协议</small>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">客服派单备注</label>
+                                <textarea class="form-control" id="assignmentNotes" rows="2" placeholder="请输入您的派单备注和要求..."></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">预计完成时间</label>
+                                <input type="datetime-local" class="form-control" id="expectedCompleteTime">
+                            </div>
+                        </div>
+
+                        <!-- 步骤2: 协议匹配和选择 -->
+                        <div id="assignStep2" style="display: none;">
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-handshake me-2"></i>智能协议匹配</h6>
+                                <div>正在为 <strong id="selectedOperatorName">-</strong> 匹配适用的内部协议...</div>
+                            </div>
+
+                            <!-- 协议匹配结果 -->
+                            <div id="protocolMatchResults" class="mb-3">
+                                <!-- 匹配结果将在这里显示 -->
+                            </div>
+
+                            <!-- 协议选择 -->
+                            <div class="mb-3">
+                                <label class="form-label">选择内部协议</label>
+                                <select class="form-select" id="protocolSelect" required onchange="showProtocolDetails()">
+                                    <option value="">请选择协议</option>
+                                </select>
+                                <small class="text-muted">系统已按匹配度和佣金率排序，建议选择推荐协议</small>
+                            </div>
+
+                            <!-- 协议详情展示 -->
+                            <div id="protocolDetails" style="display: none;">
+                                <!-- 协议详情将在这里显示 -->
+                            </div>
+                        </div>
+
+                        <!-- 步骤3: 确认派单 -->
+                        <div id="assignStep3" style="display: none;">
+                            <div class="alert alert-success">
+                                <h6><i class="fas fa-check-circle me-2"></i>客服派单信息确认</h6>
+                                <small>请确认以下指派信息，确认后将正式将服务派单给操作人员</small>
+                            </div>
+                            
+                            <!-- 指派关系图 -->
+                            <div class="card mb-3">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="fas fa-share-alt me-2"></i>派单关系图</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row text-center align-items-center">
+                                        <div class="col-md-3">
+                                            <div class="p-3 border rounded bg-primary text-white">
+                                                <i class="fas fa-user-headset fa-2x mb-2"></i>
+                                                <div><strong>客服</strong></div>
+                                                <div id="confirmCustomerServiceName">张丽丽</div>
+                                                <small id="confirmCustomerServiceDept">海运销售一部</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <i class="fas fa-arrow-right fa-2x text-primary"></i>
+                                            <div class="small text-muted mt-1">指派</div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="p-3 border rounded bg-success text-white">
+                                                <i class="fas fa-user-cog fa-2x mb-2"></i>
+                                                <div><strong>操作人员</strong></div>
+                                                <div id="confirmOperatorName">-</div>
+                                                <small id="confirmOperatorDept">-</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <i class="fas fa-handshake fa-2x text-info"></i>
+                                            <div class="small text-muted mt-1">协议</div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="p-2 border rounded bg-info text-white">
+                                                <div class="fw-bold" id="confirmTotalCommission">-</div>
+                                                <div class="small">总佣金率</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="text-primary">服务信息</h6>
+                                    <table class="table table-sm">
+                                        <tr><td><strong>服务项目:</strong></td><td id="confirmServiceName">-</td></tr>
+                                        <tr><td><strong>服务代码:</strong></td><td id="confirmServiceCode">-</td></tr>
+                                        <tr><td><strong>预计完成时间:</strong></td><td id="confirmExpectedTime">-</td></tr>
+                                        <tr><td><strong>客服备注:</strong></td><td id="confirmAssignmentNotes">-</td></tr>
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="text-success">协议信息</h6>
+                                    <table class="table table-sm">
+                                        <tr><td><strong>协议名称:</strong></td><td id="confirmProtocolName">-</td></tr>
+                                        <tr><td><strong>基础佣金率:</strong></td><td id="confirmBaseCommission">-</td></tr>
+                                        <tr><td><strong>绩效奖金率:</strong></td><td id="confirmBonusCommission">-</td></tr>
+                                        <tr><td><strong>适用范围:</strong></td><td id="confirmProtocolScope">-</td></tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-outline-primary" id="prevStepBtn" onclick="prevAssignStep()" style="display: none;">上一步</button>
+                    <button type="button" class="btn btn-primary" id="nextStepBtn" onclick="nextAssignStep()">下一步</button>
+                    <button type="button" class="btn btn-success" id="confirmAssignBtn" onclick="confirmAssignService()" style="display: none;">确认派单</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 批量派单模态框 -->
+    <div class="modal fade" id="batchAssignModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">批量派单</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="batchAssignContainer">
+                        <!-- 批量派单内容将在这里动态生成 -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmBatchAssign()">确认批量派单</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/notification-system.js"></script>
+    <script src="js/user-state.js"></script>
+    <script src="js/global-user-manager.js"></script>
+    <script src="js/freight-order.js"></script>
+    <script>
+        // 全局变量
+        let currentOrderId = '';
+        let currentServices = [];
+        let availableOperators = [];
+        let currentAssignments = [];
+        let assignmentHistory = []; // 派单历史记录
+        
+        // 派单历史持久化管理
+        const ASSIGNMENT_HISTORY_KEY = 'oneorder_assignment_history';
+        
+        // 加载派单历史
+        function loadAssignmentHistoryFromStorage() {
+            try {
+                const saved = localStorage.getItem(ASSIGNMENT_HISTORY_KEY);
+                if (saved) {
+                    assignmentHistory = JSON.parse(saved);
+                    console.log('已加载派单历史:', assignmentHistory.length, '条记录');
+                }
+            } catch (error) {
+                console.error('加载派单历史失败:', error);
+                assignmentHistory = [];
+            }
+        }
+        
+        // 保存派单历史
+        function saveAssignmentHistoryToStorage() {
+            try {
+                // 只保留最近100条记录，避免存储空间过大
+                const recentHistory = assignmentHistory.slice(0, 100);
+                localStorage.setItem(ASSIGNMENT_HISTORY_KEY, JSON.stringify(recentHistory));
+                console.log('派单历史已保存:', recentHistory.length, '条记录');
+            } catch (error) {
+                console.error('保存派单历史失败:', error);
+            }
+        }
+        
+        // 清理派单历史（用于测试）
+        function clearAssignmentHistory() {
+            assignmentHistory = [];
+            localStorage.removeItem(ASSIGNMENT_HISTORY_KEY);
+            console.log('派单历史已清空');
+            showNotification('派单历史已清空', 'info');
+            loadAssignmentHistory(); // 刷新显示
+        }
+        
+        // 检查订单是否有未派单的服务
+        async function orderHasPendingServices(orderId) {
+            try {
+                // 由于API端点不存在，暂时简化处理逻辑
+                // 现阶段所有订单都视为有待派单服务，避免404错误
+                console.log(`检查订单${orderId}服务状态 - 暂时返回true（API端点待实现）`);
+                return true;
+                
+                // TODO: 当后端实现了获取订单服务列表的API后，使用以下代码：
+                /*
+                const response = await fetch(`/api/freight-orders/${orderId}/services`);
+                if (!response.ok) {
+                    console.warn(`获取订单${orderId}服务列表失败`);
+                    return true; // 如果API调用失败，保险起见显示该订单
+                }
+                
+                const services = await response.json();
+                if (!services || services.length === 0) {
+                    return false; // 没有服务，不显示
+                }
+                
+                // 检查是否有PENDING状态的服务
+                const pendingServices = services.filter(service => service.status === 'PENDING');
+                return pendingServices.length > 0;
+                */
+                
+            } catch (error) {
+                console.error(`检查订单${orderId}服务状态失败:`, error);
+                return true; // 出错时保险起见显示该订单
+            }
+        }
+        
+        // 从用户切换列表获取可用的操作人员
+        function getAvailableOperatorsFromUserList() {
+            // 定义与freight-order.html相同的用户映射（使用实际的用户数据）
+            const userMap = {
+                'CS001': { id: 'CS001', name: '张美华', department: '客服部', role: 'CUSTOMER_SERVICE' },
+                'OP001': { id: 'OP001', name: '马晓东', department: '空运操作', role: 'OPERATOR' },
+                'OP002': { id: 'OP002', name: '林芳', department: '海运操作', role: 'OPERATOR' },
+                'OP008': { id: 'OP008', name: '高玲', department: '西区操作', role: 'OPERATOR' },
+                'MGR001': { id: 'MGR001', name: '李经理', department: '管理层', role: 'MANAGER' },
+                'FIN001': { id: 'FIN001', name: '王会计', department: '财务部', role: 'FINANCE' }
+            };
+            
+            // 从用户映射中筛选出操作人员
+            const operators = Object.values(userMap).filter(user => user.role === 'OPERATOR');
+            
+            // 转换为智能派单需要的操作人员格式
+            return operators.map((user, index) => {
+                // 根据部门分配擅长的服务类型
+                let serviceCodes = [];
+                if (user.department.includes('海运')) {
+                    serviceCodes = ['MBL_PROCESSING', 'HBL_PROCESSING', 'BOOKING', 'CONTAINER_LOADING'];
+                } else if (user.department.includes('空运')) {
+                    serviceCodes = ['AWB_PROCESSING', 'CARGO_LOADING', 'CUSTOMS_CLEARANCE', 'BOOKING'];
+                } else if (user.department.includes('西区')) {
+                    serviceCodes = ['TRANSPORTATION', 'CARGO_LOADING', 'CUSTOMS_CLEARANCE', 'MBL_PROCESSING'];
+                } else {
+                    // 默认服务类型 - 支持所有常见服务
+                    serviceCodes = ['MBL_PROCESSING', 'HBL_PROCESSING', 'CUSTOMS_CLEARANCE', 'CARGO_LOADING', 'BOOKING'];
+                }
+                
+                return {
+                    operatorId: user.id,
+                    operatorName: user.name,
+                    department: user.department,
+                    departmentLev1: user.department.split('-')[0] || user.department,
+                    departmentLev2: user.department.split('-')[1] || '',
+                    skillLevel: 3 + Math.floor(Math.random() * 3), // 3-5级技能
+                    status: 'AVAILABLE', // 默认可用
+                    currentOrderCount: Math.floor(Math.random() * 3), // 当前订单数量
+                    maxConcurrentOrders: 5, // 最大并发订单数
+                    workloadPercentage: Math.floor(Math.random() * 60) + 20, // 工作负载20-80%
+                    serviceCodes: serviceCodes.join(','), // 支持的服务类型
+                    experience: 2 + Math.floor(Math.random() * 8) // 2-10年经验
+                };
+            });
+        }
+        
+        // 获取当前客服信息（使用新的用户状态管理系统）
+        function getCurrentCustomerServiceFromOrderPage() {
+            try {
+                // 优先使用新的用户状态管理系统
+                if (window.UserState) {
+                    const user = window.UserState.getCurrentUser();
+                    if (user) {
+                        console.log('从UserState获取用户信息:', user);
+                        return user;
+                    }
+                }
+                
+                // fallback到原有方法
+                const savedUser = sessionStorage.getItem('currentCustomerService');
+                if (savedUser) {
+                    return JSON.parse(savedUser);
+                }
+                
+                const localUser = localStorage.getItem('currentCustomerService');
+                if (localUser) {
+                    return JSON.parse(localUser);
+                }
+                
+                if (window.operatorData && window.getCurrentUser) {
+                    const currentUser = window.getCurrentUser();
+                    const customerService = {
+                        id: currentUser.opid,
+                        name: currentUser.name,
+                        department: currentUser.department,
+                        departmentId: getDepartmentIdFromName(currentUser.department),
+                        role: currentUser.role,
+                        status: 'online',
+                        loginTime: new Date().toISOString()
+                    };
+                    
+                    sessionStorage.setItem('currentCustomerService', JSON.stringify(customerService));
+                    return customerService;
+                }
+                
+                return getDefaultCustomerService();
+                
+            } catch (error) {
+                console.warn('获取客服信息失败，使用默认值:', error);
+                return getDefaultCustomerService();
+            }
+        }
+
+        // 根据部门名称获取部门ID
+        function getDepartmentIdFromName(departmentName) {
+            const deptMapping = {
+                '客服中心': 'DEPT_CS_01',
+                '上海海领供应链 - 客服中心': 'DEPT_CS_01', 
+                '销售部': 'DEPT_SALES_01',
+                '海运销售一部': 'DEPT_SALES_01',
+                '空运销售部': 'DEPT_SALES_02',
+                '陆运销售部': 'DEPT_SALES_03'
+            };
+            return deptMapping[departmentName] || 'DEPT_CS_01';
+        }
+
+        // 默认客服信息
+        function getDefaultCustomerService() {
+            return {
+                id: 'CS001',
+                name: '张美华',
+                department: '客服中心',
+                departmentId: 'DEPT_CS_01',
+                role: '客服专员',
+                status: 'online',
+                loginTime: new Date().toISOString()
+            };
+        }
+
+        // 当前登录客服信息 - 从订单页面继承
+        let currentCustomerService = getCurrentCustomerServiceFromOrderPage();
+
+        // 使用freight-order.js中已定义的customerMapping，避免重复声明
+        // customerMapping已在freight-order.js中声明，此处删除重复声明
+
+        // 获取客户名称的函数（全局）
+        function getCustomerName(order) {
+            if (order.customerName && order.customerName.trim() !== '') {
+                return order.customerName;
+            }
+            
+            if (order.customerId && customerMapping[order.customerId]) {
+                return customerMapping[order.customerId];
+            }
+            
+            return order.customerId || 'Unknown Customer';
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 加载派单历史记录
+            loadAssignmentHistoryFromStorage();
+            
+            // 立即加载订单列表，确保用户能看到数据
+            loadOrderList();
+            
+            // 等待用户状态管理系统加载完成后再初始化其他功能
+            setTimeout(() => {
+                // 重新获取客服信息（可能从UserState获取到了最新数据）
+                try {
+                    currentCustomerService = getCurrentCustomerServiceFromOrderPage();
+                    initializeCustomerServiceInfo();
+                } catch (error) {
+                    console.warn('初始化客服信息失败:', error.message);
+                }
+                
+                try {
+                    loadAvailableOperators();
+                } catch (error) {
+                    console.warn('加载操作人员失败:', error.message);
+                }
+                
+                // 用户切换已移至主页面统一控制
+                
+                // 添加用户状态变更监听器
+                if (window.UserState) {
+                    window.UserState.addListener((event, oldUser, newUser) => {
+                        if (event === 'userChanged') {
+                            console.log('检测到用户切换:', oldUser, '->', newUser);
+                            currentCustomerService = newUser;
+                            initializeCustomerServiceInfo();
+                            
+                            // 用户切换下拉菜单已移除，由主页面统一控制
+                            
+                            // 清空并重新加载任务（因为角色可能变了）
+                            myTasks = [];
+                            filteredMyTasks = [];
+                            displayMyTasks();
+                            updateTaskStatistics();
+                            
+                            // 显示切换通知
+                            const newRole = getCurrentUserRole();
+                            showNotification(`用户已切换到: ${newUser.name} (${newUser.role}) - 角色: ${newRole}`, 'info');
+                            
+                            // 如果用户点击了"我的任务"标签，自动刷新
+                            const myTasksTab = document.getElementById('mytasks');
+                            if (myTasksTab && myTasksTab.classList.contains('active')) {
+                                setTimeout(() => {
+                                    console.log('用户切换后自动刷新我的任务');
+                                    loadMyTasks();
+                                }, 500);
+                            }
+                        }
+                    });
+                }
+            }, 200);
+        });
+
+        // 初始化客服信息显示
+        function initializeCustomerServiceInfo() {
+            console.log('初始化客服信息:', currentCustomerService);
+            
+            // 安全的元素更新，检查元素是否存在
+            const safeSetText = (id, text) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.textContent = text;
+                } else {
+                    console.warn(`元素 ${id} 不存在，跳过设置`);
+                }
+            };
+            
+            const safeSetClass = (id, className) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.className = className;
+                } else {
+                    console.warn(`元素 ${id} 不存在，跳过设置类名`);
+                }
+            };
+            
+            safeSetText('currentCustomerServiceName', currentCustomerService.name);
+            safeSetText('currentCustomerServiceDept', currentCustomerService.department);
+            safeSetText('currentCustomerServiceStatus', currentCustomerService.status === 'online' ? '在线' : '离线');
+            safeSetClass('currentCustomerServiceStatus', `badge ms-1 ${currentCustomerService.status === 'online' ? 'bg-success' : 'bg-secondary'}`);
+            
+            // 在派单模态框中也显示客服信息
+            safeSetText('assigningCustomerServiceName', currentCustomerService.name);
+            
+            // 更新当前时间
+            updateAssignmentTimestamp();
+            
+            console.log('客服信息显示已更新:', {
+                name: currentCustomerService.name,
+                department: currentCustomerService.department,
+                id: currentCustomerService.id
+            });
+        }
+
+        // 更新派单时间戳
+        function updateAssignmentTimestamp() {
+            const now = new Date();
+            const timestamp = now.getFullYear() + '-' + 
+                String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+                String(now.getDate()).padStart(2, '0') + ' ' + 
+                String(now.getHours()).padStart(2, '0') + ':' + 
+                String(now.getMinutes()).padStart(2, '0') + ':' + 
+                String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('assignmentTimestamp').textContent = timestamp;
+        }
+
+        // 加载订单列表 - 从货代订单API获取真实数据
+        async function loadOrderList() {
+            console.log('🔄 开始加载订单列表...');
+            
+            try {
+                // 检查orderSelect元素是否存在
+                const orderSelect = document.getElementById('orderSelect');
+                if (!orderSelect) {
+                    throw new Error('未找到订单选择框元素(orderSelect)');
+                }
+                
+                console.log('📡 调用货代订单API...');
+                // 调用货代订单API获取真实数据
+                const response = await fetch('/api/freight-orders?page=0&size=20');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const apiOrders = await response.json();
+                console.log(`✅ 获取到${apiOrders.length}个订单:`, apiOrders);
+                
+                // 使用全局定义的客户映射和getCustomerName函数
+                
+                const businessTypeMap = {
+                    'OCEAN': 'OCEAN',
+                    'AIR': 'AIR',
+                    'TRUCK': 'TRUCK', 
+                    'RAIL': 'RAIL',
+                    'CUSTOMS': 'CUSTOMS',
+                    'WAREHOUSE': 'WAREHOUSE'
+                };
+                
+                const orders = apiOrders.map(order => {
+                    return {
+                        orderId: order.orderId,
+                        orderNo: order.orderNo,
+                        customerId: order.customerId,
+                        customerName: order.customerName,  // 保持原始值，用getCustomerName处理
+                        businessType: order.businessType || 'OCEAN',
+                        portOfLoading: order.portOfLoading,
+                        portOfDischarge: order.portOfDischarge,
+                        orderStatus: order.orderStatus
+                    };
+                });
+                
+                console.log('🔄 更新订单选择框...');
+                
+                // 清空现有选项（保留默认选项）
+                while (orderSelect.children.length > 1) {
+                    orderSelect.removeChild(orderSelect.lastChild);
+                }
+                
+                if (orders && orders.length > 0) {
+                    const userRole = getCurrentUserRole();
+                    const currentUserId = getCurrentCustomerServiceFromOrderPage().id;
+                    
+                    console.log('🔍 过滤订单 - 用户角色:', userRole, '用户ID:', currentUserId);
+                    let addedCount = 0;
+                    
+                    // 逐个检查订单权限和状态
+                    for (const order of orders) {
+                        let hasPermission = true;
+                        
+                        // 权限检查：操作员只能看到派给自己的订单
+                        if (userRole === 'OPERATOR') {
+                            // TODO: 这里应该检查订单是否有派给当前操作员的服务
+                            // 暂时简化处理，操作员可以看到所有有待派单服务的订单
+                            hasPermission = true;
+                        }
+                        // 客服可以看到所有订单（为了派单）
+                        else if (userRole === 'CUSTOMER_SERVICE') {
+                            hasPermission = true;
+                        }
+                        
+                        if (!hasPermission) {
+                            console.log(`  跳过订单: ${order.orderNo} (无权限)`);
+                            continue;
+                        }
+                        
+                        const hasPending = await orderHasPendingServices(order.orderId);
+                        if (hasPending) {
+                            console.log(`  添加订单: ${order.orderNo} (有未派单服务, 权限通过)`);
+                            const option = document.createElement('option');
+                            option.value = order.orderId;
+                            const customerDisplayName = getCustomerName(order);
+                            const shortCustomerName = customerDisplayName.length > 30 ? customerDisplayName.substring(0, 27) + '...' : customerDisplayName;
+                            option.textContent = `${order.orderNo} - ${shortCustomerName} (${getBusinessTypeName(order.businessType)})`;
+                            option.title = `${order.orderNo} - ${customerDisplayName} (${getBusinessTypeName(order.businessType)})`;
+                            orderSelect.appendChild(option);
+                            addedCount++;
+                        } else {
+                            console.log(`  跳过订单: ${order.orderNo} (所有服务已派单)`);
+                        }
+                    }
+                    
+                    if (addedCount > 0) {
+                        console.log(`✅ 成功添加${addedCount}个有未派单服务的订单`);
+                        showNotification(`订单列表已更新 (${addedCount}个待派单订单，跳过${orders.length - addedCount}个已完成订单)`, 'success');
+                    } else {
+                        console.log('📋 所有订单的服务都已派单完成');
+                        const option = document.createElement('option');
+                        option.value = '';
+                        option.textContent = '所有订单服务都已派单完成';
+                        option.disabled = true;
+                        orderSelect.appendChild(option);
+                        showNotification('所有订单服务都已派单完成', 'info');
+                    }
+                } else {
+                    console.log('⚠️ 没有找到订单数据');
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = '暂无订单数据，请先在货代管理系统中创建订单';
+                    option.disabled = true;
+                    orderSelect.appendChild(option);
+                    showNotification('暂无订单数据', 'warning');
+                }
+                
+            } catch (error) {
+                console.error('❌ 加载订单列表失败:', error);
+                showNotification('加载订单列表失败: ' + error.message, 'error');
+                
+                // 添加错误时的备用显示
+                const orderSelect = document.getElementById('orderSelect');
+                if (orderSelect) {
+                    while (orderSelect.children.length > 1) {
+                        orderSelect.removeChild(orderSelect.lastChild);
+                    }
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = '无法加载订单数据，请检查API连接';
+                    option.disabled = true;
+                    orderSelect.appendChild(option);
+                }
+            }
+        }
+
+        // 获取业务类型名称
+        function getBusinessTypeName(type) {
+            const typeMap = {
+                'OCEAN': '海运',
+                'AIR': '空运', 
+                'TRUCK': '陆运',
+                'RAIL': '铁运',
+                'CUSTOMS': '关务',
+                'WAREHOUSE': '仓储'
+            };
+            return typeMap[type] || type;
+        }
+
+        // 加载订单服务项目
+        async function loadOrderServices() {
+            const orderSelect = document.getElementById('orderSelect');
+            currentOrderId = orderSelect.value;
+            
+            if (!currentOrderId) {
+                document.getElementById('orderInfo').style.display = 'none';
+                document.getElementById('assignmentProgress').style.display = 'none';
+                document.getElementById('servicesContainer').innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">请先选择订单以加载服务项目</p>
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                // 显示加载状态
+                document.getElementById('servicesContainer').innerHTML = `
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="mt-2 text-muted">正在加载服务项目...</p>
+                    </div>
+                `;
+
+                // 模拟短暂延迟
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // 生成模拟的服务项目数据
+                currentServices = [
+                    {
+                        serviceCode: 'MBL_PROCESSING',
+                        serviceName: 'MBL处理',
+                        status: 'PENDING',
+                        estimatedFee: 800,
+                        description: '主单处理，包括单证审核和数据录入',
+                        assignedOperator: null,
+                        assignedDepartment: null,
+                        assignmentTime: null
+                    },
+                    {
+                        serviceCode: 'HBL_PROCESSING', 
+                        serviceName: 'HBL处理',
+                        status: 'PENDING',
+                        estimatedFee: 600,
+                        description: '分单处理，包括分单制作和审核',
+                        assignedOperator: null,
+                        assignedDepartment: null,
+                        assignmentTime: null
+                    },
+                    {
+                        serviceCode: 'CUSTOMS_CLEARANCE',
+                        serviceName: '报关清关',
+                        status: 'PENDING', 
+                        estimatedFee: 1200,
+                        description: '进出口报关及清关手续办理',
+                        assignedOperator: null,
+                        assignedDepartment: null,
+                        assignmentTime: null
+                    },
+                    {
+                        serviceCode: 'CONTAINER_LOADING',
+                        serviceName: '集装箱装卸',
+                        status: 'PENDING',
+                        estimatedFee: 1500,
+                        description: '集装箱装卸作业及监管',
+                        assignedOperator: null,
+                        assignedDepartment: null,
+                        assignmentTime: null
+                    }
+                ];
+
+                displayServices(currentServices);
+                updateOrderInfo(currentOrderId);
+                updateAssignmentProgress();
+
+            } catch (error) {
+                console.error('加载服务项目失败:', error);
+                document.getElementById('servicesContainer').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i> 加载失败: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // 显示服务项目
+        function displayServices(services) {
+            const container = document.getElementById('servicesContainer');
+            
+            if (!services || services.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">该订单暂无服务项目</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const servicesHtml = services.map(service => {
+                // 查找该服务的最新派单信息
+                let assignmentInfo = '';
+                if (service.status !== 'PENDING') {
+                    const serviceAssignments = assignmentHistory.filter(record => 
+                        record.results.some(result => result.serviceCode === service.serviceCode)
+                    );
+                    
+                    if (serviceAssignments.length > 0) {
+                        const latestAssignment = serviceAssignments[0];
+                        const latestResult = latestAssignment.results.find(r => r.serviceCode === service.serviceCode);
+                        if (latestResult) {
+                            assignmentInfo = `
+                                <div class="mt-2 pt-2 border-top">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <small class="text-muted">
+                                                <i class="fas fa-user"></i> ${latestResult.operatorName}<br>
+                                                <i class="fas fa-building"></i> ${latestResult.department}
+                                            </small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <small class="text-muted">
+                                                <i class="fas fa-handshake"></i> ${latestResult.protocolName}<br>
+                                                <i class="fas fa-percentage"></i> 佣金 ${latestResult.commissionRate}
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    }
+                }
+                
+                return `
+                    <div class="service-card">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-md-3">
+                                    <h6 class="card-title mb-1">${service.serviceName}</h6>
+                                    <small class="text-muted">${service.serviceCode}</small>
+                                </div>
+                                <div class="col-md-2">
+                                    <span class="badge status-badge status-${service.status.toLowerCase()}">${getStatusText(service.status)}</span>
+                                </div>
+                                <div class="col-md-2">
+                                    <span class="fw-bold text-success">¥${service.estimatedFee}</span>
+                                    <br><small class="text-muted">预计费用</small>
+                                </div>
+                                <div class="col-md-2">
+                                    <span class="text-info">${service.estimatedHours || 'N/A'}小时</span>
+                                    <br><small class="text-muted">预计工期</small>
+                                </div>
+                                <div class="col-md-1">
+                                    <span class="badge bg-secondary">P${service.priority || 'N/A'}</span>
+                                    <br><small class="text-muted">优先级</small>
+                                </div>
+                                <div class="col-md-2 text-end">
+                                    ${service.status === 'PENDING' ? `
+                                        <button class="btn btn-primary btn-sm" onclick="openAssignModal('${service.serviceCode}', '${service.serviceName}')">
+                                            <i class="fas fa-user-plus"></i> 派单
+                                        </button>
+                                    ` : service.status === 'ASSIGNED' ? `
+                                        <button class="btn btn-outline-info btn-sm" onclick="viewAssignmentDetail('${service.serviceCode}')">
+                                            <i class="fas fa-eye"></i> 详情
+                                        </button>
+                                    ` : `
+                                        <button class="btn btn-outline-success btn-sm" onclick="viewAssignmentDetail('${service.serviceCode}')">
+                                            <i class="fas fa-check"></i> 详情
+                                        </button>
+                                    `}
+                                </div>
+                            </div>
+                            ${assignmentInfo}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = servicesHtml;
+        }
+
+        // 加载可用操作人员
+        async function loadAvailableOperators() {
+            try {
+                // 基于真实部门数据生成操作人员（来自deptBusiness.md）
+                const realOperationDepartments = [
+                    { lev1: "上海海领供应链", lev2: "Gateway" },
+                    { lev1: "空运事业部", lev2: "空运西区" },
+                    { lev1: "中国南区", lev2: "深圳分公司" },
+                    { lev1: "中国东区", lev2: "合肥分公司" },
+                    { lev1: "中国西区", lev2: "大客户项目三部" },
+                    { lev1: "中国西区", lev2: "成都分公司" },
+                    { lev1: "半导体解决方案部", lev2: "上海外高桥站" },
+                    { lev1: "中国南区", lev2: "广西分公司" },
+                    { lev1: "中国东区", lev2: "上海途畅" },
+                    { lev1: "半导体解决方案部", lev2: "无锡站" },
+                    { lev1: "中国东区", lev2: "福建分公司" },
+                    { lev1: "半导体解决方案部", lev2: "绍兴站" },
+                    { lev1: "空运事业部", lev2: "空运北区" },
+                    { lev1: "中国北区", lev2: "潍坊吉通" },
+                    { lev1: "铁运事业部", lev2: "铁运北区" },
+                    { lev1: "中国北区", lev2: "关务单证中心" },
+                    { lev1: "半导体解决方案部", lev2: "南京站" },
+                    { lev1: "空运事业部", lev2: "空运南区" },
+                    { lev1: "中国东区", lev2: "武汉分公司" },
+                    { lev1: "中国北区", lev2: "淄博分公司" },
+                    { lev1: "海运事业部", lev2: "海运东区" },
+                    { lev1: "海运事业部", lev2: "嘉兴站" },
+                    { lev1: "海外中心", lev2: "亚洲区" },
+                    { lev1: "海运事业部", lev2: "深圳站" },
+                    { lev1: "海运事业部", lev2: "厦门站" },
+                    { lev1: "海运事业部", lev2: "上海站" },
+                    { lev1: "中国东区", lev2: "电商业务部" },
+                    { lev1: "中国东区", lev2: "上海分公司" },
+                    { lev1: "半导体解决方案部", lev2: "湾区站" },
+                    { lev1: "海运事业部", lev2: "青岛站" },
+                    { lev1: "中国北区", lev2: "青岛业务一部" },
+                    { lev1: "集团大客户部", lev2: "关务方案部" },
+                    { lev1: "铁运事业部", lev2: "铁运西区" },
+                    { lev1: "中国北区", lev2: "展览部" },
+                    { lev1: "半导体解决方案部", lev2: "上海站" },
+                    { lev1: "海外中心", lev2: "北美区" },
+                    { lev1: "中国西区", lev2: "大客户项目二部" },
+                    { lev1: "中国北区", lev2: "西安分公司" },
+                    { lev1: "铁运事业部", lev2: "铁运南区" },
+                    { lev1: "中国东区", lev2: "武汉邦达吉通" }
+                ];
+
+                // 从用户切换列表获取操作人员数据
+                availableOperators = getAvailableOperatorsFromUserList();
+                
+                // 调试：显示可用的操作人员
+                console.log('🔧 可用操作人员列表:', availableOperators);
+
+                displayOperators(availableOperators);
+                showNotification(`操作人员数据已更新 (${availableOperators.length}个操作人员)`, 'info');
+
+            } catch (error) {
+                console.error('加载操作人员失败:', error);
+                document.getElementById('operatorsContainer').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i> 加载失败: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // 显示操作人员
+        function displayOperators(operators) {
+            const container = document.getElementById('operatorsContainer');
+            
+            if (!operators || operators.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">暂无可用操作人员</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const operatorsHtml = operators.map(operator => `
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-3">
+                                <h6 class="card-title mb-1">${operator.operatorName}</h6>
+                                <small class="text-muted">${operator.operatorId}</small>
+                            </div>
+                            <div class="col-md-2">
+                                <span class="badge bg-info">${operator.department}</span>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="d-flex align-items-center">
+                                    ${Array.from({length: 5}, (_, i) => `
+                                        <i class="fas fa-star ${i < operator.skillLevel ? 'text-warning' : 'text-muted'}"></i>
+                                    `).join('')}
+                                </div>
+                                <small class="text-muted">技能等级</small>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="progress mb-1" style="height: 6px;">
+                                    <div class="progress-bar workload-bar ${getWorkloadColor(operator.workloadPercentage)}" 
+                                         style="width: ${operator.workloadPercentage}%"></div>
+                                </div>
+                                <small class="text-muted">${operator.currentOrderCount}/${operator.maxConcurrentOrders} 订单</small>
+                            </div>
+                            <div class="col-md-2 text-end">
+                                <span class="badge ${operator.status === 'AVAILABLE' ? 'bg-success' : operator.status === 'BUSY' ? 'bg-warning' : 'bg-danger'}">
+                                    ${getOperatorStatusText(operator.status)}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-12">
+                                <small class="text-muted">
+                                    <i class="fas fa-cogs"></i> 支持服务: ${operator.serviceCodes.split(',').join(', ')}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = operatorsHtml;
+        }
+
+        // 全局变量：当前派单流程
+        let currentAssignStep = 1;
+        let selectedProtocols = [];
+        let selectedProtocol = null;
+
+        // 打开派单模态框
+        function openAssignModal(serviceCode, serviceName) {
+            document.getElementById('serviceCodeInput').value = serviceCode;
+            document.getElementById('serviceNameDisplay').value = serviceName;
+            
+            // 重置派单步骤
+            resetAssignSteps();
+            
+            // 填充操作人员选项
+            const operatorSelect = document.getElementById('operatorSelect');
+            operatorSelect.innerHTML = '<option value="">请选择操作人员</option>';
+            
+            // 过滤支持该服务的操作人员
+            const suitableOperators = availableOperators.filter(op => 
+                op.serviceCodes.split(',').includes(serviceCode) && op.status === 'AVAILABLE'
+            );
+            
+            suitableOperators.forEach(operator => {
+                const option = document.createElement('option');
+                option.value = operator.operatorId;
+                option.textContent = `${operator.operatorName} - ${operator.department} (${operator.currentOrderCount}/${operator.maxConcurrentOrders})`;
+                option.dataset.operatorName = operator.operatorName;
+                option.dataset.department = operator.department;
+                operatorSelect.appendChild(option);
+            });
+
+            // 显示模态框
+            new bootstrap.Modal(document.getElementById('assignServiceModal')).show();
+        }
+
+        // 重置派单步骤
+        function resetAssignSteps() {
+            currentAssignStep = 1;
+            selectedProtocols = [];
+            selectedProtocol = null;
+            
+            // 显示第一步，隐藏其他步骤
+            document.getElementById('assignStep1').style.display = 'block';
+            document.getElementById('assignStep2').style.display = 'none';
+            document.getElementById('assignStep3').style.display = 'none';
+            
+            // 重置按钮状态
+            document.getElementById('prevStepBtn').style.display = 'none';
+            document.getElementById('nextStepBtn').style.display = 'block';
+            document.getElementById('confirmAssignBtn').style.display = 'none';
+            
+            // 重置步骤指示器
+            updateStepIndicators();
+            
+            // 清空表单
+            document.getElementById('operatorSelect').value = '';
+            document.getElementById('protocolSelect').innerHTML = '<option value="">请选择协议</option>';
+            document.getElementById('assignmentNotes').value = '';
+            document.getElementById('expectedCompleteTime').value = '';
+        }
+
+        // 更新步骤指示器
+        function updateStepIndicators() {
+            for (let i = 1; i <= 3; i++) {
+                const indicator = document.getElementById(`step${i}Indicator`).querySelector('.rounded-circle');
+                if (i <= currentAssignStep) {
+                    indicator.className = 'rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center';
+                } else {
+                    indicator.className = 'rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center';
+                }
+            }
+        }
+
+        // 下一步
+        function nextAssignStep() {
+            if (currentAssignStep === 1) {
+                // 验证第一步
+                const operatorSelect = document.getElementById('operatorSelect');
+                if (!operatorSelect.value) {
+                    showNotification('请选择操作人员', 'warning');
+                    return;
+                }
+                
+                // 进入第二步：加载协议匹配
+                currentAssignStep = 2;
+                document.getElementById('assignStep1').style.display = 'none';
+                document.getElementById('assignStep2').style.display = 'block';
+                
+                document.getElementById('prevStepBtn').style.display = 'block';
+                
+                // 触发协议匹配
+                loadMatchingProtocols();
+                
+            } else if (currentAssignStep === 2) {
+                // 验证第二步
+                const protocolSelect = document.getElementById('protocolSelect');
+                if (!protocolSelect.value) {
+                    showNotification('请选择内部协议', 'warning');
+                    return;
+                }
+                
+                // 进入第三步：确认信息
+                currentAssignStep = 3;
+                document.getElementById('assignStep2').style.display = 'none';
+                document.getElementById('assignStep3').style.display = 'block';
+                
+                document.getElementById('nextStepBtn').style.display = 'none';
+                document.getElementById('confirmAssignBtn').style.display = 'block';
+                
+                // 填充确认信息
+                fillConfirmationInfo();
+            }
+            
+            updateStepIndicators();
+        }
+
+        // 上一步
+        function prevAssignStep() {
+            if (currentAssignStep === 2) {
+                currentAssignStep = 1;
+                document.getElementById('assignStep2').style.display = 'none';
+                document.getElementById('assignStep1').style.display = 'block';
+                document.getElementById('prevStepBtn').style.display = 'none';
+                
+            } else if (currentAssignStep === 3) {
+                currentAssignStep = 2;
+                document.getElementById('assignStep3').style.display = 'none';
+                document.getElementById('assignStep2').style.display = 'block';
+                document.getElementById('nextStepBtn').style.display = 'block';
+                document.getElementById('confirmAssignBtn').style.display = 'none';
+            }
+            
+            updateStepIndicators();
+        }
+
+        // 加载匹配的协议
+        async function loadMatchingProtocols() {
+            const operatorSelect = document.getElementById('operatorSelect');
+            const selectedOperatorId = operatorSelect.value;
+            const selectedOperatorName = operatorSelect.options[operatorSelect.selectedIndex].dataset.operatorName;
+            const serviceCode = document.getElementById('serviceCodeInput').value;
+            
+            if (!selectedOperatorId) return;
+            
+            // 更新操作员名称显示
+            document.getElementById('selectedOperatorName').textContent = selectedOperatorName;
+            
+            // 显示加载状态
+            document.getElementById('protocolMatchResults').innerHTML = `
+                <div class="text-center py-3">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <div class="mt-2">正在匹配协议...</div>
+                </div>
+            `;
+            
+            try {
+                // 调用协议匹配API - 使用当前登录客服ID
+                const response = await fetch(`/protocol-assignment/protocols/match?customerServiceId=${currentCustomerService.id}&operationStaffId=${selectedOperatorId}&serviceCode=${serviceCode}&businessType=OCEAN`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.code === 200) {
+                    selectedProtocols = result.data.protocols;
+                    displayProtocolMatchResults(selectedProtocols);
+                    fillProtocolSelect(selectedProtocols);
+                } else {
+                    throw new Error(result.message);
+                }
+                
+            } catch (error) {
+                console.warn('API不可用，使用模拟数据:', error);
+                // 使用模拟协议数据
+                selectedProtocols = generateMockProtocols(selectedOperatorId, serviceCode);
+                displayProtocolMatchResults(selectedProtocols);
+                fillProtocolSelect(selectedProtocols);
+            }
+        }
+
+        // 显示协议匹配结果
+        function displayProtocolMatchResults(protocols) {
+            if (protocols.length === 0) {
+                document.getElementById('protocolMatchResults').innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        未找到适用的协议，请联系管理员配置相关协议
+                    </div>
+                `;
+                return;
+            }
+            
+            const html = `
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong>匹配成功！</strong> 找到 ${protocols.length} 个适用协议
+                    <div class="mt-2">
+                        <small class="text-muted">
+                            • 优先推荐：${protocols.filter(p => p.recommended).length} 个精确匹配协议<br>
+                            • 备选方案：${protocols.filter(p => !p.recommended).length} 个通用协议
+                        </small>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('protocolMatchResults').innerHTML = html;
+        }
+
+        // 填充协议选择下拉框
+        function fillProtocolSelect(protocols) {
+            const protocolSelect = document.getElementById('protocolSelect');
+            protocolSelect.innerHTML = '<option value="">请选择协议</option>';
+            
+            protocols.forEach(protocol => {
+                const option = document.createElement('option');
+                option.value = protocol.protocolId;
+                option.textContent = `${protocol.protocolName} - 佣金${protocol.totalCommissionRate}% ${protocol.recommended ? '(推荐)' : ''}`;
+                option.dataset.protocolData = JSON.stringify(protocol);
+                protocolSelect.appendChild(option);
+            });
+        }
+
+        // 显示协议详情
+        function showProtocolDetails() {
+            const protocolSelect = document.getElementById('protocolSelect');
+            const selectedProtocolId = protocolSelect.value;
+            
+            if (!selectedProtocolId) {
+                document.getElementById('protocolDetails').style.display = 'none';
+                return;
+            }
+            
+            const protocolData = JSON.parse(protocolSelect.options[protocolSelect.selectedIndex].dataset.protocolData);
+            selectedProtocol = protocolData;
+            
+            const html = `
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">协议详情</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <table class="table table-sm">
+                                    <tr><td><strong>协议名称:</strong></td><td>${protocolData.protocolName}</td></tr>
+                                    <tr><td><strong>适用服务:</strong></td><td>${protocolData.serviceCode || '通用'}</td></tr>
+                                    <tr><td><strong>业务类型:</strong></td><td>${protocolData.businessType || '通用'}</td></tr>
+                                    <tr><td><strong>基础佣金率:</strong></td><td class="text-success">${protocolData.baseCommissionRate}%</td></tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <table class="table table-sm">
+                                    <tr><td><strong>绩效奖金率:</strong></td><td class="text-info">${protocolData.performanceBonusRate}%</td></tr>
+                                    <tr><td><strong>总佣金率:</strong></td><td class="text-primary fw-bold">${protocolData.totalCommissionRate}%</td></tr>
+                                    <tr><td><strong>推荐级别:</strong></td><td>${protocolData.recommended ? '<span class="badge bg-success">推荐</span>' : '<span class="badge bg-secondary">备选</span>'}</td></tr>
+                                    <tr><td><strong>协议状态:</strong></td><td><span class="badge bg-success">生效中</span></td></tr>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">${protocolData.description || '标准内部协议条款'}</small>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('protocolDetails').innerHTML = html;
+            document.getElementById('protocolDetails').style.display = 'block';
+        }
+
+        // 填充确认信息
+        function fillConfirmationInfo() {
+            const operatorSelect = document.getElementById('operatorSelect');
+            const serviceNameDisplay = document.getElementById('serviceNameDisplay');
+            const serviceCodeInput = document.getElementById('serviceCodeInput');
+            const expectedCompleteTime = document.getElementById('expectedCompleteTime');
+            const assignmentNotes = document.getElementById('assignmentNotes');
+            
+            const selectedOperatorOption = operatorSelect.options[operatorSelect.selectedIndex];
+            
+            // 填充客服信息
+            document.getElementById('confirmCustomerServiceName').textContent = currentCustomerService.name;
+            document.getElementById('confirmCustomerServiceDept').textContent = currentCustomerService.department;
+            
+            // 填充服务信息
+            document.getElementById('confirmServiceName').textContent = serviceNameDisplay.value;
+            document.getElementById('confirmServiceCode').textContent = serviceCodeInput.value;
+            document.getElementById('confirmExpectedTime').textContent = expectedCompleteTime.value || '未设置';
+            document.getElementById('confirmAssignmentNotes').textContent = assignmentNotes.value || '无';
+            
+            // 填充操作人员信息
+            document.getElementById('confirmOperatorName').textContent = selectedOperatorOption.dataset.operatorName;
+            document.getElementById('confirmOperatorDept').textContent = selectedOperatorOption.dataset.department;
+            
+            // 填充协议信息
+            document.getElementById('confirmProtocolName').textContent = selectedProtocol.protocolName;
+            document.getElementById('confirmBaseCommission').textContent = selectedProtocol.baseCommissionRate + '%';
+            document.getElementById('confirmBonusCommission').textContent = selectedProtocol.performanceBonusRate + '%';
+            document.getElementById('confirmTotalCommission').textContent = selectedProtocol.totalCommissionRate + '%';
+            document.getElementById('confirmProtocolScope').textContent = `${selectedProtocol.serviceCode || '通用'} / ${selectedProtocol.businessType || '通用'}`;
+        }
+
+        // 生成模拟协议数据
+        function generateMockProtocols(operatorId, serviceCode) {
+            const baseProtocols = [
+                {
+                    protocolId: 'PROTO_OCEAN_001',
+                    protocolName: '海运标准协议',
+                    serviceCode: serviceCode,
+                    businessType: 'OCEAN',
+                    baseCommissionRate: 8.0,
+                    performanceBonusRate: 2.0,
+                    totalCommissionRate: 10.0,
+                    recommended: true,
+                    description: '精确匹配服务类型的专用协议，提供最优分润比例'
+                },
+                {
+                    protocolId: 'PROTO_GENERAL_001',
+                    protocolName: '通用业务协议',
+                    serviceCode: null,
+                    businessType: null,
+                    baseCommissionRate: 7.5,
+                    performanceBonusRate: 1.5,
+                    totalCommissionRate: 9.0,
+                    recommended: false,
+                    description: '适用于各类业务的通用协议'
+                }
+            ];
+            
+            return baseProtocols;
+        }
+
+        // 获取默认协议（用于批量派单）
+        function getDefaultProtocolForService(serviceCode, department) {
+            // 根据服务代码和部门获取默认协议
+            const protocolMap = {
+                'MBL_PROCESSING': {
+                    protocolName: 'MBL处理标准协议',
+                    totalCommissionRate: '10.0'
+                },
+                'HBL_PROCESSING': {
+                    protocolName: 'HBL处理标准协议', 
+                    totalCommissionRate: '9.0'
+                },
+                'CUSTOMS_CLEARANCE': {
+                    protocolName: '报关清关标准协议',
+                    totalCommissionRate: '12.0'
+                },
+                'CONTAINER_LOADING': {
+                    protocolName: '集装箱装卸标准协议',
+                    totalCommissionRate: '8.5'
+                }
+            };
+            
+            return protocolMap[serviceCode] || {
+                protocolName: '通用业务协议',
+                totalCommissionRate: '8.0'
+            };
+        }
+
+        // 确认派单
+        async function confirmAssignService() {
+            const serviceCode = document.getElementById('serviceCodeInput').value;
+            const operatorId = document.getElementById('operatorSelect').value;
+            const notes = document.getElementById('assignmentNotes').value;
+            const protocolId = selectedProtocol ? selectedProtocol.protocolId : null;
+
+            if (!operatorId) {
+                showNotification('请选择操作人员', 'warning');
+                return;
+            }
+
+            if (!protocolId) {
+                showNotification('请选择内部协议', 'warning');
+                return;
+            }
+
+            try {
+                // 显示加载状态
+                document.getElementById('confirmAssignBtn').innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>处理中...';
+                document.getElementById('confirmAssignBtn').disabled = true;
+
+                // 调用新的协议派单API
+                const response = await fetch('/protocol-assignment/assign-with-protocol', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        orderId: currentOrderId,
+                        serviceCode: serviceCode,
+                        operationStaffId: operatorId,
+                        protocolId: protocolId,
+                        notes: notes
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.code === 200) {
+                    // 关闭模态框
+                    bootstrap.Modal.getInstance(document.getElementById('assignServiceModal')).hide();
+                    
+                    // 显示详细成功消息
+                    showNotification(`派单成功！已应用协议：${selectedProtocol.protocolName}`, 'success');
+                    
+                    // 显示派单结果详情
+                    showAssignmentSuccessDetails(result.data);
+                    
+                    // 发送派单通知
+                    if (window.notificationSystem) {
+                        const operator = availableOperators.find(op => op.operatorId === operatorId);
+                        const service = currentServices.find(s => s.serviceCode === serviceCode);
+                        
+                        notificationSystem.sendAssignmentNotification({
+                            serviceCode: serviceCode,
+                            serviceName: service ? service.serviceName : serviceCode,
+                            orderNo: getCurrentOrderNo(),
+                            operatorId: operatorId,
+                            department: operator ? operator.department : '',
+                            priority: 'normal',
+                            estimatedHours: service ? service.estimatedHours || 2.0 : 2.0,
+                            deadline: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                            protocolName: selectedProtocol.protocolName,
+                            commissionRate: selectedProtocol.totalCommissionRate,
+                            customerServiceName: currentCustomerService.name,
+                            customerServiceDept: currentCustomerService.department
+                        });
+                    }
+                    
+                    // 添加到派单历史记录
+                    const operator = availableOperators.find(op => op.operatorId === operatorId);
+                    const service = currentServices.find(s => s.serviceCode === serviceCode);
+                    
+                    const historyRecord = {
+                        id: `ASS${Date.now()}`,
+                        orderId: currentOrderId,
+                        orderNo: getCurrentOrderNo(),
+                        assignTime: new Date().toISOString(),
+                        customerService: currentCustomerService.name,
+                        successCount: 1,
+                        failedCount: 0,
+                        results: [{
+                            serviceCode: serviceCode,
+                            serviceName: service ? service.serviceName : serviceCode,
+                            operatorId: operatorId,
+                            operatorName: operator ? operator.operatorName : operatorId,
+                            department: operator ? operator.department : '',
+                            protocolId: protocolId,
+                            protocolName: selectedProtocol.protocolName,
+                            commissionRate: selectedProtocol.totalCommissionRate + '%',
+                            status: 'SUCCESS',
+                            notes: notes || '单个服务派单'
+                        }],
+                        operator: '手动单个派单'
+                    };
+                    
+                    assignmentHistory.unshift(historyRecord);
+                saveAssignmentHistoryToStorage(); // 持久化保存
+                    saveAssignmentHistoryToStorage(); // 持久化保存
+                    console.log('派单历史已记录:', historyRecord);
+                    
+                    // 重新加载服务列表
+                    loadOrderServices();
+                } else {
+                    throw new Error(result.message);
+                }
+
+            } catch (error) {
+                console.error('协议派单失败:', error);
+                showNotification('协议派单失败: ' + error.message, 'error');
+            } finally {
+                // 恢复按钮状态
+                document.getElementById('confirmAssignBtn').innerHTML = '确认派单';
+                document.getElementById('confirmAssignBtn').disabled = false;
+            }
+        }
+
+        // 显示派单成功详情
+        function showAssignmentSuccessDetails(assignmentData) {
+            const detailsHtml = `
+                <div class="alert alert-success mt-3">
+                    <h6><i class="fas fa-check-circle me-2"></i>协议派单成功</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small class="text-muted">派单信息:</small>
+                            <ul class="list-unstyled small">
+                                <li><strong>派单ID:</strong> ${assignmentData.assignmentId}</li>
+                                <li><strong>服务代码:</strong> ${assignmentData.serviceCode}</li>
+                                <li><strong>操作员ID:</strong> ${assignmentData.operationStaffId}</li>
+                                <li><strong>派单时间:</strong> ${assignmentData.assignedTime}</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted">协议信息:</small>
+                            <ul class="list-unstyled small">
+                                <li><strong>协议ID:</strong> ${assignmentData.protocolId}</li>
+                                <li><strong>协议名称:</strong> ${selectedProtocol.protocolName}</li>
+                                <li><strong>总佣金率:</strong> ${selectedProtocol.totalCommissionRate}%</li>
+                                <li><strong>状态:</strong> <span class="badge bg-success">${assignmentData.status}</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="text-center">
+                        <small class="text-success"><i class="fas fa-info-circle me-1"></i>${assignmentData.message}</small>
+                    </div>
+                </div>
+            `;
+            
+            // 在服务列表下方显示详情
+            const servicesContainer = document.getElementById('servicesContainer');
+            const existingDetails = servicesContainer.querySelector('.assignment-success-details');
+            if (existingDetails) {
+                existingDetails.remove();
+            }
+            
+            const detailsDiv = document.createElement('div');
+            detailsDiv.className = 'assignment-success-details';
+            detailsDiv.innerHTML = detailsHtml;
+            servicesContainer.appendChild(detailsDiv);
+            
+            // 8秒后自动隐藏
+            setTimeout(() => {
+                if (detailsDiv.parentNode) {
+                    detailsDiv.remove();
+                }
+            }, 8000);
+        }
+
+        // 批量派单
+        function batchAssign() {
+            const pendingServices = currentServices.filter(s => s.status === 'PENDING');
+            
+            if (pendingServices.length === 0) {
+                showNotification('没有待派单的服务项目', 'warning');
+                return;
+            }
+
+            // 构建批量派单界面
+            const batchContent = pendingServices.map(service => `
+                <div class="row mb-3 align-items-center">
+                    <div class="col-md-4">
+                        <label class="form-label">${service.serviceName}</label>
+                    </div>
+                    <div class="col-md-6">
+                        <select class="form-select batch-operator-select" data-service="${service.serviceCode}">
+                            <option value="">请选择操作人员</option>
+                            ${availableOperators
+                                .filter(op => op.serviceCodes.includes(service.serviceCode) && op.status === 'AVAILABLE')
+                                .map(op => `<option value="${op.operatorId}">${op.operatorName} - ${op.department}</option>`)
+                                .join('')}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <span class="badge bg-secondary">P${service.priority}</span>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('batchAssignContainer').innerHTML = batchContent;
+            new bootstrap.Modal(document.getElementById('batchAssignModal')).show();
+        }
+
+        // 确认批量派单
+        async function confirmBatchAssign() {
+            const selects = document.querySelectorAll('.batch-operator-select');
+            const assignments = [];
+
+            selects.forEach(select => {
+                if (select.value) {
+                    assignments.push({
+                        serviceCode: select.dataset.service,
+                        operatorId: select.value,
+                        notes: `批量派单 - ${new Date().toLocaleString()}`
+                    });
+                }
+            });
+
+            if (assignments.length === 0) {
+                showNotification('请至少选择一个操作人员', 'warning');
+                return;
+            }
+
+            try {
+                // 模拟批量派单处理
+                const assignmentResults = [];
+                let successCount = 0;
+                let failedCount = 0;
+
+                for (const assignment of assignments) {
+                    const operator = availableOperators.find(op => op.operatorId === assignment.operatorId);
+                    const service = currentServices.find(s => s.serviceCode === assignment.serviceCode);
+                    
+                    // 模拟95%的成功率
+                    const isSuccess = Math.random() > 0.05;
+                    
+                    if (isSuccess) {
+                        successCount++;
+                        
+                        // 更新服务状态
+                        service.status = 'ASSIGNED';
+                        service.assignedOperator = operator.operatorName;
+                        service.assignedDepartment = operator.department;
+                        service.assignmentTime = new Date().toISOString();
+                        
+                        // 更新操作人员工作负载
+                        operator.currentOrderCount++;
+                        operator.workloadPercentage = Math.min(90, operator.workloadPercentage + 10);
+                        
+                        // 获取适用的协议信息 (批量派单时使用默认协议逻辑)
+                        const applicableProtocol = getDefaultProtocolForService(assignment.serviceCode, operator.department);
+                        
+                        assignmentResults.push({
+                            serviceCode: assignment.serviceCode,
+                            serviceName: service.serviceName,
+                            operatorId: operator.operatorId,
+                            operatorName: operator.operatorName,
+                            department: operator.department,
+                            status: 'SUCCESS',
+                            assignmentTime: new Date().toISOString(),
+                            notes: assignment.notes,
+                            protocolName: applicableProtocol.protocolName,
+                            commissionRate: applicableProtocol.totalCommissionRate
+                        });
+
+                        // 发送派单通知
+                        if (window.notificationSystem) {
+                            notificationSystem.sendAssignmentNotification({
+                                serviceCode: assignment.serviceCode,
+                                serviceName: service.serviceName,
+                                orderNo: getCurrentOrderNo(),
+                                operatorId: operator.operatorId,
+                                department: operator.department,
+                                priority: service.priority >= 2 ? 'high' : 'normal',
+                                estimatedHours: service.estimatedHours || 2.0,
+                                deadline: new Date(Date.now() + (service.estimatedHours || 2) * 60 * 60 * 1000).toISOString()
+                            });
+                        }
+                    } else {
+                        failedCount++;
+                        assignmentResults.push({
+                            serviceCode: assignment.serviceCode,
+                            serviceName: service.serviceName,
+                            status: 'FAILED',
+                            failReason: '操作人员确认失败',
+                            assignmentTime: new Date().toISOString()
+                        });
+                    }
+                }
+
+                // 添加到派单历史
+                const historyRecord = {
+                    id: `ASS${Date.now()}`,
+                    orderId: currentOrderId,
+                    assignmentType: 'MANUAL',
+                    assignmentTime: new Date().toISOString(),
+                    totalServices: assignments.length,
+                    successCount: successCount,
+                    failedCount: failedCount,
+                    results: assignmentResults,
+                    operator: '手动批量派单'
+                };
+                
+                assignmentHistory.unshift(historyRecord);
+                saveAssignmentHistoryToStorage(); // 持久化保存
+
+                // 关闭模态框
+                bootstrap.Modal.getInstance(document.getElementById('batchAssignModal')).hide();
+                
+                // 显示结果
+                showNotification(`批量派单完成: 成功${successCount}个, 失败${failedCount}个`, 'info');
+                
+                // 显示详细结果
+                displayAssignmentResults(assignmentResults);
+                
+                // 重新显示服务列表和操作人员
+                displayServices(currentServices);
+                
+                // 更新派单进度
+                updateAssignmentProgress();
+                
+                displayOperators(availableOperators);
+
+            } catch (error) {
+                console.error('批量派单失败:', error);
+                showNotification('批量派单失败: ' + error.message, 'error');
+            }
+        }
+
+        // 智能自动派单
+        async function autoAssignAll() {
+            if (!currentOrderId) {
+                showNotification('请先选择订单', 'warning');
+                return;
+            }
+
+            const pendingServices = currentServices.filter(s => s.status === 'PENDING');
+            
+            if (pendingServices.length === 0) {
+                showNotification('没有待派单的服务项目', 'warning');
+                return;
+            }
+
+            // 智能匹配操作人员
+            const autoAssignments = [];
+            
+            console.log('🎯 智能派单开始，可用操作人员:', availableOperators.map(op => `${op.operatorId}:${op.operatorName}`));
+            
+            for (const service of pendingServices) {
+                console.log(`🔍 为服务 ${service.serviceCode} 查找合适操作人员...`);
+                const suitableOperators = availableOperators
+                    .filter(op => {
+                        const supports = op.serviceCodes.split(',').includes(service.serviceCode);
+                        const available = op.status === 'AVAILABLE';
+                        console.log(`  检查 ${op.operatorName}: 支持${service.serviceCode}=${supports}, 可用=${available}`);
+                        return supports && available;
+                    })
+                    .sort((a, b) => {
+                        // 按技能等级和工作负载排序
+                        const scoreA = a.skillLevel * 10 - a.workloadPercentage;
+                        const scoreB = b.skillLevel * 10 - b.workloadPercentage;
+                        return scoreB - scoreA;
+                    });
+
+                if (suitableOperators.length > 0) {
+                    autoAssignments.push({
+                        serviceCode: service.serviceCode,
+                        operatorId: suitableOperators[0].operatorId,
+                        notes: `智能自动派单 - ${new Date().toLocaleString()}`
+                    });
+                }
+            }
+
+            if (autoAssignments.length === 0) {
+                showNotification('没有合适的操作人员可自动派单', 'warning');
+                return;
+            }
+
+            // 执行自动派单 (模拟API调用并生成实际结果)
+            try {
+                // 模拟API调用成功，生成派单结果
+                const assignmentResults = [];
+                let successCount = 0;
+                let failedCount = 0;
+
+                for (const assignment of autoAssignments) {
+                    const operator = availableOperators.find(op => op.operatorId === assignment.operatorId);
+                    const service = currentServices.find(s => s.serviceCode === assignment.serviceCode);
+                    
+                    // 模拟95%的成功率
+                    const isSuccess = Math.random() > 0.05;
+                    
+                    if (isSuccess) {
+                        successCount++;
+                        
+                        // 更新服务状态
+                        service.status = 'ASSIGNED';
+                        service.assignedOperator = operator.operatorName;
+                        service.assignedDepartment = operator.department;
+                        service.assignmentTime = new Date().toISOString();
+                        
+                        // 更新操作人员工作负载
+                        operator.currentOrderCount++;
+                        operator.workloadPercentage = Math.min(90, operator.workloadPercentage + 10);
+                        
+                        // 获取适用的协议信息 (智能派单时使用默认协议逻辑)
+                        const applicableProtocol = getDefaultProtocolForService(assignment.serviceCode, operator.department);
+                        
+                        assignmentResults.push({
+                            serviceCode: assignment.serviceCode,
+                            serviceName: service.serviceName,
+                            operatorId: operator.operatorId,
+                            operatorName: operator.operatorName,
+                            department: operator.department,
+                            status: 'SUCCESS',
+                            assignmentTime: new Date().toISOString(),
+                            notes: assignment.notes,
+                            protocolName: applicableProtocol.protocolName,
+                            commissionRate: applicableProtocol.totalCommissionRate
+                        });
+
+                        // 发送派单通知
+                        if (window.notificationSystem) {
+                            notificationSystem.sendAssignmentNotification({
+                                serviceCode: assignment.serviceCode,
+                                serviceName: service.serviceName,
+                                orderNo: getCurrentOrderNo(),
+                                operatorId: operator.operatorId,
+                                department: operator.department,
+                                priority: service.priority >= 2 ? 'high' : 'normal',
+                                estimatedHours: service.estimatedHours || 2.0,
+                                deadline: new Date(Date.now() + (service.estimatedHours || 2) * 60 * 60 * 1000).toISOString()
+                            });
+                        }
+                    } else {
+                        failedCount++;
+                        assignmentResults.push({
+                            serviceCode: assignment.serviceCode,
+                            serviceName: service.serviceName,
+                            status: 'FAILED',
+                            failReason: '操作人员暂时不可用',
+                            assignmentTime: new Date().toISOString()
+                        });
+                    }
+                }
+
+                // 添加到派单历史
+                const historyRecord = {
+                    id: `ASS${Date.now()}`,
+                    orderId: currentOrderId,
+                    assignmentType: 'AUTO',
+                    assignmentTime: new Date().toISOString(),
+                    totalServices: autoAssignments.length,
+                    successCount: successCount,
+                    failedCount: failedCount,
+                    results: assignmentResults,
+                    operator: '系统自动派单'
+                };
+                
+                assignmentHistory.unshift(historyRecord);
+                saveAssignmentHistoryToStorage(); // 持久化保存
+
+                // 显示成功消息
+                showNotification(`智能派单完成: 成功${successCount}个, 失败${failedCount}个`, 'success');
+                
+                // 显示详细结果
+                displayAssignmentResults(assignmentResults);
+                
+                // 重新加载服务列表
+                displayServices(currentServices);
+                
+                // 更新派单进度
+                updateAssignmentProgress();
+                
+                // 重新显示操作人员（更新工作负载）
+                displayOperators(availableOperators);
+
+            } catch (error) {
+                console.error('智能派单失败:', error);
+                showNotification('智能派单失败: ' + error.message, 'error');
+            }
+        }
+
+        // 更新订单信息
+        async function updateOrderInfo(orderId) {
+            if (!orderId) {
+                document.getElementById('orderInfo').style.display = 'none';
+                return;
+            }
+            
+            try {
+                // 从已加载的订单列表中查找订单信息
+                const response = await fetch('/api/freight-orders?page=0&size=50');
+                const orders = await response.json();
+                const order = orders.find(o => o.orderId === orderId);
+                
+                if (order) {
+                    // 使用getCustomerName函数获取客户名称
+                    const customerName = getCustomerName(order);
+                    
+                    // 从remarks中推断业务类型，或使用默认值
+                    let businessType = 'OCEAN'; // 默认值
+                    if (order.remarks) {
+                        if (order.remarks.includes('海运')) businessType = 'OCEAN';
+                        else if (order.remarks.includes('空运')) businessType = 'AIR';
+                        else if (order.remarks.includes('铁运')) businessType = 'RAIL';
+                        else if (order.remarks.includes('陆运')) businessType = 'TRUCK';
+                        else if (order.remarks.includes('报关')) businessType = 'CUSTOMS';
+                        else if (order.remarks.includes('仓储')) businessType = 'WAREHOUSE';
+                    }
+                    const businessTypeName = getBusinessTypeName(businessType);
+                    
+                    document.getElementById('customerName').textContent = customerName;
+                    document.getElementById('businessType').textContent = businessTypeName;
+                    document.getElementById('portOfLoading').textContent = order.portOfLoading || '-';
+                    document.getElementById('portOfDischarge').textContent = order.portOfDischarge || '-';
+                    document.getElementById('orderInfo').style.display = 'block';
+                } else {
+                    // 订单未找到
+                    document.getElementById('customerName').textContent = '订单未找到';
+                    document.getElementById('businessType').textContent = '-';
+                    document.getElementById('portOfLoading').textContent = '-';
+                    document.getElementById('portOfDischarge').textContent = '-';
+                    document.getElementById('orderInfo').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('获取订单信息失败:', error);
+                // 显示默认信息
+                document.getElementById('customerName').textContent = '加载失败';
+                document.getElementById('businessType').textContent = '-';
+                document.getElementById('portOfLoading').textContent = '-';
+                document.getElementById('portOfDischarge').textContent = '-';
+                document.getElementById('orderInfo').style.display = 'block';
+            }
+        }
+
+        // 更新派单进度
+        function updateAssignmentProgress() {
+            const totalCount = currentServices.length;
+            const completedCount = currentServices.filter(s => s.status === 'ASSIGNED').length;
+            const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+            document.getElementById('totalCount').textContent = totalCount;
+            document.getElementById('completedCount').textContent = completedCount;
+            document.getElementById('progressBar').style.width = percentage + '%';
+            document.getElementById('progressBar').textContent = percentage + '%';
+            document.getElementById('assignmentProgress').style.display = 'block';
+        }
+
+        // 刷新派单状态
+        function refreshAssignments() {
+            if (currentOrderId) {
+                loadOrderServices();
+            }
+            loadAvailableOperators();
+            showNotification('状态已刷新', 'info');
+        }
+
+        // 过滤操作人员
+        function filterOperators() {
+            const deptFilter = document.getElementById('deptFilter').value;
+            
+            if (!deptFilter) {
+                displayOperators(availableOperators);
+            } else {
+                const filteredOperators = availableOperators.filter(op => op.department === deptFilter);
+                displayOperators(filteredOperators);
+            }
+        }
+
+        // 辅助函数
+        function getStatusText(status) {
+            const statusMap = {
+                'PENDING': '待派单',
+                'ASSIGNED': '已派单', 
+                'CONFIRMED': '已确认',
+                'REJECTED': '已拒绝'
+            };
+            return statusMap[status] || status;
+        }
+
+        function getOperatorStatusText(status) {
+            const statusMap = {
+                'AVAILABLE': '可用',
+                'BUSY': '繁忙',
+                'UNAVAILABLE': '不可用'
+            };
+            return statusMap[status] || status;
+        }
+
+        function getWorkloadColor(percentage) {
+            if (percentage >= 80) return 'bg-danger';
+            if (percentage >= 60) return 'bg-warning';
+            return 'bg-success';
+        }
+
+        function showNotification(message, type) {
+            const alertClass = {
+                'success': 'alert-success',
+                'error': 'alert-danger',
+                'warning': 'alert-warning',
+                'info': 'alert-info'
+            }[type] || 'alert-info';
+
+            const notification = document.createElement('div');
+            notification.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            notification.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+
+            document.body.appendChild(notification);
+
+            // 3秒后自动消失
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 3000);
+        }
+
+        // 获取当前订单号
+        function getCurrentOrderNo() {
+            const orderSelect = document.getElementById('orderSelect');
+            const selectedOption = orderSelect.options[orderSelect.selectedIndex];
+            if (selectedOption && selectedOption.value) {
+                return selectedOption.textContent.split(' - ')[0];
+            }
+            return '';
+        }
+
+        // 新增协议
+        function addNewProtocol() {
+            showNotification('新增协议功能开发中...', 'info');
+        }
+
+        // 编辑协议
+        function editProtocol(protocolId) {
+            showNotification(`编辑协议 ${protocolId} 功能开发中...`, 'info');
+        }
+
+        // 查看派单详情
+        function viewAssignmentDetail(serviceCode) {
+            const service = currentServices.find(s => s.serviceCode === serviceCode);
+            if (!service) {
+                showNotification('未找到服务信息', 'error');
+                return;
+            }
+            
+            // 查找该服务的派单历史
+            const serviceAssignments = assignmentHistory.filter(record => 
+                record.results.some(result => result.serviceCode === serviceCode)
+            );
+            
+            // 获取最新的派单信息
+            let latestAssignment = null;
+            let assignmentInfo = '暂无派单记录';
+            
+            if (serviceAssignments.length > 0) {
+                latestAssignment = serviceAssignments[0];
+                const latestResult = latestAssignment.results.find(r => r.serviceCode === serviceCode);
+                assignmentInfo = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>派单时间:</strong> ${formatDateTime(latestAssignment.assignTime)}<br>
+                            <strong>客服:</strong> ${latestAssignment.customerService || currentCustomerService.name}<br>
+                            <strong>操作员:</strong> ${latestResult.operatorName}<br>
+                            <strong>部门:</strong> ${latestResult.department}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>协议:</strong> ${latestResult.protocolName}<br>
+                            <strong>佣金率:</strong> ${latestResult.commissionRate}<br>
+                            <strong>状态:</strong> <span class="badge ${latestResult.status === 'SUCCESS' ? 'bg-success' : 'bg-danger'}">${latestResult.status === 'SUCCESS' ? '派单成功' : '派单失败'}</span><br>
+                            <strong>备注:</strong> ${latestResult.notes || '-'}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // 创建详情模态框
+            const modalId = 'serviceDetailModal';
+            let modal = document.getElementById(modalId);
+            
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = modalId;
+                modal.className = 'modal fade';
+                modal.innerHTML = `
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">服务详情</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body" id="serviceDetailContent">
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }
+            
+            // 填充详情内容
+            document.getElementById('serviceDetailContent').innerHTML = `
+                <div class="mb-4">
+                    <h6 class="text-primary">基本信息</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>服务名称:</strong> ${service.serviceName}<br>
+                            <strong>服务代码:</strong> <code>${service.serviceCode}</code><br>
+                            <strong>当前状态:</strong> <span class="badge status-badge status-${service.status.toLowerCase()}">${getStatusText(service.status)}</span><br>
+                            <strong>优先级:</strong> P${service.priority}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>预计费用:</strong> <span class="text-success">¥${service.estimatedFee}</span><br>
+                            <strong>预计工期:</strong> ${service.estimatedHours || 'N/A'}小时<br>
+                            <strong>创建时间:</strong> ${service.createdTime || formatDateTime(new Date().toISOString())}<br>
+                            <strong>截止时间:</strong> ${service.deadline || '待定'}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <h6 class="text-primary">派单信息</h6>
+                    ${assignmentInfo}
+                </div>
+                
+                <div class="mb-4">
+                    <h6 class="text-primary">服务描述</h6>
+                    <p class="text-muted">${service.description || '暂无服务描述'}</p>
+                </div>
+                
+                ${serviceAssignments.length > 1 ? `
+                <div class="mb-4">
+                    <h6 class="text-primary">历史派单记录</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>时间</th>
+                                    <th>操作员</th>
+                                    <th>协议</th>
+                                    <th>状态</th>
+                                    <th>备注</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${serviceAssignments.map(record => {
+                                    const result = record.results.find(r => r.serviceCode === serviceCode);
+                                    return `
+                                        <tr>
+                                            <td><small>${formatDateTime(record.assignTime)}</small></td>
+                                            <td>${result.operatorName}</td>
+                                            <td><small>${result.protocolName}</small></td>
+                                            <td><span class="badge ${result.status === 'SUCCESS' ? 'bg-success' : 'bg-danger'}">${result.status === 'SUCCESS' ? '成功' : '失败'}</span></td>
+                                            <td><small>${result.notes || '-'}</small></td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                ` : ''}
+            `;
+            
+            // 显示模态框
+            new bootstrap.Modal(modal).show();
+        }
+
+        // 显示派单结果详情
+        function displayAssignmentResults(results) {
+            // 创建结果展示模态框或在页面中显示
+            let resultHtml = `
+                <div class="alert alert-info mt-3">
+                    <h6><i class="fas fa-check-circle"></i> 派单结果详情</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>服务项目</th>
+                                    <th>操作人员</th>
+                                    <th>所属部门</th>
+                                    <th>状态</th>
+                                    <th>备注</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+            `;
+            
+            results.forEach(result => {
+                const statusBadge = result.status === 'SUCCESS' 
+                    ? '<span class="badge bg-success">成功</span>'
+                    : '<span class="badge bg-danger">失败</span>';
+                    
+                resultHtml += `
+                    <tr>
+                        <td>${result.serviceName}</td>
+                        <td>${result.operatorName || '-'}</td>
+                        <td>${result.department || '-'}</td>
+                        <td>${statusBadge}</td>
+                        <td>${result.notes || result.failReason || '-'}</td>
+                    </tr>
+                `;
+            });
+            
+            resultHtml += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            // 在服务列表下方显示结果
+            const servicesContainer = document.getElementById('servicesContainer');
+            const existingResult = servicesContainer.querySelector('.assignment-result');
+            if (existingResult) {
+                existingResult.remove();
+            }
+            
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'assignment-result';
+            resultDiv.innerHTML = resultHtml;
+            servicesContainer.appendChild(resultDiv);
+            
+            // 5秒后自动隐藏
+            setTimeout(() => {
+                if (resultDiv.parentNode) {
+                    resultDiv.remove();
+                }
+            }, 8000);
+        }
+
+        // 加载派单历史
+        function loadAssignmentHistory() {
+            const historyTable = document.getElementById('historyTable');
+            
+            if (!assignmentHistory || assignmentHistory.length === 0) {
+                historyTable.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <i class="fas fa-history fa-2x text-muted mb-3 d-block"></i>
+                            <p class="text-muted">暂无派单历史记录<br><small>执行智能派单后，历史记录将显示在这里</small></p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            // 将历史记录按结果展开（每个结果一行）
+            let historyRows = [];
+            assignmentHistory.forEach(record => {
+                record.results.forEach((result, index) => {
+                    // 获取订单信息用于显示订单号
+                    const orders = Array.isArray(window.orders) ? window.orders : [];
+                    const order = orders.find(o => o.orderId === record.orderId);
+                    const orderNo = order ? order.orderNo : record.orderId;
+                    
+                    historyRows.push(`
+                        <tr>
+                            <td>${formatDateTime(record.assignmentTime)}</td>
+                            <td>
+                                <code>${orderNo}</code>
+                                ${index === 0 ? `<br><small class="text-muted">${record.assignmentType === 'AUTO' ? '智能派单' : '手动派单'}</small>` : ''}
+                            </td>
+                            <td>${result.serviceName}</td>
+                            <td>
+                                <strong>${record.customerServiceName || currentCustomerService.name}</strong>
+                                <br><small class="text-muted">${record.customerServiceDept || currentCustomerService.department}</small>
+                            </td>
+                            <td>
+                                ${result.operatorName || '-'}
+                                ${result.department ? `<br><small class="text-muted">${result.department}</small>` : ''}
+                            </td>
+                            <td>
+                                ${result.protocolName ? `<small class="text-info">${result.protocolName}</small><br><small class="text-muted">${result.commissionRate || '-'}% 佣金</small>` : '-'}
+                            </td>
+                            <td>
+                                ${result.status === 'SUCCESS' 
+                                    ? '<span class="badge bg-success">派单成功</span>'
+                                    : '<span class="badge bg-danger">派单失败</span>'}
+                            </td>
+                            <td>
+                                <small>${result.notes || result.failReason || '-'}</small>
+                                ${index === 0 && record.results.length > 1 ? `<br><span class="badge bg-info">${record.results.length}个服务</span>` : ''}
+                            </td>
+                        </tr>
+                    `);
+                });
+            });
+            
+            historyTable.innerHTML = historyRows.join('');
+        }
+
+        // 格式化时间显示
+        function formatDateTime(isoString) {
+            return new Date(isoString).toLocaleString('zh-CN');
+        }
+
+        // ==================== 我的待办服务管理功能 ====================
+        let myTasks = [];
+        let filteredMyTasks = [];
+        
+        // 获取分配给特定操作员的服务
+        function getAssignedServicesForOperator(operatorId) {
+            const assignedServices = [];
+            
+            // 从派单历史中查找分配给该操作员的服务
+            assignmentHistory.forEach(record => {
+                record.results.forEach(result => {
+                    if (result.operatorId === operatorId && result.status === 'SUCCESS') {
+                        assignedServices.push({
+                            taskId: `${result.serviceCode}_${record.orderId}`,
+                            serviceCode: result.serviceCode,
+                            serviceName: result.serviceName,
+                            orderNo: record.orderNo || `订单-${record.orderId}`,
+                            orderNo_display: record.orderNo || `订单-${record.orderId}`,
+                            customerName: '客户信息',
+                            operatorId: result.operatorId,
+                            operatorName: result.operatorName,
+                            department: result.department,
+                            status: 'PENDING', // 刚分配的服务默认为待处理
+                            priority: 2, // 默认优先级
+                            assignedTime: result.assignmentTime || record.assignmentTime,
+                            deadline: new Date(new Date(result.assignmentTime || record.assignmentTime).getTime() + 24 * 60 * 60 * 1000).toISOString(),
+                            estimatedHours: 2.0,
+                            protocolName: result.protocolName,
+                            commissionRate: result.commissionRate,
+                            notes: result.notes || '服务已分配，等待处理',
+                            assignedBy: record.customerService || '系统'
+                        });
+                    }
+                });
+            });
+            
+            console.log(`📋 操作员 ${operatorId} 的待办服务:`, assignedServices);
+            return assignedServices;
+        }
+        
+        // 获取客服派发的服务状态
+        function getAssignedServicesByCustomerService(customerServiceId) {
+            const assignedServices = [];
+            
+            // 从派单历史中查找该客服派出的服务
+            assignmentHistory.forEach(record => {
+                if (record.customerService && record.customerService.includes(customerServiceId)) {
+                    record.results.forEach(result => {
+                        if (result.status === 'SUCCESS') {
+                            assignedServices.push({
+                                taskId: `${result.serviceCode}_${record.orderId}`,
+                                serviceCode: result.serviceCode,
+                                serviceName: result.serviceName,
+                                orderNo: record.orderNo || `订单-${record.orderId}`,
+                                orderNo_display: record.orderNo || `订单-${record.orderId}`,
+                                customerName: '客户信息',
+                                operatorId: result.operatorId,
+                                operatorName: result.operatorName,
+                                department: result.department,
+                                status: 'IN_PROGRESS', // 客服视角看到的是执行状态
+                                priority: 2,
+                                assignedTime: result.assignmentTime || record.assignmentTime,
+                                deadline: new Date(new Date(result.assignmentTime || record.assignmentTime).getTime() + 24 * 60 * 60 * 1000).toISOString(),
+                                estimatedHours: 2.0,
+                                protocolName: result.protocolName,
+                                commissionRate: result.commissionRate,
+                                notes: result.notes || '服务已派发给操作员',
+                                assignedBy: record.customerService || '我派发的'
+                            });
+                        }
+                    });
+                }
+            });
+            
+            console.log(`📤 客服 ${customerServiceId} 派发的服务:`, assignedServices);
+            return assignedServices;
+        }
+
+        // 加载我的待办服务
+        async function loadMyTasks() {
+            const userRole = getCurrentUserRole();
+            const currentUser = getCurrentCustomerServiceFromOrderPage();
+            
+            console.log('🔄 加载我的待办服务 - 用户:', currentUser.name, '角色:', userRole);
+            
+            if (userRole === 'OPERATOR') {
+                // 操作员：显示派给自己的服务
+                myTasks = getAssignedServicesForOperator(currentUser.id);
+            } else if (userRole === 'CUSTOMER_SERVICE') {
+                // 客服：显示自己派出的服务状态
+                myTasks = getAssignedServicesByCustomerService(currentUser.id);
+            } else {
+                myTasks = [];
+                showNotification('未识别的用户角色', 'warning');
+                displayMyTasks();
+                return;
+            }
+            
+            // 应用初始筛选
+            filteredMyTasks = myTasks;
+            displayMyTasks();
+            updateTaskCountBadge();
+            
+            const roleText = userRole === 'OPERATOR' ? '操作员' : '客服';
+            const itemText = userRole === 'OPERATOR' ? '待办服务' : '派发服务';
+            showNotification(`已加载${roleText}${itemText}数据 (${myTasks.length}个)`, 'info');
+        }
+                
+                let response;
+                if (userRole === 'OPERATOR') {
+                    // 操作员：加载分配给自己的任务
+                    const currentOperatorId = getCurrentOperatorId();
+                    if (!currentOperatorId) {
+                        throw new Error('无法获取操作员ID');
+                    }
+                    response = await fetch(`/api/service-assignment/my-tasks/${currentOperatorId}`);
+                } else if (userRole === 'CUSTOMER_SERVICE') {
+                    // 客服：加载自己派单的任务（未完成的）
+                    response = await fetch(`/api/service-assignment/assigned-tasks/${currentCustomerService.id}`);
+                } else {
+                    throw new Error('未知用户角色');
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    myTasks = data.data || [];
+                    filteredMyTasks = [...myTasks];
+                    displayMyTasks();
+                    updateTaskStatistics();
+                    showNotification(`加载了 ${myTasks.length} 个任务`, 'success');
+                } else {
+                    throw new Error(data.message || '加载任务失败');
+                }
+            } catch (error) {
+                console.warn('API不可用，加载模拟任务数据');
+                loadMockMyTasks();
+            }
+        }
+
+        // 加载模拟任务数据
+        function loadMockMyTasks() {
+            const userRole = getCurrentUserRole();
+            
+            if (userRole === 'CUSTOMER_SERVICE') {
+                // 客服：显示自己的派单跟踪任务（派给测试用户列表中的操作员）
+                myTasks = [
+                    {
+                        taskId: 'ASSIGN001',
+                        serviceName: '订舱服务',
+                        serviceCode: 'BOOKING',
+                        orderNo: 'HW-EXPORT-20240102-001',
+                        assignedOperator: 'OP001 - 陈师傅 (海运操作)',
+                        assignedOperatorId: 'OP001',
+                        status: 'IN_PROGRESS',
+                        assignedTime: '2024-09-18T10:30:00',
+                        priority: 'high',
+                        notes: '客户要求加急处理，已派给陈师傅',
+                        type: 'assignment', // 标记为派单任务
+                        protocolName: '标准海运协议',
+                        commissionRate: '3.5%'
+                    },
+                    {
+                        taskId: 'ASSIGN002',
+                        serviceName: 'MBL处理',
+                        serviceCode: 'MBL_PROCESSING',
+                        orderNo: 'MIDEA-SHIP-20240103-001',
+                        assignedOperator: 'OP002 - 林操作 (空运操作)',
+                        assignedOperatorId: 'OP002',
+                        status: 'PENDING',
+                        assignedTime: '2024-09-18T11:00:00',
+                        priority: 'normal',
+                        notes: '等待操作员接收',
+                        type: 'assignment',
+                        protocolName: '单证处理协议',
+                        commissionRate: '2.0%'
+                    },
+                    {
+                        taskId: 'ASSIGN003',
+                        serviceName: '内装服务',
+                        serviceCode: 'CARGO_LOADING',
+                        orderNo: 'SH-AUTO-20240101-001',
+                        assignedOperator: 'OP003 - 张操作 (陆运操作)',
+                        assignedOperatorId: 'OP003',
+                        status: 'COMPLETED',
+                        assignedTime: '2024-09-17T14:00:00',
+                        completedTime: '2024-09-18T11:30:00',
+                        priority: 'normal',
+                        notes: '内装已完成，封条号: SEAL123456789',
+                        type: 'assignment',
+                        protocolName: '内装服务协议',
+                        commissionRate: '4.0%'
+                    }
+                ];
+            } else if (userRole === 'OPERATOR') {
+                // 操作员：显示分配给自己的操作任务（根据操作员ID过滤）
+                const operatorId = currentCustomerService.id;
+                const allOperatorTasks = [
+                    // OP001 陈师傅的任务
+                    {
+                        operatorId: 'OP001',
+                        taskId: 'TASK001',
+                        serviceCode: 'BOOKING',
+                        serviceName: '订舱服务',
+                        orderNo: 'HW-EXPORT-20240102-001',
+                        customerName: '华为技术有限公司',
+                        status: 'IN_PROGRESS',
+                        priority: 1,
+                        assignedTime: '2024-09-18T10:00:00',
+                        deadline: '2024-09-18T18:00:00',
+                        estimatedHours: 2.0,
+                        currentStep: 2,
+                        totalSteps: 4,
+                        workflowSteps: [
+                            { stepName: '客户需求确认', stepDescription: '确认客户的货物信息和运输需求', status: 'COMPLETED' },
+                            { stepName: '船期查询', stepDescription: '查询合适的船期和航线', status: 'IN_PROGRESS' },
+                            { stepName: '舱位预订', stepDescription: '向船公司预订舱位', status: 'PENDING' },
+                            { stepName: '订舱确认', stepDescription: '确认订舱并发送确认书给客户', status: 'PENDING' }
+                        ],
+                        notes: '客户要求加急处理，已确认货物信息，正在查询合适船期'
+                    },
+                    // OP002 林操作的任务  
+                    {
+                        operatorId: 'OP002',
+                        taskId: 'TASK002',
+                        serviceCode: 'MBL_PROCESSING',
+                        serviceName: 'MBL处理',
+                        orderNo: 'MIDEA-SHIP-20240103-001',
+                        customerName: '美的集团股份有限公司',
+                        status: 'PENDING',
+                        priority: 2,
+                        assignedTime: '2024-09-18T11:00:00',
+                        deadline: '2024-09-18T15:00:00',
+                        estimatedHours: 1.5,
+                        currentStep: 1,
+                        totalSteps: 4,
+                        workflowSteps: [
+                            { stepName: 'MBL信息收集', stepDescription: '收集制作MBL所需的基础信息', status: 'PENDING' },
+                            { stepName: 'MBL制作', stepDescription: '在船公司系统中制作MBL', status: 'PENDING' },
+                            { stepName: 'MBL确认', stepDescription: '确认MBL信息无误并提交', status: 'PENDING' },
+                            { stepName: 'MBL发放', stepDescription: '将确认的MBL发送给相关方', status: 'PENDING' }
+                        ],
+                        notes: '新分配的任务，等待开始处理'
+                    },
+                    // OP003 张操作的任务
+                    {
+                        operatorId: 'OP003',
+                        taskId: 'TASK003',
+                        serviceCode: 'CARGO_LOADING',
+                        serviceName: '内装服务',
+                        orderNo: 'SH-AUTO-20240101-001',
+                        customerName: '上海汽车集团股份有限公司',
+                        status: 'COMPLETED',
+                        priority: 3,
+                        assignedTime: '2024-09-17T14:00:00',
+                        deadline: '2024-09-18T12:00:00',
+                        estimatedHours: 3.0,
+                        currentStep: 4,
+                        totalSteps: 4,
+                        workflowSteps: [
+                            { stepName: '装柜准备', stepDescription: '准备集装箱和装柜工具', status: 'COMPLETED' },
+                            { stepName: '货物装载', stepDescription: '按要求将货物装入集装箱', status: 'COMPLETED' },
+                            { stepName: '货物加固', stepDescription: '对货物进行加固防护', status: 'COMPLETED' },
+                            { stepName: '集装箱封箱', stepDescription: '封箱并记录封条号', status: 'COMPLETED' }
+                        ],
+                        notes: '内装已完成，封条号: SEAL123456789',
+                        completedTime: '2024-09-18T11:30:00'
+                    }
+                ];
+                
+                // 根据当前操作员ID过滤任务
+                myTasks = allOperatorTasks.filter(task => task.operatorId === operatorId);
+            } else {
+                // 其他角色：无任务
+                myTasks = [];
+            }
+            
+            filteredMyTasks = [...myTasks];
+            displayMyTasks();
+            updateTaskStatistics();
+            
+            const roleText = userRole === 'CUSTOMER_SERVICE' ? '客服派单' : 
+                            userRole === 'OPERATOR' ? '操作' : '演示';
+            showNotification(`已加载${roleText}任务数据 (${myTasks.length}个)`, 'info');
+        }
+
+        // 显示我的任务
+        function displayMyTasks() {
+            const container = document.getElementById('myTasksContainer');
+            
+            if (filteredMyTasks.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">暂无符合条件的任务</p>
+                        <small class="text-muted">任务将通过派单系统自动分配到您的任务列表</small>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            filteredMyTasks.forEach(task => {
+                html += createTaskCard(task);
+            });
+            
+            container.innerHTML = html;
+        }
+
+        // 创建任务卡片
+        function createTaskCard(task) {
+            // 检查任务类型：派单任务 vs 操作任务
+            if (task.type === 'assignment') {
+                return createAssignmentTaskCard(task);
+            } else {
+                return createOperationTaskCard(task);
+            }
+        }
+        
+        // 创建客服派单任务卡片
+        function createAssignmentTaskCard(task) {
+            const statusClass = `task-${task.status.toLowerCase().replace('_', '-')}`;
+            const priorityBadge = getPriorityBadge(task.priority);
+            const statusBadge = getTaskStatusBadge(task.status);
+            
+            return `
+                <div class="task-card ${statusClass} position-relative">
+                    <div class="task-priority">
+                        ${priorityBadge}
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h6 class="card-title mb-1">
+                                    <i class="fas fa-share-alt me-2 text-primary"></i>${task.serviceName}
+                                </h6>
+                                <small class="text-muted">${task.serviceCode} | ${task.orderNo}</small>
+                                <div class="mt-2">
+                                    <i class="fas fa-user-cog me-1"></i>
+                                    <strong>派给：</strong><span class="text-info">${task.assignedOperator}</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                ${statusBadge}
+                                <div class="mt-2">
+                                    <small class="text-muted">派单时间</small>
+                                    <div class="small">${formatDateTime(task.assignedTime)}</div>
+                                </div>
+                                ${task.completedTime ? `
+                                    <div class="mt-1">
+                                        <small class="text-muted">完成时间</small>
+                                        <div class="small text-success">${formatDateTime(task.completedTime)}</div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                        
+                        ${task.protocolName ? `
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <small class="text-muted">应用协议</small>
+                                    <div class="fw-bold text-primary">${task.protocolName}</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <small class="text-muted">佣金比例</small>
+                                    <div class="fw-bold text-success">${task.commissionRate}</div>
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        <div class="mt-3">
+                            <small class="text-muted">派单备注</small>
+                            <div class="small">${task.notes || '无特殊要求'}</div>
+                        </div>
+                        
+                        <div class="mt-3 text-end">
+                            <small class="text-muted">派单类型：客服派单跟踪</small>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // 创建操作员任务卡片
+        function createOperationTaskCard(task) {
+            const statusClass = `task-${task.status.toLowerCase().replace('_', '-')}`;
+            const priorityBadge = getPriorityBadge(task.priority);
+            const statusBadge = getTaskStatusBadge(task.status);
+            const isOverdue = task.deadline && new Date(task.deadline) < new Date() && task.status !== 'COMPLETED';
+            const progressPercent = task.currentStep && task.totalSteps ? Math.round((task.currentStep / task.totalSteps) * 100) : 0;
+            
+            return `
+                <div class="task-card ${statusClass} position-relative">
+                    <div class="task-priority">
+                        ${priorityBadge}
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h6 class="card-title mb-1">${task.serviceName}</h6>
+                                <small class="text-muted">${task.serviceCode} | ${task.orderNo}</small>
+                                <div class="mt-1">
+                                    <strong>客户：</strong><span class="text-info">${task.customerName}</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                ${statusBadge}
+                                <div class="mt-2">
+                                    <small class="text-muted">分配时间</small>
+                                    <div class="small">${formatDateTime(task.assignedTime)}</div>
+                                </div>
+                                <div class="mt-1">
+                                    <small class="text-muted">截止时间</small>
+                                    <div class="small ${isOverdue ? 'task-deadline' : ''}">${formatDateTime(task.deadline)}</div>
+                                    ${isOverdue ? '<small class="text-danger">已逾期</small>' : ''}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <small class="text-muted">工作流进度</small>
+                                <div class="progress mb-2" style="height: 8px;">
+                                    <div class="progress-bar ${task.status === 'COMPLETED' ? 'bg-success' : task.status === 'BLOCKED' ? 'bg-danger' : 'bg-primary'}" 
+                                         style="width: ${progressPercent}%"></div>
+                                </div>
+                                <small class="text-muted">第 ${task.currentStep} / ${task.totalSteps} 步 (${progressPercent}%)</small>
+                            </div>
+                            <div class="col-md-6">
+                                <small class="text-muted">预计工时</small>
+                                <div class="fw-bold">${task.estimatedHours} 小时</div>
+                                ${task.completedTime ? `
+                                    <small class="text-success">
+                                        <i class="fas fa-check me-1"></i>完成于 ${formatDateTime(task.completedTime)}
+                                    </small>
+                                ` : ''}
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <small class="text-muted">当前步骤</small>
+                            <div class="workflow-steps">
+                                ${task.workflowSteps.map((step, index) => {
+                                    let stepClass = '';
+                                    if (step.status === 'COMPLETED') stepClass = 'completed';
+                                    else if (index === task.currentStep - 1) stepClass = 'current';
+                                    
+                                    return `
+                                        <div class="workflow-step ${stepClass}">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="fw-bold">${index + 1}. ${step.stepName}</span>
+                                                <span class="badge ${step.status === 'COMPLETED' ? 'bg-success' : step.status === 'IN_PROGRESS' ? 'bg-warning' : 'bg-secondary'}">
+                                                    ${getStepStatusText(step.status)}
+                                                </span>
+                                            </div>
+                                            <small class="text-muted">${step.stepDescription}</small>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                        
+                        ${task.notes ? `
+                            <div class="mt-3">
+                                <small class="text-muted">备注</small>
+                                <div class="small text-info">${task.notes}</div>
+                            </div>
+                        ` : ''}
+                        
+                        <div class="task-actions mt-3">
+                            <div class="btn-group w-100" role="group">
+                                ${task.status === 'PENDING' ? `
+                                    <button class="btn btn-primary btn-sm" onclick="startTask('${task.taskId}')">
+                                        <i class="fas fa-play me-1"></i>开始处理
+                                    </button>
+                                ` : ''}
+                                ${task.status === 'IN_PROGRESS' ? `
+                                    <button class="btn btn-success btn-sm" onclick="completeCurrentStep('${task.taskId}')">
+                                        <i class="fas fa-check me-1"></i>完成当前步骤
+                                    </button>
+                                    <button class="btn btn-warning btn-sm" onclick="reportIssue('${task.taskId}')">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>报告问题
+                                    </button>
+                                ` : ''}
+                                ${task.status !== 'COMPLETED' ? `
+                                    <button class="btn btn-outline-info btn-sm" onclick="viewTaskDetails('${task.taskId}')">
+                                        <i class="fas fa-eye me-1"></i>查看详情
+                                    </button>
+                                ` : ''}
+                                ${task.status === 'COMPLETED' ? `
+                                    <button class="btn btn-outline-success btn-sm" onclick="viewTaskDetails('${task.taskId}')">
+                                        <i class="fas fa-check-circle me-1"></i>已完成
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 更新任务统计
+        function updateTaskStatistics() {
+            const pending = myTasks.filter(t => t.status === 'PENDING').length;
+            const inProgress = myTasks.filter(t => t.status === 'IN_PROGRESS').length;
+            const completed = myTasks.filter(t => t.status === 'COMPLETED').length;
+            const blocked = myTasks.filter(t => t.status === 'BLOCKED').length;
+            
+            document.getElementById('pendingTasksCount').textContent = pending;
+            document.getElementById('inProgressTasksCount').textContent = inProgress;
+            document.getElementById('completedTasksCount').textContent = completed;
+            document.getElementById('blockedTasksCount').textContent = blocked;
+            document.getElementById('myTasksCount').textContent = pending + inProgress + blocked;
+        }
+
+        // 筛选我的任务
+        function filterMyTasks() {
+            const statusFilter = document.getElementById('taskStatusFilter').value;
+            
+            if (!statusFilter) {
+                filteredMyTasks = [...myTasks];
+            } else {
+                filteredMyTasks = myTasks.filter(task => task.status === statusFilter);
+            }
+            
+            displayMyTasks();
+        }
+
+        // 开始任务
+        async function startTask(taskId) {
+            try {
+                const response = await fetch(`/api/service-assignment/tasks/${taskId}/start`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showNotification('任务已开始', 'success');
+                    loadMyTasks();
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (error) {
+                // 模拟更新
+                const task = myTasks.find(t => t.taskId === taskId);
+                if (task) {
+                    task.status = 'IN_PROGRESS';
+                    displayMyTasks();
+                    updateTaskStatistics();
+                    showNotification('任务已开始 (演示模式)', 'success');
+                }
+            }
+        }
+
+        // 完成当前步骤
+        async function completeCurrentStep(taskId) {
+            try {
+                const response = await fetch(`/api/service-assignment/tasks/${taskId}/complete-step`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showNotification('步骤已完成', 'success');
+                    loadMyTasks();
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (error) {
+                // 模拟更新
+                const task = myTasks.find(t => t.taskId === taskId);
+                if (task && task.currentStep < task.totalSteps) {
+                    task.workflowSteps[task.currentStep - 1].status = 'COMPLETED';
+                    task.currentStep++;
+                    
+                    if (task.currentStep <= task.totalSteps) {
+                        task.workflowSteps[task.currentStep - 1].status = 'IN_PROGRESS';
+                    }
+                    
+                    if (task.currentStep > task.totalSteps) {
+                        task.status = 'COMPLETED';
+                        task.completedTime = new Date().toISOString();
+                        
+                        // 发送任务完成通知
+                        if (window.notificationSystem) {
+                            notificationSystem.sendTaskStatusNotification({
+                                taskId: task.taskId,
+                                serviceName: task.serviceName,
+                                serviceCode: task.serviceCode,
+                                orderNo: task.orderNo,
+                                status: 'COMPLETED'
+                            });
+                        }
+                    }
+                    
+                    displayMyTasks();
+                    updateTaskStatistics();
+                    showNotification('步骤已完成 (演示模式)', 'success');
+                }
+            }
+        }
+
+        // 报告问题
+        function reportIssue(taskId) {
+            const issue = prompt('请描述遇到的问题：');
+            if (issue) {
+                // 模拟更新
+                const task = myTasks.find(t => t.taskId === taskId);
+                if (task) {
+                    task.status = 'BLOCKED';
+                    task.notes = `问题：${issue}`;
+                    displayMyTasks();
+                    updateTaskStatistics();
+                    showNotification('问题已报告，等待处理', 'warning');
+                }
+            }
+        }
+
+        // 查看任务详情
+        function viewTaskDetails(taskId) {
+            const task = myTasks.find(t => t.taskId === taskId);
+            if (task) {
+                showNotification(`查看任务详情: ${task.serviceName}`, 'info');
+            }
+        }
+
+        // 获取当前操作员ID
+        function getCurrentOperatorId() {
+            const userRole = getCurrentUserRole();
+            if (userRole === 'OPERATOR') {
+                return currentCustomerService.id;
+            } else if (userRole === 'CUSTOMER_SERVICE') {
+                // 客服不是操作员，返回null
+                return null;
+            }
+            return null;
+        }
+
+        // 工具函数
+        function getPriorityBadge(priority) {
+            const config = {
+                1: { class: 'bg-danger', text: '高' },
+                2: { class: 'bg-warning', text: '中' },
+                3: { class: 'bg-success', text: '低' }
+            };
+            const p = config[priority] || config[2];
+            return `<span class="badge ${p.class}">${p.text}</span>`;
+        }
+
+        function getTaskStatusBadge(status) {
+            const config = {
+                'PENDING': { class: 'bg-primary', text: '待处理' },
+                'IN_PROGRESS': { class: 'bg-warning', text: '进行中' },
+                'COMPLETED': { class: 'bg-success', text: '已完成' },
+                'BLOCKED': { class: 'bg-danger', text: '遇到问题' }
+            };
+            const s = config[status] || config['PENDING'];
+            return `<span class="badge ${s.class}">${s.text}</span>`;
+        }
+
+        function getStepStatusText(status) {
+            const statusMap = {
+                'PENDING': '待处理',
+                'IN_PROGRESS': '进行中',
+                'COMPLETED': '已完成',
+                'BLOCKED': '有问题'
+            };
+            return statusMap[status] || status;
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 延迟检查用户角色，确保用户信息已加载
+            setTimeout(() => {
+                const userRole = getCurrentUserRole();
+                console.log('用户角色:', userRole, '用户信息:', currentCustomerService);
+                
+                // 客服和操作员都可以查看"我的任务"，但内容不同
+                if (userRole === 'OPERATOR' || userRole === 'CUSTOMER_SERVICE') {
+                    // 不自动加载，让用户手动点击刷新
+                    console.log('用户可以查看我的任务，点击刷新按钮加载');
+                } else {
+                    console.log('未知用户角色，不显示任务');
+                }
+            }, 500);
+        });
+
+        function getCurrentUserRole() {
+            // 根据当前用户信息判断角色
+            try {
+                if (currentCustomerService && currentCustomerService.role) {
+                    const role = currentCustomerService.role;
+                    if (role.includes('客服') || role.includes('Customer Service')) {
+                        return 'CUSTOMER_SERVICE';
+                    } else if (role.includes('操作') || role.includes('操作员') || role.includes('Operator')) {
+                        return 'OPERATOR';
+                    }
+                }
+                
+                // 根据用户ID前缀判断角色
+                const userId = currentCustomerService.id;
+                if (userId.startsWith('CS')) {
+                    return 'CUSTOMER_SERVICE';
+                } else if (userId.startsWith('OP')) {
+                    return 'OPERATOR';
+                }
+                
+                // 默认返回客服角色
+                return 'CUSTOMER_SERVICE';
+            } catch (error) {
+                console.warn('获取用户角色失败:', error);
+                return 'CUSTOMER_SERVICE';
+            }
+        }
+
+        // ==================== 用户切换功能 ====================
+        
+        // 初始化用户切换下拉菜单
+        function initializeUserSwitchSelect() {
+            const userSwitchSelect = document.getElementById('userSwitchSelect');
+            if (userSwitchSelect) {
+                // 设置当前用户的选中状态
+                updateUserSwitchSelect();
+                
+                // 添加切换事件监听器
+                userSwitchSelect.addEventListener('change', function(e) {
+                    const selectedUserId = e.target.value;
+                    if (selectedUserId && selectedUserId !== '') {
+                        handleUserSwitch(selectedUserId);
+                    }
+                });
+            }
+        }
+        
+        // 更新用户切换下拉菜单的选中状态
+        function updateUserSwitchSelect() {
+            const userSwitchSelect = document.getElementById('userSwitchSelect');
+            if (userSwitchSelect && currentCustomerService) {
+                userSwitchSelect.value = currentCustomerService.id || '';
+            }
+        }
+        
+        // 处理用户切换
+        function handleUserSwitch(userId) {
+            console.log('派单页面用户切换:', userId);
+            
+            if (window.UserState) {
+                const success = window.UserState.switchUser(userId);
+                if (success) {
+                    showNotification('用户切换成功', 'success');
+                } else {
+                    showNotification('用户切换失败，请重试', 'error');
+                    // 恢复原来的选择
+                    updateUserSwitchSelect();
+                }
+            } else {
+                // 如果UserState不可用，使用备用方法
+                if (window.getOperatorInfo) {
+                    const operator = window.getOperatorInfo(userId);
+                    if (operator) {
+                        currentCustomerService = {
+                            id: operator.opid,
+                            name: operator.name,
+                            department: `${operator.dept1} - ${operator.dept2}`,
+                            departmentId: getDepartmentIdFromName(`${operator.dept1} - ${operator.dept2}`),
+                            role: operator.role,
+                            level: operator.level,
+                            status: 'online',
+                            loginTime: new Date().toISOString()
+                        };
+                        
+                        initializeCustomerServiceInfo();
+                        showNotification(`已切换到用户: ${operator.name}`, 'success');
+                    } else {
+                        showNotification('未找到指定用户信息', 'error');
+                        updateUserSwitchSelect();
+                    }
+                } else {
+                    showNotification('用户切换功能暂不可用', 'warning');
+                    updateUserSwitchSelect();
+                }
+            }
+        }
+    </script>
+</body>
+</html>

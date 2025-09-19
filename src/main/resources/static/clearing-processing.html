@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>清分处理管理 - OneOrder财务清分系统</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .clearing-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        .card {
+            border: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+        }
+        .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            font-weight: 600;
+        }
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        .status-pending { background-color: #fff3cd; color: #856404; }
+        .status-processing { background-color: #cce5ff; color: #004085; }
+        .status-completed { background-color: #d4edda; color: #155724; }
+        .status-failed { background-color: #f8d7da; color: #721c24; }
+        
+        .clearing-mode-star { background-color: #e7f3ff; color: #0056b3; }
+        .clearing-mode-chain { background-color: #fff0e6; color: #b85c00; }
+        
+        .detail-type-receivable { border-left: 4px solid #28a745; }
+        .detail-type-payable { border-left: 4px solid #dc3545; }
+        .detail-type-internal { border-left: 4px solid #007bff; }
+        
+        .amount-positive { color: #28a745; font-weight: bold; }
+        .amount-negative { color: #dc3545; font-weight: bold; }
+        
+        .execution-timeline {
+            position: relative;
+            padding-left: 2rem;
+        }
+        .timeline-item {
+            position: relative;
+            padding-bottom: 1.5rem;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -2rem;
+            top: 0;
+            width: 2px;
+            height: 100%;
+            background-color: #dee2e6;
+        }
+        .timeline-item::after {
+            content: '';
+            position: absolute;
+            left: -2.5rem;
+            top: 0;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #007bff;
+        }
+        .timeline-item.completed::after {
+            background-color: #28a745;
+        }
+        .timeline-item.failed::after {
+            background-color: #dc3545;
+        }
+        
+        .batch-progress {
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .instruction-flow {
+            display: flex;
+            align-items: center;
+            margin: 1rem 0;
+        }
+        .flow-step {
+            flex: 1;
+            text-align: center;
+            padding: 1rem;
+            border: 2px solid #dee2e6;
+            border-radius: 0.5rem;
+            margin: 0 0.5rem;
+            position: relative;
+            background-color: #f8f9fa;
+        }
+        .flow-step.active {
+            border-color: #007bff;
+            background-color: #e7f3ff;
+            color: #0056b3;
+        }
+        .flow-step.completed {
+            border-color: #28a745;
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .flow-step::after {
+            content: '→';
+            position: absolute;
+            right: -1.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.2rem;
+            color: #6c757d;
+        }
+        .flow-step:last-child::after {
+            display: none;
+        }
+        
+        .log-container {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e9ecef;
+            border-radius: 0.25rem;
+            padding: 1rem;
+        }
+        .log-entry {
+            margin-bottom: 0.5rem;
+            padding: 0.25rem;
+            border-left: 3px solid #007bff;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+        }
+        .log-info { border-left-color: #007bff; }
+        .log-warn { border-left-color: #ffc107; }
+        .log-error { border-left-color: #dc3545; }
+        
+        .statistics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.875rem;
+        }
+        
+        .batch-card {
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .batch-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+    </style>
+</head>
+<body>
+    <div class="clearing-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1><i class="fas fa-cogs me-3"></i>清分处理管理</h1>
+                    <p class="mb-0">基于星式/链式算法的智能财务清分执行系统</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <button class="btn btn-light" onclick="goBack()">
+                        <i class="fas fa-arrow-left me-2"></i>返回首页
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 清分统计 -->
+        <div class="statistics-grid" id="statisticsGrid">
+            <div class="stat-card">
+                <div class="stat-number text-primary" id="totalInstructions">0</div>
+                <div class="stat-label">总指令数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number text-warning" id="pendingInstructions">0</div>
+                <div class="stat-label">待处理</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number text-success" id="completedInstructions">0</div>
+                <div class="stat-label">已完成</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number text-info" id="totalAmount">¥0.00</div>
+                <div class="stat-label">清分总额</div>
+            </div>
+        </div>
+
+        <!-- 清分指令管理 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-list-alt me-2"></i>清分指令管理</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="orderSelect" class="form-label">选择订单</label>
+                        <select class="form-select" id="orderSelect">
+                            <option value="">请选择订单...</option>
+                            <option value="HCBD20250916001">HCBD20250916001 - 上海至洛杉矶FCL</option>
+                            <option value="HCBD20250916002">HCBD20250916002 - 深圳至纽约FCL</option>
+                            <option value="HCBD20250916003">HCBD20250916003 - 青岛至长滩FCL</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="clearingModeSelect" class="form-label">清分模式</label>
+                        <select class="form-select" id="clearingModeSelect">
+                            <option value="STAR">星式清分</option>
+                            <option value="CHAIN">链式清分</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">操作</label>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary" onclick="generateInstruction()" id="generateBtn" disabled>
+                                <i class="fas fa-plus me-2"></i>生成指令
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 清分指令流程图 -->
+                <div id="instructionFlow" style="display: none;">
+                    <div class="instruction-flow">
+                        <div class="flow-step" id="step1">
+                            <i class="fas fa-file-alt fa-2x mb-2"></i>
+                            <div><strong>指令生成</strong></div>
+                            <small>基于分润计算结果</small>
+                        </div>
+                        <div class="flow-step" id="step2">
+                            <i class="fas fa-check-circle fa-2x mb-2"></i>
+                            <div><strong>规则匹配</strong></div>
+                            <small>应用清分规则</small>
+                        </div>
+                        <div class="flow-step" id="step3">
+                            <i class="fas fa-play fa-2x mb-2"></i>
+                            <div><strong>执行处理</strong></div>
+                            <small>清分明细执行</small>
+                        </div>
+                        <div class="flow-step" id="step4">
+                            <i class="fas fa-flag-checkered fa-2x mb-2"></i>
+                            <div><strong>完成确认</strong></div>
+                            <small>状态更新</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 当前指令信息 -->
+                <div id="currentInstruction" style="display: none;">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle me-2"></i>当前清分指令</h6>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <strong>指令ID:</strong> <span id="instructionId">-</span>
+                            </div>
+                            <div class="col-md-3">
+                                <strong>清分模式:</strong> <span id="instructionMode">-</span>
+                            </div>
+                            <div class="col-md-3">
+                                <strong>清分金额:</strong> <span id="instructionAmount">¥0.00</span>
+                            </div>
+                            <div class="col-md-3">
+                                <strong>状态:</strong> <span id="instructionStatus">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2 mb-3">
+                        <button class="btn btn-success" onclick="executeInstruction(false)" id="executeBtn">
+                            <i class="fas fa-play me-2"></i>执行清分
+                        </button>
+                        <button class="btn btn-outline-success" onclick="executeInstruction(true)" id="dryRunBtn">
+                            <i class="fas fa-calculator me-2"></i>试算模式
+                        </button>
+                        <button class="btn btn-info" onclick="viewInstructionDetails()" id="detailsBtn">
+                            <i class="fas fa-list me-2"></i>查看明细
+                        </button>
+                        <button class="btn btn-secondary" onclick="viewExecutionLogs()" id="logsBtn">
+                            <i class="fas fa-file-alt me-2"></i>执行日志
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 清分明细 -->
+        <div class="card" id="clearingDetailsCard" style="display: none;">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-list me-2"></i>清分明细</h5>
+                <span class="badge bg-info" id="detailsCount">0 条明细</span>
+            </div>
+            <div class="card-body">
+                <div id="clearingDetailsList"></div>
+            </div>
+        </div>
+
+        <!-- 执行结果 -->
+        <div class="card" id="executionResultCard" style="display: none;">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>执行结果</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-3 text-center">
+                        <h4 class="text-success" id="successCount">0</h4>
+                        <small class="text-muted">成功明细</small>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <h4 class="text-danger" id="failureCount">0</h4>
+                        <small class="text-muted">失败明细</small>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <h4 class="text-info" id="successRate">0%</h4>
+                        <small class="text-muted">成功率</small>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <h4 class="text-warning" id="executedAmount">¥0.00</h4>
+                        <small class="text-muted">执行金额</small>
+                    </div>
+                </div>
+                
+                <div class="execution-timeline" id="executionTimeline"></div>
+            </div>
+        </div>
+
+        <!-- 清分批次管理 -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-layers me-2"></i>清分批次管理</h5>
+                <div>
+                    <button class="btn btn-success btn-sm" onclick="executeTodayBatch()">
+                        <i class="fas fa-rocket me-1"></i>执行今日批次
+                    </button>
+                    <button class="btn btn-outline-success btn-sm" onclick="executeTodayBatch(true)">
+                        <i class="fas fa-calculator me-1"></i>批次试算
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row" id="batchesList">
+                    <div class="col-12 text-center text-muted">
+                        <i class="fas fa-spinner fa-spin me-2"></i>加载批次信息...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 清分规则配置 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-cogs me-2"></i>清分规则配置</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="rulesTable">
+                        <thead>
+                            <tr>
+                                <th>规则编码</th>
+                                <th>规则名称</th>
+                                <th>规则分类</th>
+                                <th>适用模式</th>
+                                <th>优先级</th>
+                                <th>状态</th>
+                                <th>规则参数</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rulesTableBody">
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">加载中...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 执行日志模态框 -->
+        <div class="modal fade" id="logsModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">执行日志</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="log-container" id="executionLogs"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="clearing-processing.js"></script>
+</body>
+</html>

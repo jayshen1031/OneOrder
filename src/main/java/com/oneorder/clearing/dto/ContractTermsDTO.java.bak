@@ -1,0 +1,154 @@
+package com.oneorder.clearing.dto;
+
+import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import lombok.Builder;
+
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.DecimalMax;
+import javax.validation.constraints.DecimalMin;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+
+/**
+ * 合约条款DTO
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ContractTermsDTO {
+
+    private String termsId;
+    
+    @NotBlank(message = "适用服务不能为空")
+    private String applicableServices; // JSON格式存储多选
+    
+    private String applicableCustomers; // JSON格式存储多选，空表示所有客户
+    
+    private String applicableConditions;
+    
+    @NotBlank(message = "分润模型不能为空")
+    private String profitSharingType; // BUY_SELL_PRICE, COST_PLUS_FEE, RATIO_SHARING, CUSTOM
+    
+    @DecimalMin(value = "0", message = "销售分润比例不能小于0")
+    @DecimalMax(value = "100", message = "销售分润比例不能大于100")
+    private BigDecimal salesProfitRatio;
+    
+    @DecimalMin(value = "0", message = "交付分润比例不能小于0")
+    @DecimalMax(value = "100", message = "交付分润比例不能大于100")
+    private BigDecimal deliveryProfitRatio;
+    
+    private String operatingFeeCurrency;
+    
+    private String unitOfMeasurement;
+    
+    @DecimalMin(value = "0", message = "操作费单价不能小于0")
+    private BigDecimal unitPrice;
+    
+    @DecimalMin(value = "0", message = "票票最小值不能小于0")
+    private BigDecimal minimumPerOrder;
+    
+    @DecimalMin(value = "0", message = "票票最大值不能小于0")
+    private BigDecimal maximumPerOrder;
+    
+    private String deptTypeForScript; // SALES, DELIVERY
+    
+    private String calculationScript;
+    
+    private Boolean costPriceDisclosure;
+    
+    private LocalDateTime createdTime;
+    
+    private LocalDateTime updatedTime;
+    
+    // 解析后的服务和客户列表
+    private List<String> applicableServicesList;
+    private List<String> applicableCustomersList;
+    
+    // 计算属性
+    private Boolean isRatioSharingValid; // 比例总和是否为100%
+    private Boolean isCostPlusFeeComplete; // 成本+操作费字段是否完整
+    private Boolean isCustomScriptValid; // 自定义脚本是否有效
+}
+
+/**
+ * 创建合约条款请求
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+class CreateContractTermsRequest {
+    
+    @NotBlank(message = "适用服务不能为空")
+    private String applicableServices;
+    
+    private String applicableCustomers;
+    
+    private String applicableConditions;
+    
+    @NotBlank(message = "分润模型不能为空")
+    private String profitSharingType;
+    
+    private BigDecimal salesProfitRatio;
+    
+    private BigDecimal deliveryProfitRatio;
+    
+    private String operatingFeeCurrency;
+    
+    private String unitOfMeasurement;
+    
+    private BigDecimal unitPrice;
+    
+    private BigDecimal minimumPerOrder;
+    
+    private BigDecimal maximumPerOrder;
+    
+    private String deptTypeForScript;
+    
+    private String calculationScript;
+    
+    private Boolean costPriceDisclosure = false;
+}
+
+/**
+ * 更新合约条款请求
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+class UpdateContractTermsRequest {
+    
+    private String applicableServices;
+    
+    private String applicableCustomers;
+    
+    private String applicableConditions;
+    
+    private String profitSharingType;
+    
+    private BigDecimal salesProfitRatio;
+    
+    private BigDecimal deliveryProfitRatio;
+    
+    private String operatingFeeCurrency;
+    
+    private String unitOfMeasurement;
+    
+    private BigDecimal unitPrice;
+    
+    private BigDecimal minimumPerOrder;
+    
+    private BigDecimal maximumPerOrder;
+    
+    private String deptTypeForScript;
+    
+    private String calculationScript;
+    
+    private Boolean costPriceDisclosure;
+}

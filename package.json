@@ -1,0 +1,54 @@
+{
+  "name": "oneorder",
+  "version": "1.0.0",
+  "description": "OneOrder 货代订单管理与财务清分系统",
+  "main": "tests/test-runner.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "node tests/test-runner.js",
+    "test:headless": "node tests/test-runner.js --headless",
+    "test:customer-service": "node tests/test-runner.js --test=\"客服接单\"",
+    "test:api": "node tests/test-runner.js --test=\"API\"",
+    "test:operation": "node tests/test-runner.js --test=\"操作人员\"",
+    "test:firefox": "node tests/test-runner.js --browser=firefox",
+    "test:webkit": "node tests/test-runner.js --browser=webkit",
+    "test:all-browsers": "npm run test:chromium && npm run test:firefox && npm run test:webkit",
+    "test:chromium": "node tests/test-runner.js --browser=chromium",
+    "install-playwright": "npx playwright install",
+    "install-deps": "npx playwright install-deps",
+    "test:debug": "npx playwright test --debug",
+    "test:ui": "npx playwright test --ui",
+    "show-report": "npx playwright show-report test-reports/html"
+  },
+  "keywords": [
+    "oneorder",
+    "freight",
+    "logistics",
+    "clearing",
+    "e2e-testing",
+    "playwright",
+    "automation"
+  ],
+  "author": "OneOrder Team",
+  "license": "ISC",
+  "dependencies": {
+    "node-fetch": "^2.7.0",
+    "playwright": "^1.55.0",
+    "puppeteer": "^24.22.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "testConfig": {
+    "baseURL": "http://localhost:8081",
+    "testDir": "tests/e2e",
+    "timeout": 30000,
+    "retries": 1
+  }
+}

@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理账分润计算 - OneOrder财务清分系统</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .profit-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        .card {
+            border: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+        }
+        .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            font-weight: 600;
+        }
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        .status-calculated { background-color: #d4edda; color: #155724; }
+        .status-confirmed { background-color: #cce5ff; color: #004085; }
+        .status-locked { background-color: #f8d7da; color: #721c24; }
+        .dept-type-sales { background-color: #e7f3ff; color: #0056b3; }
+        .dept-type-operation { background-color: #fff0e6; color: #b85c00; }
+        .balance-check {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+        .balance-success { background-color: #d4edda; border-left: 4px solid #28a745; }
+        .balance-error { background-color: #f8d7da; border-left: 4px solid #dc3545; }
+        .profit-amount {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #28a745;
+        }
+        .negative-profit {
+            color: #dc3545;
+        }
+        .service-group {
+            border: 1px solid #e9ecef;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background-color: #f8f9fa;
+        }
+        .calculation-log {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e9ecef;
+            border-radius: 0.25rem;
+            padding: 1rem;
+        }
+        .log-entry {
+            margin-bottom: 0.5rem;
+            padding: 0.25rem;
+            border-left: 3px solid #28a745;
+        }
+        .log-warn { border-left-color: #ffc107; }
+        .log-error { border-left-color: #dc3545; }
+        .progress-container {
+            margin: 2rem 0;
+        }
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+        }
+        .step {
+            flex: 1;
+            text-align: center;
+            position: relative;
+        }
+        .step::after {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            width: 100%;
+            height: 2px;
+            background-color: #dee2e6;
+            z-index: -1;
+        }
+        .step:last-child::after {
+            display: none;
+        }
+        .step.active .step-number {
+            background-color: #007bff;
+            color: white;
+        }
+        .step.completed .step-number {
+            background-color: #28a745;
+            color: white;
+        }
+        .step-number {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #dee2e6;
+            color: #6c757d;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="profit-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1><i class="fas fa-calculator me-3"></i>管理账分润计算</h1>
+                    <p class="mb-0">基于部门维度的利润分配和内部协议匹配</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <button class="btn btn-light" onclick="goBack()">
+                        <i class="fas fa-arrow-left me-2"></i>返回首页
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 进度指示器 -->
+        <div class="progress-container">
+            <div class="step-indicator">
+                <div class="step completed">
+                    <div class="step-number">1</div>
+                    <div class="step-label">录费完成</div>
+                </div>
+                <div class="step active">
+                    <div class="step-number">2</div>
+                    <div class="step-label">分润计算</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-label">清分处理</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-label">业务统计</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 订单选择和计算控制 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-cog me-2"></i>分润计算控制</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <label for="orderSelect" class="form-label">选择订单</label>
+                        <select class="form-select" id="orderSelect" onchange="loadOrderExpenses()">
+                            <option value="">请选择订单...</option>
+                            <option value="HCBD20250916001">HCBD20250916001 - 上海至洛杉矶FCL</option>
+                            <option value="HCBD20250916002">HCBD20250916002 - 深圳至纽约FCL</option>
+                            <option value="HCBD20250916003">HCBD20250916003 - 青岛至长滩FCL</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">计算选项</label>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-primary" id="calculateBtn" onclick="calculateProfitSharing()" disabled>
+                                <i class="fas fa-play me-2"></i>开始计算
+                            </button>
+                            <button class="btn btn-warning" id="recalculateBtn" onclick="recalculateProfit()" disabled>
+                                <i class="fas fa-redo me-2"></i>重新计算
+                            </button>
+                            <button class="btn btn-info" onclick="validateBalance()" id="validateBtn" disabled>
+                                <i class="fas fa-check-double me-2"></i>校验平衡
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-3" id="orderInfo" style="display: none;">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle me-2"></i>订单费用明细信息</h6>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <strong>应收明细:</strong> <span id="receivableCount">0</span> 条
+                            </div>
+                            <div class="col-md-3">
+                                <strong>应付明细:</strong> <span id="payableCount">0</span> 条
+                            </div>
+                            <div class="col-md-3">
+                                <strong>应收总额:</strong> ¥<span id="totalReceivable">0.00</span>
+                            </div>
+                            <div class="col-md-3">
+                                <strong>应付总额:</strong> ¥<span id="totalPayable">0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 分润计算结果 -->
+        <div class="card" id="profitResultsCard" style="display: none;">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>分润计算结果</h5>
+                <span class="status-badge status-calculated" id="calculationStatus">已计算</span>
+            </div>
+            <div class="card-body">
+                <!-- 汇总信息 -->
+                <div class="row mb-4" id="profitSummary">
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h4 class="profit-amount" id="totalGrossProfit">¥0.00</h4>
+                            <small class="text-muted">订单总毛利</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h4 class="text-info" id="involvedDepartments">0</h4>
+                            <small class="text-muted">涉及部门数</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h4 class="text-warning" id="totalServices">0</h4>
+                            <small class="text-muted">服务项目数</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h4 class="text-secondary" id="calculationTime">-</h4>
+                            <small class="text-muted">计算时间</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 平衡校验结果 -->
+                <div id="balanceCheck" style="display: none;"></div>
+
+                <!-- 部门分润详情 -->
+                <div class="row">
+                    <div class="col-md-8">
+                        <h6><i class="fas fa-building me-2"></i>部门分润明细</h6>
+                        <div id="departmentResults"></div>
+                    </div>
+                    <div class="col-md-4">
+                        <h6><i class="fas fa-chart-bar me-2"></i>部门汇总</h6>
+                        <div id="departmentSummary"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 计算日志 -->
+        <div class="card" id="calculationLogCard" style="display: none;">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-list-alt me-2"></i>计算日志</h5>
+            </div>
+            <div class="card-body">
+                <div class="calculation-log" id="calculationLog"></div>
+            </div>
+        </div>
+
+        <!-- 分润规则管理 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-cogs me-2"></i>分润规则管理</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="rulesTable">
+                        <thead>
+                            <tr>
+                                <th>规则编码</th>
+                                <th>规则名称</th>
+                                <th>规则类型</th>
+                                <th>销售分润比例</th>
+                                <th>操作分润比例</th>
+                                <th>优先级</th>
+                                <th>状态</th>
+                                <th>适用范围</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rulesTableBody">
+                            <tr>
+                                <td colspan="8" class="text-center text-muted">加载中...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="profit-sharing.js"></script>
+</body>
+</html>

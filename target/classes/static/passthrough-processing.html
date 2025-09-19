@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>过账处理管理 - OneOrder财务清分系统</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .passthrough-header {
+            background: linear-gradient(135deg, #8B5FBF 0%, #6441A5 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        .card {
+            border: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+            border-radius: 12px;
+        }
+        .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            font-weight: 600;
+            border-radius: 12px 12px 0 0 !important;
+        }
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        .status-pending { background-color: #fff3cd; color: #856404; }
+        .status-processing { background-color: #cce5ff; color: #004085; }
+        .status-completed { background-color: #d4edda; color: #155724; }
+        .status-failed { background-color: #f8d7da; color: #721c24; }
+        .status-replaced { background-color: #e2e3e5; color: #383d41; }
+        
+        .mode-routing { background-color: #e7f3ff; color: #0056b3; }
+        .mode-netting { background-color: #fff0e6; color: #b85c00; }
+        .mode-differential { background-color: #f0e6ff; color: #6f42c1; }
+        
+        .detail-type-routing { border-left: 4px solid #007bff; }
+        .detail-type-retention { border-left: 4px solid #28a745; }
+        .detail-type-passthrough { border-left: 4px solid #6c757d; }
+        .detail-type-netting { border-left: 4px solid #ffc107; }
+        
+        .amount-positive { color: #28a745; font-weight: bold; }
+        .amount-negative { color: #dc3545; font-weight: bold; }
+        .amount-retention { color: #17a2b8; font-weight: bold; }
+        
+        .routing-timeline {
+            position: relative;
+            padding-left: 2rem;
+        }
+        .timeline-item {
+            position: relative;
+            padding-bottom: 1.5rem;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -2rem;
+            top: 0;
+            width: 2px;
+            height: 100%;
+            background-color: #dee2e6;
+        }
+        .timeline-item::after {
+            content: '';
+            position: absolute;
+            left: -2.5rem;
+            top: 0;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #007bff;
+        }
+        .timeline-item.retention::after {
+            background-color: #28a745;
+        }
+        .timeline-item.netting::after {
+            background-color: #ffc107;
+        }
+        
+        .statistics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.875rem;
+        }
+        
+        .routing-flow {
+            display: flex;
+            align-items: center;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+        }
+        .flow-entity {
+            background-color: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            margin: 0.25rem;
+            position: relative;
+            font-weight: 500;
+        }
+        .flow-entity.payer {
+            border-color: #dc3545;
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .flow-entity.routing {
+            border-color: #007bff;
+            background-color: #e7f3ff;
+            color: #0056b3;
+        }
+        .flow-entity.payee {
+            border-color: #28a745;
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .flow-arrow {
+            color: #6c757d;
+            font-size: 1.2rem;
+            margin: 0 0.5rem;
+        }
+        
+        .rule-card {
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .rule-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        
+        .netting-comparison {
+            background: linear-gradient(45deg, #f8f9fa 25%, transparent 25%), 
+                        linear-gradient(-45deg, #f8f9fa 25%, transparent 25%), 
+                        linear-gradient(45deg, transparent 75%, #f8f9fa 75%), 
+                        linear-gradient(-45deg, transparent 75%, #f8f9fa 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+        
+        .diff-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+        .diff-increase { background-color: #28a745; }
+        .diff-decrease { background-color: #dc3545; }
+        .diff-neutral { background-color: #6c757d; }
+        
+        .routing-path {
+            font-family: 'Courier New', monospace;
+            background-color: #f8f9fa;
+            padding: 0.5rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+        }
+        
+        .instruction-workflow {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+        .workflow-step {
+            flex: 1;
+            text-align: center;
+            padding: 1rem;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            margin: 0.25rem;
+            position: relative;
+            background-color: #f8f9fa;
+            min-width: 150px;
+        }
+        .workflow-step.active {
+            border-color: #007bff;
+            background-color: #e7f3ff;
+            color: #0056b3;
+        }
+        .workflow-step.completed {
+            border-color: #28a745;
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .workflow-step::after {
+            content: '→';
+            position: absolute;
+            right: -1.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.2rem;
+            color: #6c757d;
+        }
+        .workflow-step:last-child::after {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="passthrough-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1><i class="fas fa-route me-3"></i>过账处理管理</h1>
+                    <p class="mb-0">基于路由规则的智能资金流过账与轧差结算系统</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <button class="btn btn-light" onclick="goBack()">
+                        <i class="fas fa-arrow-left me-2"></i>返回首页
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 过账处理统计 -->
+        <div class="statistics-grid" id="statisticsGrid">
+            <div class="stat-card">
+                <div class="stat-number text-primary" id="totalInstructions">0</div>
+                <div class="stat-label">总过账指令</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number text-warning" id="pendingInstructions">0</div>
+                <div class="stat-label">待处理</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number text-success" id="completedInstructions">0</div>
+                <div class="stat-label">已完成</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number text-info" id="totalOriginalAmount">¥0.00</div>
+                <div class="stat-label">原始总额</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number text-primary" id="totalPassthroughAmount">¥0.00</div>
+                <div class="stat-label">过账总额</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number text-success" id="totalRetentionAmount">¥0.00</div>
+                <div class="stat-label">总留存金额</div>
+            </div>
+        </div>
+
+        <!-- 过账指令管理 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-list-alt me-2"></i>过账指令管理</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label for="orderSelect" class="form-label">选择订单</label>
+                        <select class="form-select" id="orderSelect">
+                            <option value="">请选择订单...</option>
+                            <option value="HCBD20250916001">HCBD20250916001 - 上海至洛杉矶FCL</option>
+                            <option value="HCBD20250916002">HCBD20250916002 - 深圳至纽约FCL</option>
+                            <option value="HCBD20250916003">HCBD20250916003 - 青岛至长滩FCL</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="passthroughModeSelect" class="form-label">过账模式</label>
+                        <select class="form-select" id="passthroughModeSelect">
+                            <option value="ROUTING">路由过账</option>
+                            <option value="NETTING">轧差结算</option>
+                            <option value="DIFFERENTIAL">差异处理</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">操作</label>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary" onclick="generatePassthroughInstruction()" id="generateBtn" disabled>
+                                <i class="fas fa-plus me-2"></i>生成指令
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">批量操作</label>
+                        <div class="d-grid gap-2 d-md-flex">
+                            <button class="btn btn-success btn-sm" onclick="showBatchModal()">
+                                <i class="fas fa-layer-group me-1"></i>批量处理
+                            </button>
+                            <button class="btn btn-info btn-sm" onclick="showDifferentialModal()">
+                                <i class="fas fa-exchange-alt me-1"></i>差异处理
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 过账处理工作流 -->
+                <div id="instructionWorkflow" style="display: none;">
+                    <div class="instruction-workflow">
+                        <div class="workflow-step" id="step1">
+                            <i class="fas fa-file-alt fa-2x mb-2"></i>
+                            <div><strong>指令生成</strong></div>
+                            <small>基于清分结果</small>
+                        </div>
+                        <div class="workflow-step" id="step2">
+                            <i class="fas fa-route fa-2x mb-2"></i>
+                            <div><strong>路由处理</strong></div>
+                            <small>应用路由规则</small>
+                        </div>
+                        <div class="workflow-step" id="step3">
+                            <i class="fas fa-balance-scale fa-2x mb-2"></i>
+                            <div><strong>轧差结算</strong></div>
+                            <small>优化资金流</small>
+                        </div>
+                        <div class="workflow-step" id="step4">
+                            <i class="fas fa-check-circle fa-2x mb-2"></i>
+                            <div><strong>执行完成</strong></div>
+                            <small>状态更新</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 当前过账指令信息 -->
+                <div id="currentInstruction" style="display: none;">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle me-2"></i>当前过账指令</h6>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <strong>指令ID:</strong> <span id="instructionId">-</span>
+                            </div>
+                            <div class="col-md-3">
+                                <strong>过账模式:</strong> <span id="instructionMode">-</span>
+                            </div>
+                            <div class="col-md-3">
+                                <strong>原始金额:</strong> <span id="originalAmount">¥0.00</span>
+                            </div>
+                            <div class="col-md-3">
+                                <strong>状态:</strong> <span id="instructionStatus">-</span>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-md-6">
+                                <strong>过账总额:</strong> <span id="passthroughAmount">¥0.00</span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>留存金额:</strong> <span id="retentionAmount">¥0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2 mb-3 flex-wrap">
+                        <button class="btn btn-success" onclick="executePassthroughInstruction(false)" id="executeBtn">
+                            <i class="fas fa-play me-2"></i>执行过账
+                        </button>
+                        <button class="btn btn-outline-success" onclick="executePassthroughInstruction(true)" id="dryRunBtn">
+                            <i class="fas fa-calculator me-2"></i>试算模式
+                        </button>
+                        <button class="btn btn-info" onclick="viewInstructionDetails()" id="detailsBtn">
+                            <i class="fas fa-list me-2"></i>查看明细
+                        </button>
+                        <button class="btn btn-warning" onclick="viewRoutingPath()" id="routingBtn">
+                            <i class="fas fa-route me-2"></i>路由路径
+                        </button>
+                        <button class="btn btn-secondary" onclick="viewExecutionLogs()" id="logsBtn">
+                            <i class="fas fa-file-alt me-2"></i>执行日志
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 过账明细 -->
+        <div class="card" id="passthroughDetailsCard" style="display: none;">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-list me-2"></i>过账处理明细</h5>
+                <span class="badge bg-info" id="detailsCount">0 条明细</span>
+            </div>
+            <div class="card-body">
+                <div id="passthroughDetailsList"></div>
+            </div>
+        </div>
+
+        <!-- 路由路径展示 -->
+        <div class="card" id="routingPathCard" style="display: none;">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-route me-2"></i>资金路由路径</h5>
+            </div>
+            <div class="card-body">
+                <div id="routingPathVisualization"></div>
+            </div>
+        </div>
+
+        <!-- 轧差结算结果 -->
+        <div class="card" id="nettingResultCard" style="display: none;">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-balance-scale me-2"></i>轧差结算结果</h5>
+            </div>
+            <div class="card-body">
+                <div id="nettingResultsList"></div>
+            </div>
+        </div>
+
+        <!-- 执行结果 -->
+        <div class="card" id="executionResultCard" style="display: none;">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>执行结果</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-3 text-center">
+                        <h4 class="text-success" id="successCount">0</h4>
+                        <small class="text-muted">成功明细</small>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <h4 class="text-danger" id="failureCount">0</h4>
+                        <small class="text-muted">失败明细</small>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <h4 class="text-info" id="successRate">0%</h4>
+                        <small class="text-muted">成功率</small>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <h4 class="text-warning" id="executedAmount">¥0.00</h4>
+                        <small class="text-muted">执行金额</small>
+                    </div>
+                </div>
+                
+                <div class="routing-timeline" id="executionTimeline"></div>
+            </div>
+        </div>
+
+        <!-- 过账路由规则配置 -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-cogs me-2"></i>过账路由规则</h5>
+                <button class="btn btn-primary btn-sm" onclick="showRuleModal()">
+                    <i class="fas fa-plus me-1"></i>新增规则
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="row" id="routingRulesList">
+                    <div class="col-12 text-center text-muted">
+                        <i class="fas fa-spinner fa-spin me-2"></i>加载路由规则...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 轧差处理规则 -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-balance-scale me-2"></i>轧差处理规则</h5>
+                <button class="btn btn-success btn-sm" onclick="showNettingRuleModal()">
+                    <i class="fas fa-plus me-1"></i>新增轧差规则
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="nettingRulesTable">
+                        <thead>
+                            <tr>
+                                <th>规则名称</th>
+                                <th>过账法人</th>
+                                <th>目标法人</th>
+                                <th>币种</th>
+                                <th>处理模式</th>
+                                <th>最小金额</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="nettingRulesTableBody">
+                            <tr>
+                                <td colspan="8" class="text-center text-muted">加载中...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 批量处理模态框 -->
+        <div class="modal fade" id="batchProcessModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">批量过账处理</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="batchOrderIds" class="form-label">订单ID列表（每行一个）</label>
+                            <textarea class="form-control" id="batchOrderIds" rows="5" placeholder="HCBD20250916001&#10;HCBD20250916002&#10;HCBD20250916003"></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="batchPassthroughMode" class="form-label">过账模式</label>
+                                <select class="form-select" id="batchPassthroughMode">
+                                    <option value="ROUTING">路由过账</option>
+                                    <option value="NETTING">轧差结算</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">处理选项</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="batchDryRun">
+                                    <label class="form-check-label" for="batchDryRun">试算模式</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        <button type="button" class="btn btn-primary" onclick="executeBatchProcessing()">
+                            <i class="fas fa-play me-2"></i>开始批量处理
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 差异处理模态框 -->
+        <div class="modal fade" id="differentialProcessModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">差异账单处理</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="diffOrderId" class="form-label">订单ID</label>
+                                <input type="text" class="form-control" id="diffOrderId" placeholder="输入订单ID">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="diffOriginalInstructionId" class="form-label">原始过账指令ID</label>
+                                <input type="text" class="form-control" id="diffOriginalInstructionId" placeholder="输入原始指令ID">
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="diffType" class="form-label">差异类型</label>
+                                <select class="form-select" id="diffType">
+                                    <option value="AMOUNT_CHANGE">金额变更</option>
+                                    <option value="RULE_CHANGE">规则变更</option>
+                                    <option value="ENTITY_CHANGE">法人变更</option>
+                                    <option value="CURRENCY_CHANGE">币种变更</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="diffProcessingMode" class="form-label">处理模式</label>
+                                <select class="form-select" id="diffProcessingMode">
+                                    <option value="INCREMENTAL">增量模式</option>
+                                    <option value="FULL_REPLACEMENT">全量替换</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="diffReason" class="form-label">差异原因</label>
+                            <textarea class="form-control" id="diffReason" rows="3" placeholder="描述产生差异的原因..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        <button type="button" class="btn btn-warning" onclick="processDifferentialBilling()">
+                            <i class="fas fa-exchange-alt me-2"></i>处理差异
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 执行日志模态框 -->
+        <div class="modal fade" id="logsModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">过账执行日志</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="log-container" id="executionLogs" style="max-height: 400px; overflow-y: auto;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="passthrough-processing.js"></script>
+</body>
+</html>

@@ -1,0 +1,368 @@
+package com.oneorder.clearing.controller;
+
+import com.oneorder.clearing.dto.*;
+import com.oneorder.clearing.entity.*;
+import com.oneorder.clearing.service.ContractManagementService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import javax.validation.Valid;
+import java.util.List;
+
+/**
+ * 内部合约管理控制器
+ * 提供集团级内部合约管理的完整API
+ */
+@RestController
+@RequestMapping("/api/contract-management")
+@RequiredArgsConstructor
+@Slf4j
+@CrossOrigin(origins = "*")
+public class ContractManagementController {
+
+    private final ContractManagementService contractManagementService;
+
+    // ==================== 4.1 内部主合约管理 ====================
+
+    /**
+     * 创建内部主合约
+     */
+    @PostMapping("/master-contracts")
+    public ResponseEntity<InternalMasterContractDTO> createMasterContract(@Valid @RequestBody CreateMasterContractRequest request) {
+        log.info("创建内部主合约: {}", request.getContractName());
+        InternalMasterContractDTO contract = contractManagementService.createMasterContract(request);
+        return ResponseEntity.ok(contract);
+    }
+
+    /**
+     * 获取内部主合约详情
+     */
+    @GetMapping("/master-contracts/{contractId}")
+    public ResponseEntity<InternalMasterContractDTO> getMasterContract(@PathVariable String contractId) {
+        InternalMasterContractDTO contract = contractManagementService.getMasterContract(contractId);
+        return ResponseEntity.ok(contract);
+    }
+
+    /**
+     * 分页查询内部主合约
+     */
+    @GetMapping("/master-contracts")
+    public ResponseEntity<Page<InternalMasterContractDTO>> listMasterContracts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String salesCostCenter,
+            @RequestParam(required = false) String deliveryCostCenter,
+            @RequestParam(required = false) Boolean isActive) {
+        
+        Pageable pageable = PageRequest.of(page, size);
+        Page<InternalMasterContractDTO> contracts = contractManagementService.listMasterContracts(
+                pageable, salesCostCenter, deliveryCostCenter, isActive);
+        return ResponseEntity.ok(contracts);
+    }
+
+    /**
+     * 更新内部主合约
+     */
+    @PutMapping("/master-contracts/{contractId}")
+    public ResponseEntity<InternalMasterContractDTO> updateMasterContract(
+            @PathVariable String contractId,
+            @Valid @RequestBody UpdateMasterContractRequest request) {
+        log.info("更新内部主合约: {}", contractId);
+        InternalMasterContractDTO contract = contractManagementService.updateMasterContract(contractId, request);
+        return ResponseEntity.ok(contract);
+    }
+
+    /**
+     * 删除内部主合约
+     */
+    @DeleteMapping("/master-contracts/{contractId}")
+    public ResponseEntity<Void> deleteMasterContract(@PathVariable String contractId) {
+        log.info("删除内部主合约: {}", contractId);
+        contractManagementService.deleteMasterContract(contractId);
+        return ResponseEntity.ok().build();
+    }
+
+    // ==================== 4.2 合约条款管理 ====================
+
+    /**
+     * 创建合约条款
+     */
+    @PostMapping("/contract-terms")
+    public ResponseEntity<ContractTermsDTO> createContractTerms(@Valid @RequestBody CreateContractTermsRequest request) {
+        log.info("创建合约条款: {}", request.getProfitSharingType());
+        ContractTermsDTO terms = contractManagementService.createContractTerms(request);
+        return ResponseEntity.ok(terms);
+    }
+
+    /**
+     * 获取合约条款详情
+     */
+    @GetMapping("/contract-terms/{termsId}")
+    public ResponseEntity<ContractTermsDTO> getContractTerms(@PathVariable String termsId) {
+        ContractTermsDTO terms = contractManagementService.getContractTerms(termsId);
+        return ResponseEntity.ok(terms);
+    }
+
+    /**
+     * 分页查询合约条款
+     */
+    @GetMapping("/contract-terms")
+    public ResponseEntity<Page<ContractTermsDTO>> listContractTerms(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String profitSharingType,
+            @RequestParam(required = false) String serviceCode) {
+        
+        Pageable pageable = PageRequest.of(page, size);
+        Page<ContractTermsDTO> terms = contractManagementService.listContractTerms(
+                pageable, profitSharingType, serviceCode);
+        return ResponseEntity.ok(terms);
+    }
+
+    /**
+     * 更新合约条款
+     */
+    @PutMapping("/contract-terms/{termsId}")
+    public ResponseEntity<ContractTermsDTO> updateContractTerms(
+            @PathVariable String termsId,
+            @Valid @RequestBody UpdateContractTermsRequest request) {
+        log.info("更新合约条款: {}", termsId);
+        ContractTermsDTO terms = contractManagementService.updateContractTerms(termsId, request);
+        return ResponseEntity.ok(terms);
+    }
+
+    // ==================== 4.3 法人间关联交易规则管理 ====================
+
+    /**
+     * 创建法人间关联交易规则
+     */
+    @PostMapping("/intercompany-rules")
+    public ResponseEntity<IntercompanyTransactionRuleDTO> createIntercompanyRule(
+            @Valid @RequestBody CreateIntercompanyRuleRequest request) {
+        log.info("创建法人间关联交易规则: {} -> {}", request.getSalesEntityId(), request.getDeliveryEntityId());
+        IntercompanyTransactionRuleDTO rule = contractManagementService.createIntercompanyRule(request);
+        return ResponseEntity.ok(rule);
+    }
+
+    /**
+     * 分页查询法人间关联交易规则
+     */
+    @GetMapping("/intercompany-rules")
+    public ResponseEntity<Page<IntercompanyTransactionRuleDTO>> listIntercompanyRules(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String salesEntityId,
+            @RequestParam(required = false) String deliveryEntityId,
+            @RequestParam(required = false) String transactionMode) {
+        
+        Pageable pageable = PageRequest.of(page, size);
+        Page<IntercompanyTransactionRuleDTO> rules = contractManagementService.listIntercompanyRules(
+                pageable, salesEntityId, deliveryEntityId, transactionMode);
+        return ResponseEntity.ok(rules);
+    }
+
+    // ==================== 4.4 考核补贴规则管理 ====================
+
+    /**
+     * 创建考核补贴规则
+     */
+    @PostMapping("/subsidy-rules")
+    public ResponseEntity<AssessmentSubsidyRuleDTO> createSubsidyRule(
+            @Valid @RequestBody CreateSubsidyRuleRequest request) {
+        log.info("创建考核补贴规则: {}", request.getRuleNameCn());
+        AssessmentSubsidyRuleDTO rule = contractManagementService.createSubsidyRule(request);
+        return ResponseEntity.ok(rule);
+    }
+
+    /**
+     * 分页查询考核补贴规则
+     */
+    @GetMapping("/subsidy-rules")
+    public ResponseEntity<Page<AssessmentSubsidyRuleDTO>> listSubsidyRules(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String subsidyCostCenterType,
+            @RequestParam(required = false) String subsidyMode,
+            @RequestParam(required = false) Boolean isActive) {
+        
+        Pageable pageable = PageRequest.of(page, size);
+        Page<AssessmentSubsidyRuleDTO> rules = contractManagementService.listSubsidyRules(
+                pageable, subsidyCostCenterType, subsidyMode, isActive);
+        return ResponseEntity.ok(rules);
+    }
+
+    /**
+     * 更新考核补贴规则
+     */
+    @PutMapping("/subsidy-rules/{ruleId}")
+    public ResponseEntity<AssessmentSubsidyRuleDTO> updateSubsidyRule(
+            @PathVariable String ruleId,
+            @Valid @RequestBody UpdateSubsidyRuleRequest request) {
+        log.info("更新考核补贴规则: {}", ruleId);
+        AssessmentSubsidyRuleDTO rule = contractManagementService.updateSubsidyRule(ruleId, request);
+        return ResponseEntity.ok(rule);
+    }
+
+    // ==================== 4.5 收付款借抬头规则管理 ====================
+
+    /**
+     * 创建收付款借抬头规则
+     */
+    @PostMapping("/retention-rules")
+    public ResponseEntity<ReceiptPaymentRetentionRuleDTO> createRetentionRule(
+            @Valid @RequestBody CreateRetentionRuleRequest request) {
+        log.info("创建收付款借抬头规则");
+        ReceiptPaymentRetentionRuleDTO rule = contractManagementService.createRetentionRule(request);
+        return ResponseEntity.ok(rule);
+    }
+
+    /**
+     * 分页查询收付款借抬头规则
+     */
+    @GetMapping("/retention-rules")
+    public ResponseEntity<Page<ReceiptPaymentRetentionRuleDTO>> listRetentionRules(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String entityId) {
+        
+        Pageable pageable = PageRequest.of(page, size);
+        Page<ReceiptPaymentRetentionRuleDTO> rules = contractManagementService.listRetentionRules(pageable, entityId);
+        return ResponseEntity.ok(rules);
+    }
+
+    // ==================== 4.6 资金路由规则管理 ====================
+
+    /**
+     * 创建资金路由规则
+     */
+    @PostMapping("/fund-routing-rules")
+    public ResponseEntity<FundRoutingRuleDTO> createFundRoutingRule(
+            @Valid @RequestBody CreateFundRoutingRuleRequest request) {
+        log.info("创建资金路由规则: {} -> {}", request.getPayingEntityId(), request.getReceivingEntityId());
+        FundRoutingRuleDTO rule = contractManagementService.createFundRoutingRule(request);
+        return ResponseEntity.ok(rule);
+    }
+
+    /**
+     * 查询资金路由规则
+     */
+    @GetMapping("/fund-routing-rules")
+    public ResponseEntity<List<FundRoutingRuleDTO>> listFundRoutingRules(
+            @RequestParam(required = false) String payingEntityId,
+            @RequestParam(required = false) String receivingEntityId,
+            @RequestParam(required = false) String currency) {
+        
+        List<FundRoutingRuleDTO> rules = contractManagementService.listFundRoutingRules(
+                payingEntityId, receivingEntityId, currency);
+        return ResponseEntity.ok(rules);
+    }
+
+    /**
+     * 获取最佳资金路由
+     */
+    @GetMapping("/fund-routing-rules/best-route")
+    public ResponseEntity<FundRoutingRuleDTO> getBestFundRoute(
+            @RequestParam String payingEntityId,
+            @RequestParam String receivingEntityId,
+            @RequestParam String currency) {
+        
+        FundRoutingRuleDTO bestRoute = contractManagementService.getBestFundRoute(
+                payingEntityId, receivingEntityId, currency);
+        return ResponseEntity.ok(bestRoute);
+    }
+
+    // ==================== 合约匹配与应用 ====================
+
+    /**
+     * 为订单匹配最佳合约
+     */
+    @PostMapping("/match-contract")
+    public ResponseEntity<ContractMatchResultDTO> matchContractForOrder(
+            @Valid @RequestBody ContractMatchRequest request) {
+        log.info("为订单匹配合约: {}", request.getOrderId());
+        ContractMatchResultDTO result = contractManagementService.matchContractForOrder(request);
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * 应用合约到订单
+     */
+    @PostMapping("/apply-contract")
+    public ResponseEntity<ContractApplicationResultDTO> applyContractToOrder(
+            @Valid @RequestBody ContractApplicationRequest request) {
+        log.info("应用合约到订单: {}", request.getOrderId());
+        ContractApplicationResultDTO result = contractManagementService.applyContractToOrder(request);
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * 计算分润预览
+     */
+    @PostMapping("/calculate-profit-sharing")
+    public ResponseEntity<ProfitSharingCalculationDTO> calculateProfitSharing(
+            @Valid @RequestBody ProfitSharingCalculationRequest request) {
+        log.info("计算分润预览: {}", request.getOrderId());
+        ProfitSharingCalculationDTO calculation = contractManagementService.calculateProfitSharing(request);
+        return ResponseEntity.ok(calculation);
+    }
+
+    // ==================== 统计与报表 ====================
+
+    /**
+     * 获取合约统计信息
+     */
+    @GetMapping("/statistics")
+    public ResponseEntity<ContractStatisticsDTO> getContractStatistics(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
+            @RequestParam(required = false) String entityId) {
+        
+        ContractStatisticsDTO statistics = contractManagementService.getContractStatistics(startDate, endDate, entityId);
+        return ResponseEntity.ok(statistics);
+    }
+
+    /**
+     * 导出合约数据
+     */
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> exportContractData(
+            @RequestParam String type, // master-contracts, contract-terms, etc.
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        
+        log.info("导出合约数据: {}", type);
+        byte[] data = contractManagementService.exportContractData(type, startDate, endDate);
+        
+        return ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=contract-data.xlsx")
+                .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                .body(data);
+    }
+
+    // ==================== 健康检查与验证 ====================
+
+    /**
+     * 验证合约配置
+     */
+    @PostMapping("/validate-contract-config")
+    public ResponseEntity<ContractValidationResultDTO> validateContractConfig(
+            @Valid @RequestBody ContractValidationRequest request) {
+        log.info("验证合约配置");
+        ContractValidationResultDTO result = contractManagementService.validateContractConfig(request);
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * 获取合约健康状态
+     */
+    @GetMapping("/health-check")
+    public ResponseEntity<ContractHealthStatusDTO> getContractHealthStatus() {
+        ContractHealthStatusDTO healthStatus = contractManagementService.getContractHealthStatus();
+        return ResponseEntity.ok(healthStatus);
+    }
+}

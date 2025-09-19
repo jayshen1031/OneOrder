@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>服务配置管理 - OneOrder</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        .config-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+        .config-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .config-card.enabled {
+            border-left-color: #198754;
+        }
+        .config-card.disabled {
+            border-left-color: #dc3545;
+            opacity: 0.7;
+        }
+        .fee-category-badge {
+            font-size: 0.75rem;
+        }
+        .rate-input {
+            width: 120px;
+        }
+        .search-box {
+            max-width: 400px;
+        }
+        .filter-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .statistics-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .category-stats {
+            background: #fff;
+            border-radius: 8px;
+            padding: 1rem;
+        }
+        .loading-spinner {
+            display: none;
+        }
+        .config-actions {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .config-card:hover .config-actions {
+            opacity: 1;
+        }
+        .batch-actions {
+            position: sticky;
+            top: 20px;
+            z-index: 1000;
+        }
+        .edit-mode .form-control {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- 导航栏 -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="freight-order.html">
+                    <i class="fas fa-arrow-left me-2"></i>OneOrder
+                </a>
+                <div class="navbar-nav ms-auto">
+                    <span class="navbar-text">
+                        <i class="fas fa-cog me-2"></i>服务配置管理
+                    </span>
+                </div>
+            </div>
+        </nav>
+
+        <!-- 统计信息区域 -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card statistics-card">
+                    <div class="card-body text-center">
+                        <h2 id="totalConfigs">0</h2>
+                        <p class="mb-0">总配置数</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body text-center">
+                        <h2 id="enabledConfigs">0</h2>
+                        <p class="mb-0">启用配置</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-white">
+                    <div class="card-body text-center">
+                        <h2 id="feeCategoriesCount">0</h2>
+                        <p class="mb-0">费用分类</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-info text-white">
+                    <div class="card-body text-center">
+                        <h2 id="businessTypesCount">0</h2>
+                        <p class="mb-0">业务类型</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 筛选和搜索区域 -->
+        <div class="filter-section">
+            <div class="row align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">业务类型</label>
+                    <select class="form-select" id="businessTypeFilter">
+                        <option value="">全部业务类型</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">费用分类</label>
+                    <select class="form-select" id="feeCategoryFilter">
+                        <option value="">全部费用分类</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">搜索</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="searchKeyword" 
+                               placeholder="搜索费用名称、编码或助记符...">
+                        <button class="btn btn-outline-primary" type="button" onclick="searchConfigs()">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="btn-group w-100" role="group">
+                        <button type="button" class="btn btn-primary" onclick="loadConfigs()">
+                            <i class="fas fa-refresh me-1"></i>刷新
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 批量操作区域 -->
+        <div class="batch-actions card mb-3">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="batchEditMode">
+                            <label class="form-check-label" for="batchEditMode">
+                                <i class="fas fa-edit me-2"></i>批量编辑模式
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-success btn-sm" onclick="saveAllChanges()" disabled id="saveAllBtn">
+                                <i class="fas fa-save me-1"></i>保存所有更改
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="cancelAllChanges()" disabled id="cancelAllBtn">
+                                <i class="fas fa-times me-1"></i>取消更改
+                            </button>
+                            <button type="button" class="btn btn-warning btn-sm" onclick="resetToDefaults()">
+                                <i class="fas fa-undo me-1"></i>重置默认
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 加载动画 -->
+        <div class="text-center loading-spinner" id="loadingSpinner">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">加载中...</p>
+        </div>
+
+        <!-- 配置列表区域 -->
+        <div id="configsList">
+            <!-- 动态生成配置卡片 -->
+        </div>
+    </div>
+
+    <!-- 配置详情模态框 -->
+    <div class="modal fade" id="configDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-info-circle me-2"></i>配置详情
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="configDetailContent">
+                        <!-- 动态生成详情内容 -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 成功/错误提示 -->
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 11">
+        <div id="alertContainer"></div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // 全局变量
+        let allConfigs = [];
+        let filteredConfigs = [];
+        let changedConfigs = new Map();
+        let statistics = {};
+        let batchEditMode = false;
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStatistics();
+            loadConfigs();
+            setupEventListeners();
+        });
+
+        // 设置事件监听器
+        function setupEventListeners() {
+            // 筛选器变化监听
+            document.getElementById('businessTypeFilter').addEventListener('change', filterConfigs);
+            document.getElementById('feeCategoryFilter').addEventListener('change', filterConfigs);
+            
+            // 搜索框回车监听
+            document.getElementById('searchKeyword').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    searchConfigs();
+                }
+            });
+            
+            // 批量编辑模式切换
+            document.getElementById('batchEditMode').addEventListener('change', function(e) {
+                batchEditMode = e.target.checked;
+                toggleBatchEditMode(batchEditMode);
+            });
+        }
+
+        // 加载统计信息
+        async function loadStatistics() {
+            try {
+                const response = await fetch('/api/freight-orders/service-config/statistics');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    statistics = data;
+                    updateStatisticsDisplay();
+                    populateFilterOptions();
+                } else {
+                    showAlert('加载统计信息失败: ' + data.error, 'danger');
+                }
+            } catch (error) {
+                console.error('加载统计信息失败:', error);
+                showAlert('加载统计信息失败: ' + error.message, 'danger');
+            }
+        }
+
+        // 更新统计信息显示
+        function updateStatisticsDisplay() {
+            document.getElementById('totalConfigs').textContent = statistics.totalConfigs || 0;
+            document.getElementById('enabledConfigs').textContent = statistics.enabledConfigs || 0;
+            document.getElementById('feeCategoriesCount').textContent = statistics.allFeeCategories?.length || 0;
+            document.getElementById('businessTypesCount').textContent = statistics.allBusinessTypes?.length || 0;
+        }
+
+        // 填充筛选器选项
+        function populateFilterOptions() {
+            const businessTypeSelect = document.getElementById('businessTypeFilter');
+            const feeCategorySelect = document.getElementById('feeCategoryFilter');
+            
+            // 清空现有选项
+            businessTypeSelect.innerHTML = '<option value="">全部业务类型</option>';
+            feeCategorySelect.innerHTML = '<option value="">全部费用分类</option>';
+            
+            // 添加业务类型选项
+            if (statistics.allBusinessTypes) {
+                statistics.allBusinessTypes.forEach(type => {
+                    if (type) {
+                        const option = document.createElement('option');
+                        option.value = type;
+                        option.textContent = type;
+                        businessTypeSelect.appendChild(option);
+                    }
+                });
+            }
+            
+            // 添加费用分类选项
+            if (statistics.allFeeCategories) {
+                statistics.allFeeCategories.forEach(category => {
+                    if (category) {
+                        const option = document.createElement('option');
+                        option.value = category;
+                        option.textContent = category;
+                        feeCategorySelect.appendChild(option);
+                    }
+                });
+            }
+        }
+
+        // 加载配置数据
+        async function loadConfigs() {
+            showLoading(true);
+            
+            try {
+                const businessType = document.getElementById('businessTypeFilter').value;
+                const feeCategory = document.getElementById('feeCategoryFilter').value;
+                const keyword = document.getElementById('searchKeyword').value;
+                
+                let url = '/api/freight-orders/service-config?';
+                const params = new URLSearchParams();
+                
+                if (businessType) params.append('businessType', businessType);
+                if (feeCategory) params.append('feeCategory', feeCategory);
+                if (keyword) params.append('keyword', keyword);
+                
+                const response = await fetch(url + params.toString());
+                const data = await response.json();
+                
+                if (response.ok) {
+                    allConfigs = data.configs || [];
+                    filteredConfigs = [...allConfigs];
+                    displayConfigs();
+                    showAlert(`成功加载 ${allConfigs.length} 个配置`, 'success');
+                } else {
+                    showAlert('加载配置失败: ' + data.error, 'danger');
+                }
+            } catch (error) {
+                console.error('加载配置失败:', error);
+                showAlert('加载配置失败: ' + error.message, 'danger');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // 显示配置列表
+        function displayConfigs() {
+            const container = document.getElementById('configsList');
+            
+            if (filteredConfigs.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">没有找到匹配的配置</h5>
+                        <p class="text-muted">请尝试调整筛选条件或搜索关键字</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // 按费用分类分组
+            const groupedConfigs = {};
+            filteredConfigs.forEach(config => {
+                const category = config.feeCategory || '未分类';
+                if (!groupedConfigs[category]) {
+                    groupedConfigs[category] = [];
+                }
+                groupedConfigs[category].push(config);
+            });
+            
+            let html = '';
+            
+            // 为每个分类生成卡片组
+            Object.keys(groupedConfigs).sort().forEach(category => {
+                html += `
+                    <div class="mb-4">
+                        <h5 class="mb-3">
+                            <i class="fas fa-folder me-2 text-primary"></i>${category}
+                            <span class="badge bg-secondary ms-2">${groupedConfigs[category].length}</span>
+                        </h5>
+                        <div class="row">
+                `;
+                
+                groupedConfigs[category].forEach(config => {
+                    html += generateConfigCard(config);
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        // 生成单个配置卡片
+        function generateConfigCard(config) {
+            const isEnabled = config.enabled;
+            const hasChanges = changedConfigs.has(config.feeCode);
+            
+            return `
+                <div class="col-xl-4 col-lg-6 mb-3">
+                    <div class="card config-card ${isEnabled ? 'enabled' : 'disabled'} ${hasChanges ? 'border-warning' : ''}" 
+                         data-fee-code="${config.feeCode}">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>${config.feeCode}</strong>
+                                <span class="badge fee-category-badge bg-primary ms-2">${config.abbreviation || ''}</span>
+                            </div>
+                            <div class="config-actions">
+                                <button class="btn btn-sm btn-outline-info" onclick="showConfigDetail('${config.feeCode}')" 
+                                        title="查看详情">
+                                    <i class="fas fa-info"></i>
+                                </button>
+                                <div class="form-check form-switch d-inline-block ms-2">
+                                    <input class="form-check-input" type="checkbox" 
+                                           id="enabled_${config.feeCode}" 
+                                           ${isEnabled ? 'checked' : ''} 
+                                           onchange="updateConfigField('${config.feeCode}', 'enabled', this.checked)">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="card-title">${config.chineseName}</h6>
+                            <p class="card-text small text-muted">${config.englishName}</p>
+                            
+                            <div class="row">
+                                <div class="col-12 mb-2">
+                                    <label class="form-label small">标准费率</label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" class="form-control rate-input" 
+                                               id="standardRate_${config.feeCode}"
+                                               value="${config.standardRate || ''}" 
+                                               step="0.01" 
+                                               ${batchEditMode ? '' : 'readonly'}
+                                               onchange="updateConfigField('${config.feeCode}', 'standardRate', this.value)">
+                                        <span class="input-group-text">${config.defaultCurrency || 'CNY'}</span>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small">最低费率</label>
+                                    <input type="number" class="form-control form-control-sm" 
+                                           id="minRate_${config.feeCode}"
+                                           value="${config.minRate || ''}" 
+                                           step="0.01" 
+                                           ${batchEditMode ? '' : 'readonly'}
+                                           onchange="updateConfigField('${config.feeCode}', 'minRate', this.value)">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small">最高费率</label>
+                                    <input type="number" class="form-control form-control-sm" 
+                                           id="maxRate_${config.feeCode}"
+                                           value="${config.maxRate || ''}" 
+                                           step="0.01" 
+                                           ${batchEditMode ? '' : 'readonly'}
+                                           onchange="updateConfigField('${config.feeCode}', 'maxRate', this.value)">
+                                </div>
+                            </div>
+                            
+                            <div class="row mt-2">
+                                <div class="col-6">
+                                    <label class="form-label small">单位</label>
+                                    <input type="text" class="form-control form-control-sm" 
+                                           id="unit_${config.feeCode}"
+                                           value="${config.unit || ''}" 
+                                           ${batchEditMode ? '' : 'readonly'}
+                                           onchange="updateConfigField('${config.feeCode}', 'unit', this.value)">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small">币种</label>
+                                    <select class="form-select form-select-sm" 
+                                            id="defaultCurrency_${config.feeCode}"
+                                            ${batchEditMode ? '' : 'disabled'}
+                                            onchange="updateConfigField('${config.feeCode}', 'defaultCurrency', this.value)">
+                                        <option value="CNY" ${config.defaultCurrency === 'CNY' ? 'selected' : ''}>CNY</option>
+                                        <option value="USD" ${config.defaultCurrency === 'USD' ? 'selected' : ''}>USD</option>
+                                        <option value="EUR" ${config.defaultCurrency === 'EUR' ? 'selected' : ''}>EUR</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-tag me-1"></i>${config.relatedService || ''}
+                                    <span class="ms-2">
+                                        <i class="fas fa-building me-1"></i>${config.supplierType || ''}
+                                    </span>
+                                </small>
+                            </div>
+                            
+                            ${hasChanges ? `
+                                <div class="mt-2">
+                                    <span class="badge bg-warning">
+                                        <i class="fas fa-edit me-1"></i>已修改
+                                    </span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 更新配置字段
+        function updateConfigField(feeCode, field, value) {
+            if (!changedConfigs.has(feeCode)) {
+                // 找到原始配置
+                const originalConfig = allConfigs.find(c => c.feeCode === feeCode);
+                if (originalConfig) {
+                    changedConfigs.set(feeCode, {...originalConfig});
+                }
+            }
+            
+            const changedConfig = changedConfigs.get(feeCode);
+            if (changedConfig) {
+                changedConfig[field] = value;
+                
+                // 更新卡片样式以显示已修改状态
+                const card = document.querySelector(`[data-fee-code="${feeCode}"]`);
+                if (card) {
+                    card.classList.add('border-warning');
+                }
+                
+                // 启用保存按钮
+                document.getElementById('saveAllBtn').disabled = false;
+                document.getElementById('cancelAllBtn').disabled = false;
+            }
+        }
+
+        // 切换批量编辑模式
+        function toggleBatchEditMode(enabled) {
+            const inputs = document.querySelectorAll('.config-card input, .config-card select');
+            inputs.forEach(input => {
+                if (input.type === 'checkbox') return; // 保持开关可用
+                
+                if (enabled) {
+                    input.removeAttribute('readonly');
+                    input.removeAttribute('disabled');
+                    input.classList.add('edit-mode');
+                } else {
+                    input.setAttribute('readonly', 'readonly');
+                    input.setAttribute('disabled', 'disabled');
+                    input.classList.remove('edit-mode');
+                }
+            });
+            
+            if (enabled) {
+                showAlert('已启用批量编辑模式，现在可以修改费率配置', 'info');
+            } else {
+                showAlert('已关闭批量编辑模式', 'info');
+            }
+        }
+
+        // 保存所有更改
+        async function saveAllChanges() {
+            if (changedConfigs.size === 0) {
+                showAlert('没有需要保存的更改', 'info');
+                return;
+            }
+            
+            const updateList = Array.from(changedConfigs.values());
+            
+            try {
+                showLoading(true);
+                
+                const response = await fetch('/api/service-config/batch', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updateList)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    showAlert(`成功保存 ${data.updatedCount} 个配置`, 'success');
+                    changedConfigs.clear();
+                    await loadConfigs(); // 重新加载数据
+                    
+                    // 禁用保存按钮
+                    document.getElementById('saveAllBtn').disabled = true;
+                    document.getElementById('cancelAllBtn').disabled = true;
+                } else {
+                    showAlert('保存失败: ' + (data.error || '未知错误'), 'danger');
+                    if (data.errors && data.errors.length > 0) {
+                        data.errors.forEach(error => {
+                            showAlert(error, 'warning');
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('保存配置失败:', error);
+                showAlert('保存配置失败: ' + error.message, 'danger');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // 取消所有更改
+        function cancelAllChanges() {
+            changedConfigs.clear();
+            displayConfigs();
+            
+            // 禁用保存按钮
+            document.getElementById('saveAllBtn').disabled = true;
+            document.getElementById('cancelAllBtn').disabled = true;
+            
+            showAlert('已取消所有更改', 'info');
+        }
+
+        // 筛选配置
+        function filterConfigs() {
+            loadConfigs(); // 重新从后端加载筛选后的数据
+        }
+
+        // 搜索配置
+        function searchConfigs() {
+            loadConfigs(); // 重新从后端加载搜索结果
+        }
+
+        // 显示配置详情
+        async function showConfigDetail(feeCode) {
+            try {
+                const response = await fetch(`/api/service-config/${feeCode}`);
+                const data = await response.json();
+                
+                if (response.ok && data.found) {
+                    const config = data.config;
+                    const modalBody = document.getElementById('configDetailContent');
+                    
+                    modalBody.innerHTML = `
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>基本信息</h6>
+                                <table class="table table-sm">
+                                    <tr><td><strong>费用编码</strong></td><td>${config.feeCode}</td></tr>
+                                    <tr><td><strong>中文名称</strong></td><td>${config.chineseName}</td></tr>
+                                    <tr><td><strong>英文名称</strong></td><td>${config.englishName}</td></tr>
+                                    <tr><td><strong>助记符</strong></td><td>${config.abbreviation || '-'}</td></tr>
+                                    <tr><td><strong>费用分类</strong></td><td>${config.feeCategory || '-'}</td></tr>
+                                    <tr><td><strong>业务类型</strong></td><td>${config.businessType || '-'}</td></tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>费率信息</h6>
+                                <table class="table table-sm">
+                                    <tr><td><strong>标准费率</strong></td><td>${config.standardRate || '-'} ${config.defaultCurrency || ''}</td></tr>
+                                    <tr><td><strong>费率范围</strong></td><td>${config.minRate || '-'} ~ ${config.maxRate || '-'}</td></tr>
+                                    <tr><td><strong>计费单位</strong></td><td>${config.unit || '-'}</td></tr>
+                                    <tr><td><strong>默认币种</strong></td><td>${config.defaultCurrency || '-'}</td></tr>
+                                    <tr><td><strong>税费状态</strong></td><td>${config.taxStatus || '-'}</td></tr>
+                                    <tr><td><strong>状态</strong></td><td>
+                                        <span class="badge ${config.enabled ? 'bg-success' : 'bg-danger'}">
+                                            ${config.enabled ? '启用' : '禁用'}
+                                        </span>
+                                    </td></tr>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <h6>业务信息</h6>
+                                <table class="table table-sm">
+                                    <tr><td><strong>相关服务</strong></td><td>${config.relatedService || '-'}</td></tr>
+                                    <tr><td><strong>供应商类型</strong></td><td>${config.supplierType || '-'}</td></tr>
+                                    <tr><td><strong>财务科目</strong></td><td>${config.accountingSubject || '-'}</td></tr>
+                                    <tr><td><strong>收付方向</strong></td><td>${config.direction || '-'}</td></tr>
+                                    <tr><td><strong>开票类型</strong></td><td>${config.invoiceType || '-'}</td></tr>
+                                </table>
+                            </div>
+                        </div>
+                        ${config.description ? `
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <h6>说明</h6>
+                                    <p class="text-muted">${config.description}</p>
+                                    ${config.descriptionEnglish ? `<p class="text-muted small">${config.descriptionEnglish}</p>` : ''}
+                                </div>
+                            </div>
+                        ` : ''}
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <h6>版本信息</h6>
+                                <small class="text-muted">
+                                    版本: ${config.version || 1} | 
+                                    创建时间: ${config.createdTime ? new Date(config.createdTime).toLocaleString() : '-'} | 
+                                    更新时间: ${config.updatedTime ? new Date(config.updatedTime).toLocaleString() : '-'}
+                                </small>
+                            </div>
+                        </div>
+                    `;
+                    
+                    const modal = new bootstrap.Modal(document.getElementById('configDetailModal'));
+                    modal.show();
+                } else {
+                    showAlert('获取配置详情失败: ' + (data.message || '未知错误'), 'danger');
+                }
+            } catch (error) {
+                console.error('获取配置详情失败:', error);
+                showAlert('获取配置详情失败: ' + error.message, 'danger');
+            }
+        }
+
+        // 重置为默认配置
+        async function resetToDefaults() {
+            if (!confirm('确定要重置所有配置为默认值吗？此操作不可撤销！')) {
+                return;
+            }
+            
+            try {
+                showLoading(true);
+                
+                const response = await fetch('/api/service-config/reset-defaults', {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showAlert('重置配置成功', 'success');
+                    await loadConfigs();
+                    await loadStatistics();
+                } else {
+                    showAlert('重置配置失败: ' + data.error, 'danger');
+                }
+            } catch (error) {
+                console.error('重置配置失败:', error);
+                showAlert('重置配置失败: ' + error.message, 'danger');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // 显示/隐藏加载动画
+        function showLoading(show) {
+            const spinner = document.getElementById('loadingSpinner');
+            if (show) {
+                spinner.style.display = 'block';
+            } else {
+                spinner.style.display = 'none';
+            }
+        }
+
+        // 显示提示消息
+        function showAlert(message, type = 'info') {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertId = 'alert_' + Date.now();
+            
+            const alert = document.createElement('div');
+            alert.id = alertId;
+            alert.className = `alert alert-${type} alert-dismissible fade show`;
+            alert.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            alertContainer.appendChild(alert);
+            
+            // 3秒后自动消失
+            setTimeout(() => {
+                const alertElement = document.getElementById(alertId);
+                if (alertElement) {
+                    const bsAlert = new bootstrap.Alert(alertElement);
+                    bsAlert.close();
+                }
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

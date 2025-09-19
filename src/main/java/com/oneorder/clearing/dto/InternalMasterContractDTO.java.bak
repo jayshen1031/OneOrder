@@ -1,0 +1,120 @@
+package com.oneorder.clearing.dto;
+
+import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import lombok.Builder;
+
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+
+/**
+ * 内部主合约DTO
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class InternalMasterContractDTO {
+
+    private String contractId;
+    
+    @NotBlank(message = "销售核算单元不能为空")
+    private String salesCostCenter; // JSON格式存储多选
+    
+    @NotBlank(message = "交付核算单元不能为空")
+    private String deliveryCostCenter; // JSON格式存储多选
+    
+    private Boolean isReciprocalContract;
+    
+    private String liabilityClause;
+    
+    private String exemptionClause;
+    
+    @NotNull(message = "合约生效时间不能为空")
+    private LocalDate executionDate;
+    
+    private Boolean isLongTermContract;
+    
+    private LocalDate expirationDate;
+    
+    private LocalDateTime createdTime;
+    
+    private LocalDateTime updatedTime;
+    
+    private String createdBy;
+    
+    private String createdByName; // 创建人员姓名
+    
+    // 解析后的核算单元列表
+    private List<String> salesCostCenterList;
+    private List<String> deliveryCostCenterList;
+    
+    // 状态信息
+    private Boolean isCurrentlyActive;
+    private Integer daysUntilExpiration;
+    
+    // 关联的合约条款数量
+    private Integer associatedTermsCount;
+}
+
+/**
+ * 创建内部主合约请求
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+class CreateMasterContractRequest {
+    
+    @NotBlank(message = "合约名称不能为空")
+    private String contractName;
+    
+    @NotBlank(message = "销售核算单元不能为空")
+    private String salesCostCenter;
+    
+    @NotBlank(message = "交付核算单元不能为空")
+    private String deliveryCostCenter;
+    
+    private Boolean isReciprocalContract = false;
+    
+    private String liabilityClause;
+    
+    private String exemptionClause;
+    
+    @NotNull(message = "合约生效时间不能为空")
+    private LocalDate executionDate;
+    
+    private Boolean isLongTermContract = false;
+    
+    private LocalDate expirationDate;
+    
+    private String createdBy;
+}
+
+/**
+ * 更新内部主合约请求
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+class UpdateMasterContractRequest {
+    
+    private String salesCostCenter;
+    
+    private String deliveryCostCenter;
+    
+    private Boolean isReciprocalContract;
+    
+    private String liabilityClause;
+    
+    private String exemptionClause;
+    
+    private LocalDate expirationDate;
+    
+    private Boolean isLongTermContract;
+}
