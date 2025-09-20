@@ -1,4 +1,4 @@
-// 内部协议管理 JavaScript
+// 内部协议管理 JavaScript (增强版 - 与派单系统联动)
 
 // 全局变量
 let allProtocols = [];
@@ -6,20 +6,41 @@ let filteredProtocols = [];
 let currentProtocol = null;
 let deleteProtocolId = null;
 
-// API基础URL
-const API_BASE = '/api/internal-contracts';
-
 /**
  * 页面初始化
  */
 document.addEventListener('DOMContentLoaded', function() {
+    // 等待协议管理器加载
+    if (typeof protocolManager !== 'undefined') {
+        initProtocolAdmin();
+    } else {
+        // 如果协议管理器还没加载，等待一下
+        setTimeout(() => {
+            if (typeof protocolManager !== 'undefined') {
+                initProtocolAdmin();
+            } else {
+                console.error('❌ 协议管理器未加载');
+            }
+        }, 1000);
+    }
+});
+
+/**
+ * 初始化协议管理页面
+ */
+function initProtocolAdmin() {
+    console.log('🔧 初始化协议管理页面...');
+    
     loadProtocols();
     bindEvents();
+    setupRealTimeSync();
     
     // 设置默认日期
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('effectiveDate').value = today;
-});
+    
+    console.log('✅ 协议管理页面初始化完成');
+}
 
 /**
  * 绑定事件监听器
@@ -63,6 +84,17 @@ async function loadProtocols() {
     showLoading(true);
     
     try {
+        // 优先从协议管理器获取数据
+        if (window.protocolManager) {
+            allProtocols = convertFromProtocolManager(window.protocolManager.getAllProtocols());
+            filteredProtocols = [...allProtocols];
+            displayProtocols(filteredProtocols);
+            updateStatistics();
+            console.log('✅ 从协议管理器加载协议:', allProtocols.length);
+            return;
+        }
+        
+        // 如果协议管理器不可用，尝试API
         const response = await fetch(`${API_BASE}/protocols`);
         const result = await response.json();
         
@@ -450,6 +482,19 @@ async function saveProtocol() {
         if (result.success) {
             showNotification(isEdit ? '协议更新成功' : '协议创建成功', 'success');
             
+            // 同步到协议管理器
+            if (window.protocolManager) {
+                const protocolManagerData = convertToProtocolManager(formData);
+                
+                if (isEdit) {
+                    window.protocolManager.updateProtocol(currentProtocol.protocolId, protocolManagerData);
+                } else {
+                    window.protocolManager.addProtocol(protocolManagerData);
+                }
+                
+                console.log('✅ 已同步到协议管理器');
+            }
+            
             // 更新本地数据
             if (isEdit) {
                 const index = allProtocols.findIndex(p => p.protocolId === currentProtocol.protocolId);
@@ -482,6 +527,20 @@ async function saveProtocol() {
         
         // 模拟保存成功
         const isEdit = !!currentProtocol;
+        
+        // 同步到协议管理器
+        if (window.protocolManager) {
+            const protocolManagerData = convertToProtocolManager(formData);
+            
+            if (isEdit) {
+                window.protocolManager.updateProtocol(currentProtocol.protocolId, protocolManagerData);
+            } else {
+                window.protocolManager.addProtocol(protocolManagerData);
+            }
+            
+            console.log('✅ 已同步到协议管理器 (演示模式)');
+        }
+        
         if (isEdit) {
             const index = allProtocols.findIndex(p => p.protocolId === currentProtocol.protocolId);
             if (index !== -1) {
@@ -626,6 +685,16 @@ async function confirmDeleteProtocol() {
         console.error('删除协议失败:', error);
         showNotification('协议删除成功 (演示模式)', 'success');
     } finally {
+        // 同步到协议管理器
+        if (window.protocolManager) {
+            try {
+                window.protocolManager.deleteProtocol(deleteProtocolId);
+                console.log('✅ 已从协议管理器删除');
+            } catch (error) {
+                console.error('❌ 协议管理器删除失败:', error);
+            }
+        }
+        
         // 无论API是否成功，都从本地数据中移除
         allProtocols = allProtocols.filter(p => p.protocolId !== deleteProtocolId);
         searchProtocols();
@@ -663,6 +732,16 @@ async function toggleProtocolStatus(protocolId, newStatus) {
         console.error('更新协议状态失败:', error);
         showNotification(`协议已${newStatus ? '启用' : '停用'} (演示模式)`, 'success');
     } finally {
+        // 同步到协议管理器
+        if (window.protocolManager) {
+            try {
+                window.protocolManager.toggleProtocolStatus(protocolId);
+                console.log('✅ 协议状态已同步到协议管理器');
+            } catch (error) {
+                console.error('❌ 协议管理器状态更新失败:', error);
+            }
+        }
+        
         // 更新本地数据
         const protocol = allProtocols.find(p => p.protocolId === protocolId);
         if (protocol) {
@@ -768,6 +847,90 @@ function showNotification(message, type = 'info') {
     
     const bsToast = new bootstrap.Toast(toast);
     bsToast.show();
+}
+
+/**
+ * 设置实时同步
+ */
+function setupRealTimeSync() {
+    console.log('🔧 设置实时同步...');
+    
+    // 监听协议管理器的变化
+    if (window.protocolManager) {
+        window.protocolManager.addEventListener('protocols_updated', (protocols) => {
+            console.log('📡 接收到协议更新通知:', protocols.length);
+            allProtocols = convertFromProtocolManager(protocols);
+            filteredProtocols = [...allProtocols];
+            displayProtocols(filteredProtocols);
+            updateStatistics();
+        });
+        
+        console.log('✅ 实时同步已建立');
+    } else {
+        console.warn('⚠️ 协议管理器不可用，无法建立实时同步');
+    }
+}
+
+/**
+ * 将协议管理器格式转换为管理页面格式
+ */
+function convertFromProtocolManager(protocolManagerData) {
+    return protocolManagerData.map(protocol => ({
+        protocolId: protocol.protocolId,
+        protocolName: protocol.protocolName,
+        protocolCode: protocol.protocolId,
+        description: protocol.description,
+        salesDepartmentId: getParentDepartment(protocol.applicableDepartments[0], 'SALES'),
+        operationDepartmentId: getParentDepartment(protocol.applicableDepartments[0], 'OPERATION'),
+        baseCommissionRate: protocol.baseCommissionRate || 0,
+        performanceBonusRate: protocol.bonusCommissionRate || 0,
+        minimumAmount: 0,
+        businessTypes: [protocol.businessType === 'ALL' ? 'MULTIMODAL' : protocol.businessType],
+        applicableServiceCodes: protocol.serviceCode === 'ALL' ? [] : [protocol.serviceCode],
+        effectiveDate: protocol.effectiveDate,
+        expiryDate: protocol.expiryDate,
+        isActive: protocol.status === 'ACTIVE',
+        createdTime: protocol.createdAt,
+        lastModified: protocol.updatedAt
+    }));
+}
+
+/**
+ * 将管理页面格式转换为协议管理器格式
+ */
+function convertToProtocolManager(adminPageData) {
+    const businessType = adminPageData.businessTypes.length > 1 ? 'ALL' : 
+                        (adminPageData.businessTypes[0] || 'ALL');
+    const serviceCode = adminPageData.applicableServiceCodes.length === 0 ? 'ALL' :
+                       adminPageData.applicableServiceCodes[0];
+    
+    return {
+        protocolName: adminPageData.protocolName,
+        serviceCode: serviceCode,
+        businessType: businessType,
+        baseCommissionRate: adminPageData.baseCommissionRate,
+        bonusCommissionRate: adminPageData.performanceBonusRate,
+        totalCommissionRate: adminPageData.baseCommissionRate + adminPageData.performanceBonusRate,
+        applicableDepartments: [getDepartmentName(adminPageData.operationDepartmentId)],
+        slaHours: 24, // 默认值
+        recommended: adminPageData.baseCommissionRate >= 15,
+        status: adminPageData.isActive ? 'ACTIVE' : 'INACTIVE',
+        effectiveDate: adminPageData.effectiveDate,
+        expiryDate: adminPageData.expiryDate,
+        description: adminPageData.description
+    };
+}
+
+/**
+ * 获取父部门
+ */
+function getParentDepartment(operationDept, type) {
+    const deptMapping = {
+        '海运操作': type === 'SALES' ? 'SALES_OCEAN' : 'OPERATION_OCEAN',
+        '空运操作': type === 'SALES' ? 'SALES_AIR' : 'OPERATION_AIR',
+        '西区操作': type === 'SALES' ? 'SALES_TRUCK' : 'OPERATION_TRUCK'
+    };
+    return deptMapping[operationDept] || (type === 'SALES' ? 'SALES_OCEAN' : 'OPERATION_OCEAN');
 }
 
 // 导出主要函数供HTML使用

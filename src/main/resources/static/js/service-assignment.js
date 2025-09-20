@@ -27,8 +27,8 @@ function initServiceAssignment() {
     console.log('🚀 初始化接派单模块...');
     
     // 加载保存的数据
-    loadAssignmentHistoryFromStorage();
-    console.log('📂 已加载派单历史:', assignmentHistory.length, '条记录');
+    loadAssignmentHistoryFromDatabase();
+    console.log('📂 正在加载派单历史...');
     
     // 加载订单列表
     loadOrderList();
@@ -358,7 +358,9 @@ async function assignService(serviceCode) {
         };
         
         assignmentHistory.unshift(historyRecord);
-        saveAssignmentHistoryToStorage();
+        
+        // 保存到数据库
+        saveAssignmentHistoryToDatabase(historyRecord);
         
         // 刷新显示
         displayServices(currentServices);
@@ -414,16 +416,41 @@ async function autoAssignAll() {
             if (selectedOperator) {
                 console.log(`✅ 匹配成功: ${service.serviceCode} → ${selectedOperator.operatorName}`);
                 
+                // 智能协议匹配
+                let selectedProtocol = null;
+                let protocolId = null;
+                let protocolName = '无协议';
+                
+                if (window.protocolManager) {
+                    const matchingProtocols = window.protocolManager.getMatchingProtocols(
+                        selectedOperator.department, 
+                        service.serviceCode
+                    );
+                    
+                    if (matchingProtocols && matchingProtocols.length > 0) {
+                        // 选择推荐的或者佣金率最高的协议
+                        selectedProtocol = matchingProtocols.find(p => p.recommended) || matchingProtocols[0];
+                        protocolId = selectedProtocol.protocolId;
+                        protocolName = selectedProtocol.protocolName;
+                        console.log(`🔗 智能匹配协议: ${protocolName} (${selectedProtocol.totalCommissionRate}%)`);
+                    } else {
+                        console.log(`⚠️ 未找到适用协议: ${selectedOperator.department} + ${service.serviceCode}`);
+                    }
+                }
+                
                 autoAssignments.push({
                     serviceCode: service.serviceCode,
                     operatorId: selectedOperator.operatorId,
-                    reason: suitableOperators.length > 0 ? '专长匹配' : '负载均衡'
+                    reason: suitableOperators.length > 0 ? '专长匹配' : '负载均衡',
+                    protocolId: protocolId,
+                    protocolName: protocolName
                 });
                 
                 // 更新服务状态
                 service.status = 'ASSIGNED';
                 service.assignedTo = selectedOperator.operatorId;
                 service.assignedTime = new Date().toISOString();
+                service.assignedProtocol = protocolId;
                 
                 // 更新操作人员负载
                 selectedOperator.currentOrderCount++;
@@ -434,6 +461,8 @@ async function autoAssignAll() {
                     serviceName: service.serviceName,
                     operatorId: selectedOperator.operatorId,
                     operatorName: selectedOperator.operatorName,
+                    protocolId: protocolId,
+                    protocolName: protocolName,
                     status: 'SUCCESS',
                     reason: autoAssignments[autoAssignments.length - 1].reason
                 });
@@ -463,7 +492,9 @@ async function autoAssignAll() {
         };
         
         assignmentHistory.unshift(historyRecord);
-        saveAssignmentHistoryToStorage();
+        
+        // 保存到数据库
+        saveAssignmentHistoryToDatabase(historyRecord);
         
         // 刷新显示
         displayServices(currentServices);
@@ -586,7 +617,9 @@ async function confirmBatchAssign() {
         };
         
         assignmentHistory.unshift(historyRecord);
-        saveAssignmentHistoryToStorage();
+        
+        // 保存到数据库
+        saveAssignmentHistoryToDatabase(historyRecord);
         
         // 关闭模态框
         bootstrap.Modal.getInstance(document.getElementById('batchAssignModal')).hide();
@@ -609,51 +642,198 @@ async function confirmBatchAssign() {
  */
 function displayAssignmentHistory() {
     const container = document.getElementById('assignmentHistoryTableBody');
-    if (!container) return;
+    if (!container) {
+        console.log('❌ 未找到历史记录容器 assignmentHistoryTableBody');
+        return;
+    }
+    
+    console.log('📚 显示派单历史:', assignmentHistory.length, '条记录');
     
     if (assignmentHistory.length === 0) {
         container.innerHTML = `
             <tr>
-                <td class="text-center py-4">
-                    <i class="fas fa-history fa-2x text-muted mb-2 d-block"></i>
-                    <p class="text-muted">暂无派单历史记录</p>
+                <td colspan="4" class="text-center text-muted py-4">
+                    <i class="fas fa-history fa-2x mb-2 d-block"></i>
+                    <p>暂无派单历史记录</p>
                 </td>
             </tr>
         `;
         return;
     }
     
+    // 生成表格行HTML (不包含table结构，因为容器是tbody)
     const historyHtml = assignmentHistory.slice(0, 10).map(record => {
-        const orderInfo = `订单${record.orderId}`;
-        return record.results.map((result, index) => `
-            <tr>
-                <td>
-                    <small class="text-muted">${formatDateTime(record.assignmentTime)}</small>
-                    ${index === 0 ? `<br><span class="badge bg-info">${record.operator}</span>` : ''}
-                </td>
-                <td>
-                    <strong>${result.serviceName || result.serviceCode}</strong><br>
-                    <small class="text-muted">${result.operatorName}</small>
-                </td>
-            </tr>
-        `).join('');
+        return record.results.map(result => {
+            // 协议信息显示
+            const protocolDisplay = result.protocolName && result.protocolName !== 'N/A' && result.protocolName !== '无协议' ? `
+                <span class="badge bg-info">${result.protocolName}</span>
+                ${result.protocolCommission ? `<br><small class="text-muted">佣金: ${result.protocolCommission}%</small>` : ''}
+            ` : '<span class="text-muted">无协议</span>';
+            
+            return `
+                <tr>
+                    <td>
+                        <div class="fw-bold">${formatDateTime(record.assignmentTime || record.timestamp)}</div>
+                        <small class="text-muted">${record.orderNo || record.orderId}</small>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-user-circle text-primary me-2"></i>
+                            <span class="fw-bold">${result.operatorName}</span>
+                        </div>
+                    </td>
+                    <td>${protocolDisplay}</td>
+                    <td><span class="badge bg-success">已派单</span></td>
+                </tr>
+            `;
+        }).join('');
     }).join('');
     
     container.innerHTML = historyHtml;
+    console.log('✅ 历史记录显示完成');
 }
 
 /**
- * 持久化存储派单历史
+ * 保存单个派单历史记录到数据库
  */
-function saveAssignmentHistoryToStorage() {
+async function saveAssignmentHistoryToDatabase(historyRecord) {
+    try {
+        console.log('📤 保存派单历史到数据库:', historyRecord);
+        
+        // 根据是否有多个results决定使用单个还是批量API
+        if (historyRecord.results && historyRecord.results.length > 1) {
+            // 批量保存
+            const response = await fetch('/api/assignment-history/save-batch', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(historyRecord)
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ 批量派单历史保存成功:', result.message);
+            } else {
+                console.error('❌ 批量派单历史保存失败:', result.message);
+            }
+            return result;
+        } else {
+            // 单个保存
+            const singleRecord = historyRecord.results && historyRecord.results.length > 0 ? 
+                historyRecord.results[0] : {};
+            
+            const saveData = {
+                orderId: historyRecord.orderId,
+                orderNo: historyRecord.orderNo,
+                assignmentType: historyRecord.assignmentType,
+                operatorName: historyRecord.operator,
+                assignmentTime: historyRecord.assignmentTime,
+                successCount: historyRecord.successCount,
+                failedCount: historyRecord.failedCount,
+                serviceCode: singleRecord.serviceCode,
+                serviceName: singleRecord.serviceName,
+                assignedOperatorId: singleRecord.operatorId,
+                assignedOperatorName: singleRecord.operatorName,
+                protocolId: singleRecord.protocolId,
+                protocolName: singleRecord.protocolName,
+                protocolCommission: singleRecord.protocolCommission,
+                status: singleRecord.status,
+                reason: singleRecord.reason,
+                assignmentNotes: singleRecord.assignmentNotes
+            };
+            
+            const response = await fetch('/api/assignment-history/save', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(saveData)
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ 派单历史保存成功:', result.message);
+            } else {
+                console.error('❌ 派单历史保存失败:', result.message);
+            }
+            return result;
+        }
+        
+    } catch (error) {
+        console.error('❌ 保存派单历史时发生错误:', error);
+        
+        // 如果数据库保存失败，降级到localStorage
+        console.log('📥 降级到localStorage保存');
+        saveAssignmentHistoryToLocalStorage();
+        
+        return { success: false, message: error.message };
+    }
+}
+
+/**
+ * 从数据库加载派单历史
+ */
+async function loadAssignmentHistoryFromDatabase() {
+    try {
+        console.log('📥 从数据库加载派单历史...');
+        
+        const response = await fetch('/api/assignment-history/recent?page=0&size=50');
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+            // 转换数据库格式到前端格式
+            assignmentHistory = result.data.map(dbRecord => {
+                return {
+                    assignmentTime: dbRecord.assignmentTime,
+                    orderId: dbRecord.orderId,
+                    orderNo: dbRecord.orderNo,
+                    assignmentType: dbRecord.assignmentType,
+                    operator: dbRecord.operatorName,
+                    successCount: dbRecord.successCount || 1,
+                    failedCount: dbRecord.failedCount || 0,
+                    results: [{
+                        serviceCode: dbRecord.serviceCode,
+                        serviceName: dbRecord.serviceName,
+                        operatorId: dbRecord.assignedOperatorId,
+                        operatorName: dbRecord.assignedOperatorName,
+                        protocolId: dbRecord.protocolId,
+                        protocolName: dbRecord.protocolName,
+                        protocolCommission: dbRecord.protocolCommission,
+                        status: dbRecord.status,
+                        reason: dbRecord.reason,
+                        assignmentNotes: dbRecord.assignmentNotes
+                    }]
+                };
+            });
+            
+            console.log('✅ 派单历史加载成功:', assignmentHistory.length, '条记录');
+            displayAssignmentHistory();
+        } else {
+            console.warn('⚠️ 数据库加载派单历史失败:', result.message);
+            // 降级到localStorage
+            loadAssignmentHistoryFromLocalStorage();
+        }
+        
+    } catch (error) {
+        console.error('❌ 从数据库加载派单历史失败:', error);
+        // 降级到localStorage
+        loadAssignmentHistoryFromLocalStorage();
+    }
+}
+
+/**
+ * 持久化存储派单历史（localStorage备用）
+ */
+function saveAssignmentHistoryToLocalStorage() {
     const recentHistory = assignmentHistory.slice(0, 100); // 限制100条
     localStorage.setItem(ASSIGNMENT_HISTORY_KEY, JSON.stringify(recentHistory));
 }
 
 /**
- * 从存储加载派单历史
+ * 从存储加载派单历史（localStorage备用）
  */
-function loadAssignmentHistoryFromStorage() {
+function loadAssignmentHistoryFromLocalStorage() {
     const saved = localStorage.getItem(ASSIGNMENT_HISTORY_KEY);
     if (saved) {
         assignmentHistory = JSON.parse(saved);
@@ -687,6 +867,104 @@ function formatDateTime(dateString) {
         month: 'numeric', day: 'numeric', 
         hour: '2-digit', minute: '2-digit'
     });
+}
+
+/**
+ * 获取服务规格详情
+ */
+function getServiceSpecifications(serviceCode) {
+    const serviceSpecsDatabase = {
+        'BOOKING': {
+            serviceType: '预订服务',
+            requiredSkills: ['船务操作', '舱位管理', '客户沟通'],
+            estimatedHours: 2,
+            difficultyLevel: 'MEDIUM',
+            documentRequirements: ['订舱委托书', '货物清单', '特殊要求说明'],
+            qualityStandard: '100%舱位确认，24小时内回复',
+            customerVisible: true,
+            billingMethod: '按票计费',
+            description: '为客户预订船舶舱位，确保货物运输时间和空间安排。包括舱位查询、预订确认、特殊货物安排等。'
+        },
+        'MBL_PROCESSING': {
+            serviceType: '主单处理',
+            requiredSkills: ['海运单证', '系统操作', '英文读写'],
+            estimatedHours: 3,
+            difficultyLevel: 'HIGH',
+            documentRequirements: ['主提单草本', '舱单信息', '货物描述'],
+            qualityStandard: 'MBL信息100%准确，符合SOLAS要求',
+            customerVisible: false,
+            billingMethod: '按票计费',
+            description: '处理海运主提单(MBL)的制作、审核、修改和签发。确保MBL信息准确无误，符合国际海运规范。'
+        },
+        'HBL_PROCESSING': {
+            serviceType: '分单处理',
+            requiredSkills: ['货代业务', '单证操作', '客户服务'],
+            estimatedHours: 2,
+            difficultyLevel: 'MEDIUM',
+            documentRequirements: ['分提单模板', '客户资料', 'MBL信息'],
+            qualityStandard: 'HBL与MBL信息匹配，客户确认',
+            customerVisible: true,
+            billingMethod: '按票计费',
+            description: '制作和处理货代提单(HBL)，确保与主单信息一致，满足客户特殊要求和展示需求。'
+        },
+        'CUSTOMS_CLEARANCE': {
+            serviceType: '报关服务',
+            requiredSkills: ['报关业务', '政策法规', '系统操作'],
+            estimatedHours: 4,
+            difficultyLevel: 'HIGH',
+            documentRequirements: ['报关委托书', '发票', '装箱单', '许可证'],
+            qualityStandard: '一次性通关，无查验风险',
+            customerVisible: true,
+            billingMethod: '按票计费',
+            description: '办理进出口货物的海关申报手续，包括单证审核、申报录入、税费计算、查验配合等全流程服务。'
+        },
+        'CARGO_LOADING': {
+            serviceType: '装货监装',
+            requiredSkills: ['现场操作', '货物检验', '安全管理'],
+            estimatedHours: 6,
+            difficultyLevel: 'MEDIUM',
+            documentRequirements: ['装货清单', '现场照片', '装货报告'],
+            qualityStandard: '货物安全装载，符合配载要求',
+            customerVisible: true,
+            billingMethod: '按小时计费',
+            description: '现场监督货物装载过程，确保货物安全、合理配载，记录装载过程并出具装货报告。'
+        },
+        'CONTAINER_LOADING': {
+            serviceType: '集装箱装货',
+            requiredSkills: ['集装箱操作', '货物配载', '现场管理'],
+            estimatedHours: 4,
+            difficultyLevel: 'MEDIUM',
+            documentRequirements: ['装箱单', '现场照片', '封条记录'],
+            qualityStandard: '集装箱利用率>95%，货物无损坏',
+            customerVisible: true,
+            billingMethod: '按箱计费',
+            description: '专业的集装箱装载服务，包括货物配载优化、装箱监督、封条管理等，确保运输安全。'
+        },
+        'TRANSPORTATION': {
+            serviceType: '运输配送',
+            requiredSkills: ['运输管理', '路线规划', '车辆调度'],
+            estimatedHours: 8,
+            difficultyLevel: 'MEDIUM',
+            documentRequirements: ['运输委托书', '货物清单', '收货确认'],
+            qualityStandard: '准时送达率>98%，货物完好率100%',
+            customerVisible: true,
+            billingMethod: '按公里计费',
+            description: '提供门到门运输服务，包括车辆安排、路线优化、在途跟踪、收货确认等全程物流服务。'
+        },
+        'AWB_PROCESSING': {
+            serviceType: '空运单处理',
+            requiredSkills: ['空运业务', '单证制作', 'IATA规范'],
+            estimatedHours: 2,
+            difficultyLevel: 'MEDIUM',
+            documentRequirements: ['空运委托书', '货物信息', '特殊声明'],
+            qualityStandard: 'AWB信息准确，符合IATA标准',
+            customerVisible: true,
+            billingMethod: '按票计费',
+            description: '制作和处理空运提单(AWB)，确保符合国际航空运输协会规范，满足航空运输要求。'
+        }
+    };
+    
+    return serviceSpecsDatabase[serviceCode] || null;
 }
 
 // 协议派单相关变量
@@ -872,7 +1150,7 @@ async function loadMatchingProtocols() {
 }
 
 /**
- * 生成模拟协议数据
+ * 获取匹配的协议（使用统一协议管理器）
  */
 function generateMockProtocols(operatorId, serviceCode) {
     const operator = availableOperators.find(op => op.operatorId === operatorId);
@@ -885,8 +1163,31 @@ function generateMockProtocols(operatorId, serviceCode) {
         serviceCode
     });
     
-    const protocols = [
-        // 海运相关协议
+    // 使用统一协议管理器获取匹配的协议
+    if (typeof protocolManager !== 'undefined') {
+        const matchedProtocols = protocolManager.getMatchingProtocols(operator.department, serviceCode);
+        console.log('🎯 从协议管理器匹配到的协议:', matchedProtocols.map(p => `${p.protocolName}(${p.totalCommissionRate}%)`));
+        
+        // 显示匹配过程信息
+        if (matchedProtocols.length > 0) {
+            const bestProtocol = matchedProtocols[0];
+            console.log(`✨ 自动匹配结果: ${operator.operatorName}(${operator.department}) + ${getServiceName(serviceCode)} → ${bestProtocol.protocolName} (佣金:${bestProtocol.totalCommissionRate}%)`);
+        } else {
+            console.log(`⚠️ 自动匹配失败: ${operator.operatorName}(${operator.department}) + ${getServiceName(serviceCode)} → 无适用协议`);
+        }
+        
+        return matchedProtocols;
+    } else {
+        console.warn('⚠️ 协议管理器未加载，使用备用协议数据');
+        return getFallbackProtocols(operator, serviceCode);
+    }
+}
+
+/**
+ * 备用协议数据（当协议管理器未加载时使用）
+ */
+function getFallbackProtocols(operator, serviceCode) {
+    const fallbackProtocols = [
         {
             protocolId: 'PROTO001',
             protocolName: '海运MBL处理标准协议',
@@ -898,62 +1199,9 @@ function generateMockProtocols(operatorId, serviceCode) {
             applicableDepartments: ['海运操作'],
             slaHours: 48,
             recommended: true,
-            description: '专门针对海运MBL处理的标准协议，包含完整的业务流程和分润规则，适用于提单管理和货物跟踪'
+            status: 'ACTIVE',
+            description: '专门针对海运MBL处理的标准协议，包含完整的业务流程和分润规则。'
         },
-        {
-            protocolId: 'PROTO002',
-            protocolName: '海运HBL处理专项协议',
-            serviceCode: 'HBL_PROCESSING',
-            businessType: 'OCEAN',
-            baseCommissionRate: 12,
-            bonusCommissionRate: 4,
-            totalCommissionRate: 16,
-            applicableDepartments: ['海运操作'],
-            slaHours: 24,
-            recommended: true,
-            description: '针对海运分单处理的专项协议，涵盖货物分拣、标签管理和交付确认'
-        },
-        {
-            protocolId: 'PROTO003',
-            protocolName: '海运订舱服务协议',
-            serviceCode: 'BOOKING',
-            businessType: 'OCEAN',
-            baseCommissionRate: 10,
-            bonusCommissionRate: 3,
-            totalCommissionRate: 13,
-            applicableDepartments: ['海运操作'],
-            slaHours: 12,
-            recommended: true,
-            description: '海运订舱服务的标准协议，包括舱位预订、船期确认和舱单管理'
-        },
-        {
-            protocolId: 'PROTO004',
-            protocolName: '集装箱装货作业协议',
-            serviceCode: 'CONTAINER_LOADING',
-            businessType: 'OCEAN',
-            baseCommissionRate: 8,
-            bonusCommissionRate: 2,
-            totalCommissionRate: 10,
-            applicableDepartments: ['海运操作'],
-            slaHours: 6,
-            recommended: true,
-            description: '集装箱装货作业的专项协议，涵盖货物装箱、封条管理和装箱清单确认'
-        },
-        // 空运相关协议
-        {
-            protocolId: 'PROTO005',
-            protocolName: '空运操作专用协议',
-            serviceCode: 'AWB_PROCESSING',
-            businessType: 'AIR',
-            baseCommissionRate: 18,
-            bonusCommissionRate: 7,
-            totalCommissionRate: 25,
-            applicableDepartments: ['空运操作'],
-            slaHours: 24,
-            recommended: operator.department === '空运操作',
-            description: '针对空运业务优化的专用协议，时效要求高，佣金率优厚'
-        },
-        // 通用服务协议
         {
             protocolId: 'PROTO006',
             protocolName: '报关服务标准协议',
@@ -965,64 +1213,16 @@ function generateMockProtocols(operatorId, serviceCode) {
             applicableDepartments: ['海运操作', '空运操作', '西区操作'],
             slaHours: 48,
             recommended: true,
-            description: '标准报关服务协议，适用于进出口报关业务，包含文件准备和清关跟踪'
-        },
-        {
-            protocolId: 'PROTO007',
-            protocolName: '运输服务通用协议',
-            serviceCode: 'TRANSPORTATION',
-            businessType: 'ALL',
-            baseCommissionRate: 10,
-            bonusCommissionRate: 3,
-            totalCommissionRate: 13,
-            applicableDepartments: ['海运操作', '空运操作', '西区操作'],
-            slaHours: 24,
-            recommended: true,
-            description: '通用运输服务协议，适用于各种运输方式的货物配送和跟踪'
-        },
-        {
-            protocolId: 'PROTO008',
-            protocolName: '装货作业通用协议',
-            serviceCode: 'CARGO_LOADING',
-            businessType: 'ALL',
-            baseCommissionRate: 8,
-            bonusCommissionRate: 2,
-            totalCommissionRate: 10,
-            applicableDepartments: ['海运操作', '空运操作', '西区操作'],
-            slaHours: 8,
-            recommended: false,
-            description: '通用装货作业协议，适用于各种货物的装卸和搬运作业'
-        },
-        {
-            protocolId: 'PROTO009',
-            protocolName: '通用货代服务协议',
-            serviceCode: 'ALL',
-            businessType: 'ALL',
-            baseCommissionRate: 12,
-            bonusCommissionRate: 3,
-            totalCommissionRate: 15,
-            applicableDepartments: ['海运操作', '空运操作', '西区操作'],
-            slaHours: 72,
-            recommended: false,
-            description: '适用于所有货代服务的通用协议，灵活性高但佣金率较低，作为备选方案'
+            status: 'ACTIVE',
+            description: '标准报关服务协议，适用于进出口报关业务。'
         }
     ];
     
-    // 根据操作员部门和服务代码筛选协议
-    const matchedProtocols = protocols.filter(protocol => {
+    return fallbackProtocols.filter(protocol => {
         const deptMatch = protocol.applicableDepartments.includes(operator.department);
         const serviceMatch = protocol.serviceCode === serviceCode || protocol.serviceCode === 'ALL';
         return deptMatch && serviceMatch;
-    }).sort((a, b) => {
-        // 推荐协议排在前面，然后按佣金率排序
-        if (a.recommended && !b.recommended) return -1;
-        if (!a.recommended && b.recommended) return 1;
-        return b.totalCommissionRate - a.totalCommissionRate;
     });
-    
-    console.log('🎯 匹配到的协议:', matchedProtocols.map(p => `${p.protocolName}(${p.totalCommissionRate}%)`));
-    
-    return matchedProtocols;
 }
 
 /**
@@ -1179,6 +1379,17 @@ async function confirmAssignment() {
         // 立即保存服务状态
         saveServicesStateToStorage();
         
+        // 添加调试日志
+        console.log('💾 服务状态已保存到localStorage:', {
+            orderId: currentOrderId,
+            serviceCode: service.serviceCode,
+            assignedProtocol: service.assignedProtocol ? {
+                protocolId: service.assignedProtocol.protocolId,
+                protocolName: service.assignedProtocol.protocolName,
+                totalCommissionRate: service.assignedProtocol.totalCommissionRate
+            } : null
+        });
+        
         // 更新操作人员工作负载
         const operator = availableOperators.find(op => op.operatorId === operatorId);
         if (operator) {
@@ -1191,6 +1402,7 @@ async function confirmAssignment() {
             assignmentTime: new Date().toISOString(),
             orderId: currentOrderId,
             assignmentType: 'PROTOCOL',
+            operator: UserState.getCurrentUser().name || '张美华',
             successCount: 1,
             failedCount: 0,
             results: [{
@@ -1200,13 +1412,28 @@ async function confirmAssignment() {
                 operatorName: operatorName,
                 status: 'SUCCESS',
                 protocolId: selectedProtocol.protocolId,
-                protocolName: selectedProtocol.protocolName
+                protocolName: selectedProtocol.protocolName,
+                protocolCommission: selectedProtocol.totalCommissionRate,
+                assignmentNotes: document.getElementById('assignmentNotes').value || '',
+                expectedCompleteTime: document.getElementById('expectedCompleteTime').value || '',
+                assignmentMethod: 'PROTOCOL_ASSIGNMENT'
             }],
             operator: '协议派单'
         };
         
         assignmentHistory.unshift(historyRecord);
-        saveAssignmentHistoryToStorage();
+        
+        // 保存到数据库
+        saveAssignmentHistoryToDatabase(historyRecord);
+        
+        // 添加调试日志
+        console.log('📚 协议派单历史已记录:', {
+            orderId: historyRecord.orderId,
+            assignmentType: historyRecord.assignmentType,
+            protocolName: historyRecord.results[0].protocolName,
+            protocolCommission: historyRecord.results[0].protocolCommission,
+            assignmentNotes: historyRecord.results[0].assignmentNotes
+        });
         
         // 关闭模态框
         bootstrap.Modal.getInstance(document.getElementById('assignServiceModal')).hide();
@@ -1243,23 +1470,41 @@ function viewServiceDetail(serviceCode) {
         record.results.some(result => result.serviceCode === serviceCode)
     );
     
+    // 获取服务详细规格信息
+    const serviceSpecs = getServiceSpecifications(service.serviceCode);
+    
     let assignmentHistoryHtml = '';
     if (serviceAssignments.length > 0) {
         assignmentHistoryHtml = `
-            <h6 class="text-primary mt-4">派单历史</h6>
+            <h6 class="text-primary mt-4"><i class="fas fa-history me-2"></i>派单历史</h6>
             <div class="table-responsive">
-                <table class="table table-sm">
-                    <thead>
-                        <tr><th>时间</th><th>操作人员</th><th>协议</th><th>状态</th></tr>
+                <table class="table table-sm table-striped">
+                    <thead class="table-light">
+                        <tr>
+                            <th><i class="fas fa-clock me-1"></i>时间</th>
+                            <th><i class="fas fa-user me-1"></i>操作人员</th>
+                            <th><i class="fas fa-file-contract me-1"></i>协议</th>
+                            <th><i class="fas fa-tag me-1"></i>状态</th>
+                        </tr>
                     </thead>
                     <tbody>
                         ${serviceAssignments.map(record => {
                             const result = record.results.find(r => r.serviceCode === serviceCode);
                             return `
                                 <tr>
-                                    <td>${formatDateTime(record.assignmentTime)}</td>
-                                    <td>${result.operatorName}</td>
-                                    <td>${result.protocolName || '无协议'}</td>
+                                    <td>${record.timestamp || formatDateTime(record.assignmentTime)}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-user-circle text-muted me-2"></i>
+                                            ${result.operatorName}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        ${result.protocolName ? `
+                                            <span class="badge bg-info">${result.protocolName}</span>
+                                            ${result.protocolCommission ? `<br><small class="text-muted">佣金: ${result.protocolCommission}%</small>` : ''}
+                                        ` : '<span class="text-muted">无协议</span>'}
+                                    </td>
                                     <td><span class="badge bg-success">已派单</span></td>
                                 </tr>
                             `;
@@ -1269,30 +1514,117 @@ function viewServiceDetail(serviceCode) {
             </div>
         `;
     }
+
+    // 当前协议详情
+    let currentProtocolHtml = '';
+    if (service.assignedProtocol) {
+        currentProtocolHtml = `
+            <h6 class="text-primary mt-4"><i class="fas fa-file-contract me-2"></i>当前应用协议</h6>
+            <div class="card border-info">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-sm table-borderless">
+                                <tr><td><strong>协议名称:</strong></td><td>${service.assignedProtocol.protocolName}</td></tr>
+                                <tr><td><strong>适用范围:</strong></td><td>${service.assignedProtocol.businessType || '通用'}</td></tr>
+                                <tr><td><strong>基础佣金率:</strong></td><td class="text-success fw-bold">${service.assignedProtocol.baseCommissionRate}%</td></tr>
+                                <tr><td><strong>绩效奖金率:</strong></td><td class="text-success fw-bold">${service.assignedProtocol.bonusCommissionRate}%</td></tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-sm table-borderless">
+                                <tr><td><strong>总佣金率:</strong></td><td class="text-primary fw-bold">${service.assignedProtocol.totalCommissionRate}%</td></tr>
+                                <tr><td><strong>SLA时效:</strong></td><td>${service.assignedProtocol.slaHours}小时</td></tr>
+                                <tr><td><strong>推荐等级:</strong></td><td>${service.assignedProtocol.recommended ? '<span class="badge bg-success">推荐</span>' : '<span class="badge bg-secondary">备选</span>'}</td></tr>
+                                <tr><td><strong>协议状态:</strong></td><td><span class="badge bg-success">生效中</span></td></tr>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <strong class="text-primary">协议说明:</strong>
+                        <p class="text-muted small mt-2 mb-0">${service.assignedProtocol.description || '暂无详细说明'}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // 服务规格详情
+    let serviceSpecsHtml = '';
+    if (serviceSpecs) {
+        serviceSpecsHtml = `
+            <h6 class="text-primary mt-4"><i class="fas fa-cogs me-2"></i>服务规格说明</h6>
+            <div class="card border-light">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-sm table-borderless">
+                                <tr><td><strong>服务类型:</strong></td><td>${serviceSpecs.serviceType}</td></tr>
+                                <tr><td><strong>所需技能:</strong></td><td>${serviceSpecs.requiredSkills.join(', ')}</td></tr>
+                                <tr><td><strong>预计工时:</strong></td><td>${serviceSpecs.estimatedHours}小时</td></tr>
+                                <tr><td><strong>难度等级:</strong></td><td>
+                                    ${serviceSpecs.difficultyLevel === 'HIGH' ? '<span class="badge bg-danger">高</span>' : 
+                                      serviceSpecs.difficultyLevel === 'MEDIUM' ? '<span class="badge bg-warning text-dark">中</span>' : 
+                                      '<span class="badge bg-success">低</span>'}
+                                </td></tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-sm table-borderless">
+                                <tr><td><strong>文档要求:</strong></td><td>${serviceSpecs.documentRequirements.join(', ')}</td></tr>
+                                <tr><td><strong>质量标准:</strong></td><td>${serviceSpecs.qualityStandard}</td></tr>
+                                <tr><td><strong>客户可见:</strong></td><td>${serviceSpecs.customerVisible ? '<span class="badge bg-info">是</span>' : '<span class="badge bg-secondary">否</span>'}</td></tr>
+                                <tr><td><strong>计费方式:</strong></td><td>${serviceSpecs.billingMethod}</td></tr>
+                            </table>
+                        </div>
+                    </div>
+                    ${serviceSpecs.description ? `
+                        <div class="mt-3">
+                            <strong class="text-primary">服务描述:</strong>
+                            <p class="text-muted small mt-2 mb-0">${serviceSpecs.description}</p>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }
     
     // 填充详情内容
     document.getElementById('serviceDetailContent').innerHTML = `
         <div class="mb-4">
-            <h6 class="text-primary">基本信息</h6>
+            <h6 class="text-primary"><i class="fas fa-info-circle me-2"></i>基本信息</h6>
             <div class="row">
                 <div class="col-md-6">
-                    <strong>服务名称:</strong> ${service.serviceName}<br>
-                    <strong>服务代码:</strong> <code>${service.serviceCode}</code><br>
-                    <strong>当前状态:</strong> <span class="badge ${getStatusClass(service.status)}">${getStatusText(service.status)}</span><br>
-                    <strong>优先级:</strong> <span class="badge ${getPriorityClass(service.priority)}">${getPriorityText(service.priority)}</span>
+                    <table class="table table-sm table-borderless">
+                        <tr><td><strong>服务名称:</strong></td><td>${service.serviceName}</td></tr>
+                        <tr><td><strong>服务代码:</strong></td><td><code class="text-primary">${service.serviceCode}</code></td></tr>
+                        <tr><td><strong>当前状态:</strong></td><td><span class="badge ${getStatusClass(service.status)}">${getStatusText(service.status)}</span></td></tr>
+                        <tr><td><strong>优先级:</strong></td><td><span class="badge ${getPriorityClass(service.priority)}">${getPriorityText(service.priority)}</span></td></tr>
+                    </table>
                 </div>
                 <div class="col-md-6">
-                    ${service.assignedTo ? `
-                        <strong>指派给:</strong> ${availableOperators.find(op => op.operatorId === service.assignedTo)?.operatorName || service.assignedTo}<br>
-                        <strong>派单时间:</strong> ${service.assignedTime ? formatDateTime(service.assignedTime) : '未知'}<br>
-                        ${service.assignedProtocol ? `
-                            <strong>应用协议:</strong> ${service.assignedProtocol.protocolName}<br>
-                            <strong>协议佣金:</strong> ${service.assignedProtocol.totalCommissionRate}%
-                        ` : ''}
-                    ` : '<em class="text-muted">尚未派单</em>'}
+                    <table class="table table-sm table-borderless">
+                        ${service.assignedTo ? `
+                            <tr><td><strong>指派给:</strong></td><td>
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-user-circle text-primary me-2"></i>
+                                    ${availableOperators.find(op => op.operatorId === service.assignedTo)?.operatorName || service.assignedTo}
+                                </div>
+                            </td></tr>
+                            <tr><td><strong>派单时间:</strong></td><td>${service.assignedTime ? formatDateTime(service.assignedTime) : '未知'}</td></tr>
+                            ${service.expectedCompleteTime ? `<tr><td><strong>预期完成:</strong></td><td>${formatDateTime(service.expectedCompleteTime)}</td></tr>` : ''}
+                            ${service.assignmentNotes ? `<tr><td><strong>派单备注:</strong></td><td class="text-muted small">${service.assignmentNotes}</td></tr>` : ''}
+                        ` : `
+                            <tr><td colspan="2"><em class="text-muted">
+                                <i class="fas fa-clock me-2"></i>尚未派单
+                            </em></td></tr>
+                        `}
+                    </table>
                 </div>
             </div>
         </div>
+        ${currentProtocolHtml}
+        ${serviceSpecsHtml}
         ${assignmentHistoryHtml}
     `;
     

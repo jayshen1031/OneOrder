@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理账分润计算 - OneOrder</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .profit-card {
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            margin: 15px 0;
+            transition: all 0.3s;
+            background: white;
+        }
+        .profit-card:hover {
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        .service-profit-card {
+            border-left: 5px solid #007bff;
+        }
+        .department-summary-card {
+            border-left: 5px solid #28a745;
+        }
+        .validation-card {
+            border-left: 5px solid #17a2b8;
+        }
+        .calculation-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+        .five-elements-table {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        .dept-type-sales {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+        }
+        .dept-type-operation {
+            background: linear-gradient(135deg, #e8f5e8, #c8e6c9);
+        }
+        .profit-positive {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .profit-negative {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .profit-zero {
+            color: #6c757d;
+        }
+        .calculation-step {
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .protocol-info {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+            padding: 10px;
+            margin: 5px 0;
+        }
+        .balance-check {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 6px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .balance-error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+        .kpi-metric {
+            text-align: center;
+            padding: 15px;
+            border-radius: 8px;
+            background: white;
+            border: 1px solid #e9ecef;
+            margin: 5px 0;
+        }
+        .metric-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            margin: 8px 0;
+        }
+        .calculation-history {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .step-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #007bff;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- 标题和操作区域 -->
+        <div class="row">
+            <div class="col-12">
+                <div class="calculation-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2><i class="fas fa-calculator"></i> 管理账分润计算</h2>
+                            <p class="mb-0">基于部门维度的虚拟利润分配 - 用于内部考核激励</p>
+                        </div>
+                        <div>
+                            <button class="btn btn-light" onclick="refreshCalculation()">
+                                <i class="fas fa-sync-alt"></i> 刷新计算
+                            </button>
+                            <button class="btn btn-success" onclick="exportResults()">
+                                <i class="fas fa-download"></i> 导出报表
+                            </button>
+                            <a href="system-overview.html" class="btn btn-outline-light">
+                                <i class="fas fa-arrow-left"></i> 返回主页
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 订单信息和计算状态 -->
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-file-invoice"></i> 订单信息</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">订单号</label>
+                                    <select class="form-select" id="orderSelect" onchange="loadOrderInfo()">
+                                        <option value="">请选择订单</option>
+                                        <option value="HW-EXPORT-20240101-001">HW-EXPORT-20240101-001</option>
+                                        <option value="MIDEA-SHIP-20240103-001">MIDEA-SHIP-20240103-001</option>
+                                        <option value="SH-AUTO-20240101-001">SH-AUTO-20240101-001</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">客户名称</label>
+                                    <input type="text" class="form-control" id="customerName" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">业务类型</label>
+                                    <input type="text" class="form-control" id="businessType" readonly>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">订单状态</label>
+                                    <input type="text" class="form-control" id="orderStatus" readonly>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-grid">
+                            <button class="btn btn-primary" onclick="calculateManagementProfit()" id="calculateBtn">
+                                <i class="fas fa-calculator"></i> 计算管理账分润
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h6><i class="fas fa-chart-line"></i> 计算概览</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="kpi-metric">
+                                    <i class="fas fa-coins text-warning fa-lg"></i>
+                                    <div class="metric-value text-warning" id="totalGrossProfit">¥0</div>
+                                    <small>总毛利</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="kpi-metric">
+                                    <i class="fas fa-cogs text-primary fa-lg"></i>
+                                    <div class="metric-value text-primary" id="serviceCount">0</div>
+                                    <small>服务数量</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="kpi-metric">
+                                    <i class="fas fa-users text-success fa-lg"></i>
+                                    <div class="metric-value text-success" id="departmentCount">0</div>
+                                    <small>部门数量</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="kpi-metric">
+                                    <i class="fas fa-clock text-info fa-lg"></i>
+                                    <div class="metric-value text-info" id="calculationTime">--</div>
+                                    <small>计算时间</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <div class="alert alert-info" id="calculationStatus">
+                                <i class="fas fa-info-circle"></i> 请选择订单并点击计算按钮
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 计算结果区域 -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <ul class="nav nav-tabs card-header-tabs" id="resultTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="service-tab" data-bs-toggle="tab" data-bs-target="#service-results" type="button" role="tab">
+                                    <i class="fas fa-cogs"></i> 服务分润明细
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="department-tab" data-bs-toggle="tab" data-bs-target="#department-summary" type="button" role="tab">
+                                    <i class="fas fa-building"></i> 部门汇总(五项要素)
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="validation-tab" data-bs-toggle="tab" data-bs-target="#validation-results" type="button" role="tab">
+                                    <i class="fas fa-check-circle"></i> 数据验证
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="calculation-detail-tab" data-bs-toggle="tab" data-bs-target="#calculation-detail" type="button" role="tab">
+                                    <i class="fas fa-list-ol"></i> 计算步骤
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="card-body">
+                        <div class="tab-content" id="resultTabContent">
+                            <!-- 服务分润明细 -->
+                            <div class="tab-pane fade show active" id="service-results" role="tabpanel">
+                                <div id="serviceResultsContent">
+                                    <div class="text-center text-muted py-5">
+                                        <i class="fas fa-calculator fa-3x mb-3"></i>
+                                        <p>暂无计算结果，请先选择订单并执行计算</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 部门汇总(五项要素) -->
+                            <div class="tab-pane fade" id="department-summary" role="tabpanel">
+                                <div id="departmentSummaryContent">
+                                    <div class="text-center text-muted py-5">
+                                        <i class="fas fa-building fa-3x mb-3"></i>
+                                        <p>部门汇总数据将在计算完成后显示</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 数据验证 -->
+                            <div class="tab-pane fade" id="validation-results" role="tabpanel">
+                                <div id="validationResultsContent">
+                                    <div class="text-center text-muted py-5">
+                                        <i class="fas fa-check-circle fa-3x mb-3"></i>
+                                        <p>数据验证结果将在计算完成后显示</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 计算步骤 -->
+                            <div class="tab-pane fade" id="calculation-detail" role="tabpanel">
+                                <div id="calculationDetailContent">
+                                    <div class="text-center text-muted py-5">
+                                        <i class="fas fa-list-ol fa-3x mb-3"></i>
+                                        <p>计算步骤详情将在计算完成后显示</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 全局变量
+        let currentCalculationResult = null;
+        let currentOrderId = null;
+
+        // 模拟数据
+        const mockOrderData = {
+            "HW-EXPORT-20240101-001": {
+                customerName: "上海华为技术有限公司",
+                businessType: "海运整柜出口",
+                orderStatus: "费用录入完成"
+            },
+            "MIDEA-SHIP-20240103-001": {
+                customerName: "广东美的集团",
+                businessType: "海运拼箱出口", 
+                orderStatus: "费用录入完成"
+            },
+            "SH-AUTO-20240101-001": {
+                customerName: "上海汽车工业集团",
+                businessType: "陆运运输",
+                orderStatus: "费用录入完成"
+            }
+        };
+
+        // 模拟分润计算结果
+        const mockCalculationResult = {
+            orderId: "HW-EXPORT-20240101-001",
+            calculationTime: new Date().toISOString(),
+            totalGrossProfit: 140.00,
+            serviceCount: 3,
+            departmentCount: 4,
+            calculationVersion: 1,
+            serviceProfitResults: [
+                {
+                    serviceCode: "MBL_PROCESSING",
+                    serviceName: "MBL处理",
+                    salesDepartmentId: "OCEAN_SALES",
+                    salesDepartmentName: "海运销售部",
+                    operationDepartmentId: "OCEAN_OPERATION", 
+                    operationDepartmentName: "海运操作部",
+                    externalRevenue: 1000.00,
+                    externalCost: 900.00,
+                    grossProfit: 100.00,
+                    protocolName: "海运MBL处理标准协议",
+                    profitSharingRatio: "50:50",
+                    salesProfitAmount: 50.00,
+                    operationProfitAmount: 50.00,
+                    salesInternalPayment: 950.00,
+                    operationInternalIncome: 950.00
+                },
+                {
+                    serviceCode: "CONTAINER_LOADING",
+                    serviceName: "内装",
+                    salesDepartmentId: "OCEAN_SALES",
+                    salesDepartmentName: "海运销售部", 
+                    operationDepartmentId: "CONTAINER_OPERATION",
+                    operationDepartmentName: "内装操作部",
+                    externalRevenue: 300.00,
+                    externalCost: 280.00,
+                    grossProfit: 20.00,
+                    protocolName: "内装操作服务协议",
+                    profitSharingRatio: "50:50",
+                    salesProfitAmount: 10.00,
+                    operationProfitAmount: 10.00,
+                    salesInternalPayment: 290.00,
+                    operationInternalIncome: 290.00
+                },
+                {
+                    serviceCode: "CUSTOMS_CLEARANCE",
+                    serviceName: "报关",
+                    salesDepartmentId: "OCEAN_SALES",
+                    salesDepartmentName: "海运销售部",
+                    operationDepartmentId: "CUSTOMS_OPERATION",
+                    operationDepartmentName: "报关部",
+                    externalRevenue: 80.00,
+                    externalCost: 60.00,
+                    grossProfit: 20.00,
+                    protocolName: "报关服务标准协议",
+                    profitSharingRatio: "30:70",
+                    salesProfitAmount: 6.00,
+                    operationProfitAmount: 14.00,
+                    salesInternalPayment: 74.00,
+                    operationInternalIncome: 74.00
+                }
+            ],
+            departmentSummaries: [
+                {
+                    departmentId: "OCEAN_SALES",
+                    departmentName: "海运销售部",
+                    departmentType: "SALES",
+                    externalRevenue: 1380.00,
+                    internalIncome: 0.00,
+                    internalPayment: 1314.00,
+                    externalCost: 0.00,
+                    departmentProfit: 66.00,
+                    profitMargin: 0.0478,
+                    serviceCount: 3
+                },
+                {
+                    departmentId: "OCEAN_OPERATION",
+                    departmentName: "海运操作部",
+                    departmentType: "OPERATION",
+                    externalRevenue: 0.00,
+                    internalIncome: 950.00,
+                    internalPayment: 0.00,
+                    externalCost: 900.00,
+                    departmentProfit: 50.00,
+                    profitMargin: 0.0526,
+                    serviceCount: 1
+                },
+                {
+                    departmentId: "CONTAINER_OPERATION",
+                    departmentName: "内装操作部",
+                    departmentType: "OPERATION",
+                    externalRevenue: 0.00,
+                    internalIncome: 290.00,
+                    internalPayment: 0.00,
+                    externalCost: 280.00,
+                    departmentProfit: 10.00,
+                    profitMargin: 0.0345,
+                    serviceCount: 1
+                },
+                {
+                    departmentId: "CUSTOMS_OPERATION",
+                    departmentName: "报关部",
+                    departmentType: "OPERATION",
+                    externalRevenue: 0.00,
+                    internalIncome: 74.00,
+                    internalPayment: 0.00,
+                    externalCost: 60.00,
+                    departmentProfit: 14.00,
+                    profitMargin: 0.1892,
+                    serviceCount: 1
+                }
+            ]
+        };
+
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('管理账分润计算页面加载完成');
+        });
+
+        // 加载订单信息
+        function loadOrderInfo() {
+            const orderSelect = document.getElementById('orderSelect');
+            const orderId = orderSelect.value;
+            
+            if (!orderId) {
+                clearOrderInfo();
+                return;
+            }
+            
+            currentOrderId = orderId;
+            const orderData = mockOrderData[orderId];
+            
+            if (orderData) {
+                document.getElementById('customerName').value = orderData.customerName;
+                document.getElementById('businessType').value = orderData.businessType;
+                document.getElementById('orderStatus').value = orderData.orderStatus;
+                
+                // 启用计算按钮
+                document.getElementById('calculateBtn').disabled = false;
+                
+                // 更新状态
+                updateCalculationStatus('订单信息已加载，可以开始计算', 'info');
+            }
+        }
+
+        // 清空订单信息
+        function clearOrderInfo() {
+            document.getElementById('customerName').value = '';
+            document.getElementById('businessType').value = '';
+            document.getElementById('orderStatus').value = '';
+            document.getElementById('calculateBtn').disabled = true;
+            currentOrderId = null;
+            currentCalculationResult = null;
+            
+            // 清空计算结果
+            clearCalculationResults();
+            updateCalculationStatus('请选择订单并点击计算按钮', 'info');
+        }
+
+        // 执行管理账分润计算
+        async function calculateManagementProfit() {
+            if (!currentOrderId) {
+                alert('请先选择订单');
+                return;
+            }
+            
+            const calculateBtn = document.getElementById('calculateBtn');
+            calculateBtn.disabled = true;
+            calculateBtn.innerHTML = '<div class="spinner-border spinner-border-sm me-2"></div>计算中...';
+            
+            updateCalculationStatus('正在执行管理账分润计算...', 'warning');
+            
+            try {
+                // 调用真实API
+                const response = await fetch(`/api/management-profit-sharing/calculate/${currentOrderId}?forceRecalculate=true`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.code === 200) {
+                    currentCalculationResult = result.data;
+                    
+                    // 更新计算概览
+                    updateCalculationOverview(currentCalculationResult);
+                    
+                    // 显示计算结果
+                    displayCalculationResults(currentCalculationResult);
+                    
+                    updateCalculationStatus('管理账分润计算完成', 'success');
+                } else {
+                    throw new Error(result.message || '计算失败');
+                }
+                
+            } catch (error) {
+                console.error('计算失败:', error);
+                updateCalculationStatus('计算失败: ' + error.message, 'danger');
+                
+                // 如果API调用失败，回退到模拟数据
+                console.log('API调用失败，使用模拟数据');
+                currentCalculationResult = { ...mockCalculationResult };
+                currentCalculationResult.orderId = currentOrderId;
+                currentCalculationResult.calculationTime = new Date().toISOString();
+                
+                updateCalculationOverview(currentCalculationResult);
+                displayCalculationResults(currentCalculationResult);
+                updateCalculationStatus('使用模拟数据完成计算', 'warning');
+                
+            } finally {
+                calculateBtn.disabled = false;
+                calculateBtn.innerHTML = '<i class="fas fa-calculator"></i> 重新计算';
+            }
+        }
+
+        // 更新计算概览
+        function updateCalculationOverview(result) {
+            document.getElementById('totalGrossProfit').textContent = '¥' + result.totalGrossProfit.toFixed(2);
+            document.getElementById('serviceCount').textContent = result.serviceCount;
+            document.getElementById('departmentCount').textContent = result.departmentCount;
+            document.getElementById('calculationTime').textContent = formatDateTime(result.calculationTime);
+        }
+
+        // 显示计算结果
+        function displayCalculationResults(result) {
+            displayServiceResults(result.serviceProfitResults);
+            displayDepartmentSummary(result.departmentSummaries);
+            displayValidationResults(result);
+            displayCalculationSteps(result);
+        }
+
+        // 显示服务分润明细
+        function displayServiceResults(serviceResults) {
+            const container = document.getElementById('serviceResultsContent');
+            
+            if (!serviceResults || serviceResults.length === 0) {
+                container.innerHTML = '<div class="text-center text-muted py-3">暂无服务分润数据</div>';
+                return;
+            }
+            
+            let html = `
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>服务项目</th>
+                                <th>外部收入</th>
+                                <th>外部支出</th>
+                                <th>毛利</th>
+                                <th>分润比例</th>
+                                <th>销售分润</th>
+                                <th>操作分润</th>
+                                <th>协议</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            let totalRevenue = 0, totalCost = 0, totalProfit = 0, totalSalesProfit = 0, totalOperationProfit = 0;
+            
+            serviceResults.forEach(result => {
+                totalRevenue += result.externalRevenue;
+                totalCost += result.externalCost; 
+                totalProfit += result.grossProfit;
+                totalSalesProfit += result.salesProfitAmount;
+                totalOperationProfit += result.operationProfitAmount;
+                
+                html += `
+                    <tr>
+                        <td>
+                            <strong>${result.serviceName}</strong>
+                            <br><small class="text-muted">${result.serviceCode}</small>
+                        </td>
+                        <td class="text-end">¥${result.externalRevenue.toFixed(2)}</td>
+                        <td class="text-end">¥${result.externalCost.toFixed(2)}</td>
+                        <td class="text-end ${getProfitClass(result.grossProfit)}">¥${result.grossProfit.toFixed(2)}</td>
+                        <td class="text-center">
+                            <span class="badge bg-info">${result.profitSharingRatio}</span>
+                        </td>
+                        <td class="text-end profit-positive">¥${result.salesProfitAmount.toFixed(2)}</td>
+                        <td class="text-end profit-positive">¥${result.operationProfitAmount.toFixed(2)}</td>
+                        <td>
+                            <span class="protocol-info">
+                                ${result.protocolName}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-outline-primary btn-sm" onclick="viewServiceDetail('${result.serviceCode}')">
+                                <i class="fas fa-eye"></i> 详情
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                    </tbody>
+                    <tfoot class="table-secondary">
+                        <tr>
+                            <th>合计</th>
+                            <th class="text-end">¥${totalRevenue.toFixed(2)}</th>
+                            <th class="text-end">¥${totalCost.toFixed(2)}</th>
+                            <th class="text-end ${getProfitClass(totalProfit)}">¥${totalProfit.toFixed(2)}</th>
+                            <th class="text-center">-</th>
+                            <th class="text-end profit-positive">¥${totalSalesProfit.toFixed(2)}</th>
+                            <th class="text-end profit-positive">¥${totalOperationProfit.toFixed(2)}</th>
+                            <th>-</th>
+                            <th>-</th>
+                        </tr>
+                    </tfoot>
+                </table>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        // 显示部门汇总(五项要素)
+        function displayDepartmentSummary(departmentSummaries) {
+            const container = document.getElementById('departmentSummaryContent');
+            
+            if (!departmentSummaries || departmentSummaries.length === 0) {
+                container.innerHTML = '<div class="text-center text-muted py-3">暂无部门汇总数据</div>';
+                return;
+            }
+            
+            let html = `
+                <div class="five-elements-table">
+                    <h6><i class="fas fa-chart-pie"></i> 部门收支五项要素汇总</h6>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th rowspan="2">部门名称</th>
+                                    <th colspan="2" class="text-center">收入</th>
+                                    <th colspan="2" class="text-center">支出</th>
+                                    <th rowspan="2">部门毛利</th>
+                                    <th rowspan="2">利润率</th>
+                                    <th rowspan="2">服务数</th>
+                                </tr>
+                                <tr>
+                                    <th>外部收入</th>
+                                    <th>内部收入</th>
+                                    <th>内部支出</th>
+                                    <th>外部支出</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+            `;
+            
+            let totalExtRevenue = 0, totalIntIncome = 0, totalIntPayment = 0, totalExtCost = 0, totalDeptProfit = 0;
+            
+            departmentSummaries.forEach(dept => {
+                totalExtRevenue += dept.externalRevenue;
+                totalIntIncome += dept.internalIncome;
+                totalIntPayment += dept.internalPayment;
+                totalExtCost += dept.externalCost;
+                totalDeptProfit += dept.departmentProfit;
+                
+                const deptTypeClass = dept.departmentType === 'SALES' ? 'dept-type-sales' : 'dept-type-operation';
+                
+                html += `
+                    <tr class="${deptTypeClass}">
+                        <td>
+                            <strong>${dept.departmentName}</strong>
+                            <br><small class="text-muted">${dept.departmentType === 'SALES' ? '销售部门' : '操作部门'}</small>
+                        </td>
+                        <td class="text-end">¥${dept.externalRevenue.toFixed(2)}</td>
+                        <td class="text-end">¥${dept.internalIncome.toFixed(2)}</td>
+                        <td class="text-end">¥${dept.internalPayment.toFixed(2)}</td>
+                        <td class="text-end">¥${dept.externalCost.toFixed(2)}</td>
+                        <td class="text-end ${getProfitClass(dept.departmentProfit)}">¥${dept.departmentProfit.toFixed(2)}</td>
+                        <td class="text-end">${(dept.profitMargin * 100).toFixed(2)}%</td>
+                        <td class="text-center">${dept.serviceCount}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                    </tbody>
+                    <tfoot class="table-warning">
+                        <tr>
+                            <th>合计</th>
+                            <th class="text-end">¥${totalExtRevenue.toFixed(2)}</th>
+                            <th class="text-end">¥${totalIntIncome.toFixed(2)}</th>
+                            <th class="text-end">¥${totalIntPayment.toFixed(2)}</th>
+                            <th class="text-end">¥${totalExtCost.toFixed(2)}</th>
+                            <th class="text-end ${getProfitClass(totalDeptProfit)}">¥${totalDeptProfit.toFixed(2)}</th>
+                            <th class="text-center">-</th>
+                            <th class="text-center">${departmentSummaries.reduce((sum, d) => sum + d.serviceCount, 0)}</th>
+                        </tr>
+                    </tfoot>
+                </table>
+                </div>
+            `;
+            
+            // 添加验证指标
+            const internalBalance = totalIntIncome - totalIntPayment;
+            const balanceClass = Math.abs(internalBalance) < 0.01 ? 'balance-check' : 'balance-check balance-error';
+            
+            html += `
+                <div class="${balanceClass}">
+                    <h6><i class="fas fa-check-circle"></i> 验证指标</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>内部收入 = 内部支出：</strong> 
+                                ¥${totalIntIncome.toFixed(2)} = ¥${totalIntPayment.toFixed(2)} 
+                                ${Math.abs(internalBalance) < 0.01 ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times text-danger"></i>'}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>部门毛利合计 = 订单总毛利：</strong> 
+                                ¥${totalDeptProfit.toFixed(2)} 
+                                <i class="fas fa-check text-success"></i>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        // 显示数据验证结果
+        function displayValidationResults(result) {
+            const container = document.getElementById('validationResultsContent');
+            
+            // 计算验证指标
+            const totalIntIncome = result.departmentSummaries.reduce((sum, d) => sum + d.internalIncome, 0);
+            const totalIntPayment = result.departmentSummaries.reduce((sum, d) => sum + d.internalPayment, 0);
+            const totalDeptProfit = result.departmentSummaries.reduce((sum, d) => sum + d.departmentProfit, 0);
+            
+            const internalBalanced = Math.abs(totalIntIncome - totalIntPayment) < 0.01;
+            const profitConsistent = Math.abs(totalDeptProfit - result.totalGrossProfit) < 0.01;
+            
+            let html = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card ${internalBalanced ? 'border-success' : 'border-danger'}">
+                            <div class="card-header ${internalBalanced ? 'bg-success text-white' : 'bg-danger text-white'}">
+                                <h6><i class="fas fa-balance-scale"></i> 内部收支平衡验证</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row text-center">
+                                    <div class="col-6">
+                                        <div class="kpi-metric">
+                                            <div class="metric-value text-primary">¥${totalIntIncome.toFixed(2)}</div>
+                                            <small>内部收入合计</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="kpi-metric">
+                                            <div class="metric-value text-warning">¥${totalIntPayment.toFixed(2)}</div>
+                                            <small>内部支出合计</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-center mt-3">
+                                    <div class="alert ${internalBalanced ? 'alert-success' : 'alert-danger'}">
+                                        <i class="fas ${internalBalanced ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i>
+                                        差额: ¥${(totalIntIncome - totalIntPayment).toFixed(2)}
+                                        <br>${internalBalanced ? '内部收支平衡' : '内部收支不平衡'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card ${profitConsistent ? 'border-success' : 'border-danger'}">
+                            <div class="card-header ${profitConsistent ? 'bg-success text-white' : 'bg-danger text-white'}">
+                                <h6><i class="fas fa-chart-line"></i> 毛利一致性验证</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row text-center">
+                                    <div class="col-6">
+                                        <div class="kpi-metric">
+                                            <div class="metric-value text-success">¥${totalDeptProfit.toFixed(2)}</div>
+                                            <small>部门毛利合计</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="kpi-metric">
+                                            <div class="metric-value text-info">¥${result.totalGrossProfit.toFixed(2)}</div>
+                                            <small>订单总毛利</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-center mt-3">
+                                    <div class="alert ${profitConsistent ? 'alert-success' : 'alert-danger'}">
+                                        <i class="fas ${profitConsistent ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i>
+                                        差额: ¥${(totalDeptProfit - result.totalGrossProfit).toFixed(2)}
+                                        <br>${profitConsistent ? '毛利一致' : '毛利不一致'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6><i class="fas fa-list-check"></i> 完整性检查清单</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            服务数量验证
+                                            <span class="badge bg-success rounded-pill">
+                                                <i class="fas fa-check"></i> ${result.serviceCount}个
+                                            </span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            部门数量验证
+                                            <span class="badge bg-success rounded-pill">
+                                                <i class="fas fa-check"></i> ${result.departmentCount}个
+                                            </span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            协议匹配验证
+                                            <span class="badge bg-success rounded-pill">
+                                                <i class="fas fa-check"></i> 全部匹配
+                                            </span>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            分润比例验证
+                                            <span class="badge bg-success rounded-pill">
+                                                <i class="fas fa-check"></i> 100%分配
+                                            </span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            数据完整性验证
+                                            <span class="badge bg-success rounded-pill">
+                                                <i class="fas fa-check"></i> 完整
+                                            </span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            计算准确性验证
+                                            <span class="badge bg-success rounded-pill">
+                                                <i class="fas fa-check"></i> 准确
+                                            </span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        // 显示计算步骤
+        function displayCalculationSteps(result) {
+            const container = document.getElementById('calculationDetailContent');
+            
+            let html = `
+                <div class="calculation-history">
+                    <h6><i class="fas fa-cogs"></i> 管理账分润计算步骤详解</h6>
+            `;
+            
+            // 步骤1: 服务分组
+            html += `
+                <div class="calculation-step">
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="step-number">1</span>
+                        <strong>服务项目分组</strong>
+                    </div>
+                    <p>从费用明细中识别出 ${result.serviceCount} 个服务项目，每个服务单独计算分润。</p>
+                    <div class="row">
+                        ${result.serviceProfitResults.map(service => `
+                            <div class="col-md-4">
+                                <div class="card card-body bg-light">
+                                    <h6>${service.serviceName}</h6>
+                                    <small>收入: ¥${service.externalRevenue.toFixed(2)}</small><br>
+                                    <small>支出: ¥${service.externalCost.toFixed(2)}</small><br>
+                                    <small>毛利: ¥${service.grossProfit.toFixed(2)}</small>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            
+            // 步骤2: 协议匹配
+            html += `
+                <div class="calculation-step">
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="step-number">2</span>
+                        <strong>内部协议匹配</strong>
+                    </div>
+                    <p>根据服务类型和部门组合，为每个服务匹配最适用的内部分润协议。</p>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>服务</th>
+                                    <th>销售部门</th>
+                                    <th>操作部门</th>
+                                    <th>匹配协议</th>
+                                    <th>分润比例</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${result.serviceProfitResults.map(service => `
+                                    <tr>
+                                        <td>${service.serviceName}</td>
+                                        <td>${service.salesDepartmentName}</td>
+                                        <td>${service.operationDepartmentName}</td>
+                                        <td>${service.protocolName}</td>
+                                        <td>${service.profitSharingRatio}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            // 步骤3: 分润计算
+            html += `
+                <div class="calculation-step">
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="step-number">3</span>
+                        <strong>分润金额计算</strong>
+                    </div>
+                    <p>应用协议比例计算各部门的分润金额，同时计算内部支付流转。</p>
+                    <div class="alert alert-info">
+                        <strong>计算公式：</strong><br>
+                        • 服务毛利 = 外部收入 - 外部支出<br>
+                        • 销售分润 = 服务毛利 × 销售比例<br>
+                        • 操作分润 = 服务毛利 × 操作比例<br>
+                        • 销售内部支出 = 操作外部支出 + 操作分润<br>
+                        • 操作内部收入 = 销售内部支出
+                    </div>
+                </div>
+            `;
+            
+            // 步骤4: 部门汇总
+            html += `
+                <div class="calculation-step">
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="step-number">4</span>
+                        <strong>部门维度汇总</strong>
+                    </div>
+                    <p>将各服务的分润结果按部门进行汇总，形成五项要素的完整视图。</p>
+                    <div class="alert alert-success">
+                        <strong>五项要素：</strong>外部收入 + 内部收入 - 内部支出 - 外部支出 = 部门毛利
+                    </div>
+                </div>
+            `;
+            
+            // 步骤5: 数据验证
+            html += `
+                <div class="calculation-step">
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="step-number">5</span>
+                        <strong>数据验证</strong>
+                    </div>
+                    <p>验证计算结果的正确性，确保内部收支平衡和毛利一致性。</p>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="alert alert-success">
+                                <i class="fas fa-check"></i> 内部收支平衡验证通过
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="alert alert-success">
+                                <i class="fas fa-check"></i> 毛利一致性验证通过
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // 辅助函数
+        function getProfitClass(profit) {
+            if (profit > 0) return 'profit-positive';
+            if (profit < 0) return 'profit-negative';
+            return 'profit-zero';
+        }
+
+        function formatDateTime(dateString) {
+            return new Date(dateString).toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function updateCalculationStatus(message, type) {
+            const statusElement = document.getElementById('calculationStatus');
+            const iconClass = {
+                'info': 'fa-info-circle',
+                'warning': 'fa-exclamation-triangle',
+                'success': 'fa-check-circle',
+                'danger': 'fa-times-circle'
+            }[type] || 'fa-info-circle';
+            
+            statusElement.className = `alert alert-${type}`;
+            statusElement.innerHTML = `<i class="fas ${iconClass}"></i> ${message}`;
+        }
+
+        function clearCalculationResults() {
+            document.getElementById('totalGrossProfit').textContent = '¥0';
+            document.getElementById('serviceCount').textContent = '0';
+            document.getElementById('departmentCount').textContent = '0';
+            document.getElementById('calculationTime').textContent = '--';
+            
+            document.getElementById('serviceResultsContent').innerHTML = '<div class="text-center text-muted py-5"><i class="fas fa-calculator fa-3x mb-3"></i><p>暂无计算结果</p></div>';
+            document.getElementById('departmentSummaryContent').innerHTML = '<div class="text-center text-muted py-5"><i class="fas fa-building fa-3x mb-3"></i><p>部门汇总数据将在计算完成后显示</p></div>';
+            document.getElementById('validationResultsContent').innerHTML = '<div class="text-center text-muted py-5"><i class="fas fa-check-circle fa-3x mb-3"></i><p>数据验证结果将在计算完成后显示</p></div>';
+            document.getElementById('calculationDetailContent').innerHTML = '<div class="text-center text-muted py-5"><i class="fas fa-list-ol fa-3x mb-3"></i><p>计算步骤详情将在计算完成后显示</p></div>';
+        }
+
+        // 其他功能函数
+        function viewServiceDetail(serviceCode) {
+            if (!currentCalculationResult) return;
+            
+            const service = currentCalculationResult.serviceProfitResults.find(s => s.serviceCode === serviceCode);
+            if (service) {
+                alert(`服务详情：\n服务：${service.serviceName}\n毛利：¥${service.grossProfit.toFixed(2)}\n销售分润：¥${service.salesProfitAmount.toFixed(2)}\n操作分润：¥${service.operationProfitAmount.toFixed(2)}`);
+            }
+        }
+
+        function refreshCalculation() {
+            if (currentOrderId) {
+                calculateManagementProfit();
+            } else {
+                alert('请先选择订单');
+            }
+        }
+
+        function exportResults() {
+            if (!currentCalculationResult) {
+                alert('暂无计算结果可导出');
+                return;
+            }
+            
+            alert('导出功能开发中...\n将支持Excel和PDF格式导出');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>执行监控与分润准备 - OneOrder</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .execution-card {
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            margin: 15px 0;
+            transition: all 0.3s;
+            background: white;
+        }
+        .execution-card:hover {
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        .execution-card.in-progress {
+            border-left: 5px solid #007bff;
+        }
+        .execution-card.completed {
+            border-left: 5px solid #28a745;
+        }
+        .execution-card.paused {
+            border-left: 5px solid #ffc107;
+        }
+        .execution-card.delayed {
+            border-left: 5px solid #dc3545;
+        }
+        .progress-timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+        .timeline-step {
+            position: relative;
+            padding: 15px 0;
+            border-left: 2px solid #e9ecef;
+        }
+        .timeline-step::before {
+            content: '';
+            position: absolute;
+            left: -8px;
+            top: 25px;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #6c757d;
+            border: 2px solid white;
+        }
+        .timeline-step.completed::before {
+            background: #28a745;
+        }
+        .timeline-step.current::before {
+            background: #007bff;
+            animation: pulse 2s infinite;
+        }
+        .timeline-step.delayed::before {
+            background: #dc3545;
+        }
+        .collaboration-panel {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .profit-data-card {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .status-badge {
+            font-size: 0.8em;
+            padding: 4px 8px;
+        }
+        .department-tag {
+            background: #e9ecef;
+            color: #495057;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin: 2px;
+            display: inline-block;
+        }
+        .communication-thread {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 10px;
+            background: white;
+        }
+        .message-item {
+            border-bottom: 1px solid #f8f9fa;
+            padding: 8px 0;
+        }
+        .message-item:last-child {
+            border-bottom: none;
+        }
+        .progress-indicator {
+            height: 8px;
+            border-radius: 4px;
+            background: #e9ecef;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            transition: width 0.3s;
+        }
+        .metric-card {
+            text-align: center;
+            padding: 20px;
+            border-radius: 8px;
+            background: white;
+            border: 1px solid #e9ecef;
+        }
+        .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .kpi-dashboard {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2><i class="fas fa-tasks text-primary"></i> 执行监控与分润准备</h2>
+                    <div>
+                        <button class="btn btn-outline-success" onclick="refreshData()">
+                            <i class="fas fa-sync-alt"></i> 刷新数据
+                        </button>
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-outline-primary" onclick="switchView('operator')">
+                                <i class="fas fa-user-cog"></i> 操作员视图
+                            </button>
+                            <button class="btn btn-outline-info" onclick="switchView('customer-service')">
+                                <i class="fas fa-headset"></i> 客服视图
+                            </button>
+                            <button class="btn btn-outline-warning" onclick="switchView('manager')">
+                                <i class="fas fa-chart-line"></i> 管理视图
+                            </button>
+                        </div>
+                        <a href="system-overview.html" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> 返回主页
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI仪表盘 -->
+        <div class="row">
+            <div class="col-12">
+                <div class="kpi-dashboard">
+                    <h5><i class="fas fa-tachometer-alt"></i> 执行监控KPI仪表盘</h5>
+                    <div class="row">
+                        <div class="col-md-2">
+                            <div class="metric-card">
+                                <i class="fas fa-play-circle text-primary fa-2x"></i>
+                                <div class="metric-value text-primary" id="inProgressCount">0</div>
+                                <small>执行中</small>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="metric-card">
+                                <i class="fas fa-check-circle text-success fa-2x"></i>
+                                <div class="metric-value text-success" id="completedCount">0</div>
+                                <small>已完成</small>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="metric-card">
+                                <i class="fas fa-exclamation-triangle text-warning fa-2x"></i>
+                                <div class="metric-value text-warning" id="delayedCount">0</div>
+                                <small>延期风险</small>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="metric-card">
+                                <i class="fas fa-percentage text-info fa-2x"></i>
+                                <div class="metric-value text-info" id="completionRate">0%</div>
+                                <small>完成率</small>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="metric-card">
+                                <i class="fas fa-clock text-secondary fa-2x"></i>
+                                <div class="metric-value text-secondary" id="avgExecutionTime">0h</div>
+                                <small>平均用时</small>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="metric-card">
+                                <i class="fas fa-coins text-warning fa-2x"></i>
+                                <div class="metric-value text-warning" id="potentialProfit">¥0</div>
+                                <small>预计分润</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- 左侧：执行中的任务列表 -->
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5><i class="fas fa-running"></i> 执行中的任务</h5>
+                        <div>
+                            <select class="form-select form-select-sm" id="statusFilter" onchange="filterTasks()">
+                                <option value="">全部状态</option>
+                                <option value="IN_PROGRESS">执行中</option>
+                                <option value="COMPLETED">已完成</option>
+                                <option value="PAUSED">暂停</option>
+                                <option value="DELAYED">延期</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="executionTasksList">
+                            <div class="text-center text-muted py-5">
+                                <i class="fas fa-tasks fa-3x mb-3"></i>
+                                <p>暂无执行中的任务</p>
+                                <button class="btn btn-outline-primary" onclick="generateMockTasks()">
+                                    <i class="fas fa-plus"></i> 生成模拟任务
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 跨部门协作面板 -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h6><i class="fas fa-users"></i> 跨部门协作沟通</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="collaboration-panel">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="communication-thread" id="communicationThread">
+                                        <div class="message-item">
+                                            <div class="d-flex justify-content-between">
+                                                <strong>张美华 (客服)</strong>
+                                                <small class="text-muted">10:30</small>
+                                            </div>
+                                            <p class="mb-0">HW-EXPORT-20240101-001订单的MBL处理进度如何？客户询问预计完成时间。</p>
+                                        </div>
+                                        <div class="message-item">
+                                            <div class="d-flex justify-content-between">
+                                                <strong>林芳 (海运操作)</strong>
+                                                <small class="text-muted">10:45</small>
+                                            </div>
+                                            <p class="mb-0">MBL草本已完成80%，预计今天下午3点前完成审核，明天上午可以签发。</p>
+                                        </div>
+                                        <div class="message-item">
+                                            <div class="d-flex justify-content-between">
+                                                <strong>王经理 (财务)</strong>
+                                                <small class="text-muted">11:00</small>
+                                            </div>
+                                            <p class="mb-0">请及时更新任务进度，这批货物的分润计算需要准确的时效数据。</p>
+                                        </div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" id="messageInput" placeholder="输入消息...">
+                                            <button class="btn btn-primary" onclick="sendMessage()">
+                                                <i class="fas fa-paper-plane"></i> 发送
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <h6>在线部门</h6>
+                                    <div class="department-tag"><i class="fas fa-circle text-success"></i> 客服部</div>
+                                    <div class="department-tag"><i class="fas fa-circle text-success"></i> 海运操作</div>
+                                    <div class="department-tag"><i class="fas fa-circle text-warning"></i> 空运操作</div>
+                                    <div class="department-tag"><i class="fas fa-circle text-secondary"></i> 财务部</div>
+                                    
+                                    <h6 class="mt-3">快速操作</h6>
+                                    <div class="d-grid gap-1">
+                                        <button class="btn btn-outline-primary btn-sm" onclick="requestUpdate()">
+                                            <i class="fas fa-question-circle"></i> 请求状态更新
+                                        </button>
+                                        <button class="btn btn-outline-warning btn-sm" onclick="reportIssue()">
+                                            <i class="fas fa-exclamation-triangle"></i> 报告问题
+                                        </button>
+                                        <button class="btn btn-outline-success btn-sm" onclick="confirmCompletion()">
+                                            <i class="fas fa-check"></i> 确认完成
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：分润数据面板 -->
+            <div class="col-md-4">
+                <!-- 分润数据采集 -->
+                <div class="card">
+                    <div class="card-header">
+                        <h6><i class="fas fa-database"></i> 分润数据采集</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="profit-data-card">
+                            <h6><i class="fas fa-chart-pie"></i> 实时分润指标</h6>
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <div class="text-success">
+                                        <strong id="totalRevenue">¥0</strong>
+                                        <small class="d-block">总营收</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-primary">
+                                        <strong id="totalCost">¥0</strong>
+                                        <small class="d-block">总成本</small>
+                                    </div>
+                                </div>
+                                <div class="col-6 mt-2">
+                                    <div class="text-warning">
+                                        <strong id="grossProfit">¥0</strong>
+                                        <small class="d-block">毛利润</small>
+                                    </div>
+                                </div>
+                                <div class="col-6 mt-2">
+                                    <div class="text-info">
+                                        <strong id="profitMargin">0%</strong>
+                                        <small class="d-block">毛利率</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 部门贡献度 -->
+                        <div class="mt-3">
+                            <h6><i class="fas fa-users-cog"></i> 部门贡献度</h6>
+                            <div id="departmentContribution">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span>客服部</span>
+                                    <div class="flex-grow-1 mx-2">
+                                        <div class="progress-indicator">
+                                            <div class="progress-fill bg-primary" style="width: 30%"></div>
+                                        </div>
+                                    </div>
+                                    <small>30%</small>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span>海运操作</span>
+                                    <div class="flex-grow-1 mx-2">
+                                        <div class="progress-indicator">
+                                            <div class="progress-fill bg-success" style="width: 45%"></div>
+                                        </div>
+                                    </div>
+                                    <small>45%</small>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span>财务部</span>
+                                    <div class="flex-grow-1 mx-2">
+                                        <div class="progress-indicator">
+                                            <div class="progress-fill bg-warning" style="width: 25%"></div>
+                                        </div>
+                                    </div>
+                                    <small>25%</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 分润预测 -->
+                        <div class="mt-3">
+                            <h6><i class="fas fa-crystal-ball"></i> 分润预测</h6>
+                            <div class="alert alert-info">
+                                <small>
+                                    基于当前执行进度和协议条款，预计本批次任务完成后：<br>
+                                    • 销售分润：<strong class="text-success">¥12,300</strong><br>
+                                    • 操作分润：<strong class="text-primary">¥8,700</strong><br>
+                                    • 管理费用：<strong class="text-secondary">¥2,100</strong>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 质量监控 -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h6><i class="fas fa-star"></i> 质量监控</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="text-success">
+                                    <i class="fas fa-thumbs-up fa-2x"></i>
+                                    <div><strong id="qualityScore">95%</strong></div>
+                                    <small>质量评分</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-warning">
+                                    <i class="fas fa-clock fa-2x"></i>
+                                    <div><strong id="timelyRate">88%</strong></div>
+                                    <small>及时率</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                质量评分影响分润加成，及时率影响绩效考核。
+                                当前质量水平将为操作员提供5%的质量奖励。
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 预警提醒 -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h6><i class="fas fa-bell"></i> 预警提醒</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="alertList">
+                            <div class="alert alert-warning alert-sm">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <strong>延期风险:</strong> MIDEA-SHIP-20240103-001 预订服务可能延期2小时
+                            </div>
+                            <div class="alert alert-info alert-sm">
+                                <i class="fas fa-info-circle"></i>
+                                <strong>协作需求:</strong> 需要财务部确认费用科目
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 任务详情模态框 -->
+    <div class="modal fade" id="taskDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-tasks text-primary"></i> 任务执行详情
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="taskDetailContent">
+                        <!-- 动态内容 -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <button type="button" class="btn btn-primary" onclick="updateTaskProgress()">
+                        <i class="fas fa-edit"></i> 更新进度
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 进度更新模态框 -->
+    <div class="modal fade" id="progressUpdateModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-edit text-primary"></i> 更新任务进度
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">任务状态</label>
+                        <select class="form-select" id="taskStatus">
+                            <option value="IN_PROGRESS">执行中</option>
+                            <option value="PAUSED">暂停</option>
+                            <option value="COMPLETED">已完成</option>
+                            <option value="DELAYED">延期</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">完成进度 (%)</label>
+                        <input type="range" class="form-range" id="progressSlider" min="0" max="100" value="50" oninput="updateProgressValue()">
+                        <div class="text-center"><span id="progressValue">50</span>%</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">执行备注</label>
+                        <textarea class="form-control" id="executionNotes" rows="3" placeholder="描述当前进度和遇到的问题..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">预计完成时间</label>
+                        <input type="datetime-local" class="form-control" id="estimatedCompletion">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-success" onclick="submitProgressUpdate()">
+                        <i class="fas fa-save"></i> 提交更新
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 全局变量
+        let executionTasks = [];
+        let currentUser = { id: 'CS001', name: '张美华', role: 'CUSTOMER_SERVICE', department: '客服部' };
+        let currentView = 'customer-service';
+        let selectedTaskId = null;
+
+        // 模拟任务数据
+        const mockTasks = [
+            {
+                id: 'EXEC001',
+                orderId: 'HW-EXPORT-20240101-001',
+                serviceType: 'MBL_PROCESSING',
+                serviceName: '主单处理',
+                operatorId: 'OP002',
+                operatorName: '林芳',
+                department: '海运操作部',
+                status: 'IN_PROGRESS',
+                progress: 75,
+                startTime: '2024-09-20 09:00:00',
+                estimatedCompletion: '2024-09-20 15:00:00',
+                actualTime: '2024-09-20 14:30:00',
+                protocolId: 'PROTO001',
+                protocolName: '海运MBL处理标准协议',
+                baseCommission: 15,
+                totalCommission: 20,
+                revenue: 8500,
+                cost: 6200,
+                qualityScore: 95,
+                notes: 'MBL草本制作完成，正在进行最终审核',
+                issues: [],
+                collaborators: ['客服部', '海运操作部', '财务部']
+            },
+            {
+                id: 'EXEC002',
+                orderId: 'MIDEA-SHIP-20240103-001',
+                serviceType: 'BOOKING',
+                serviceName: '预订服务',
+                operatorId: 'OP001',
+                operatorName: '马晓东',
+                department: '空运操作部',
+                status: 'DELAYED',
+                progress: 60,
+                startTime: '2024-09-20 10:30:00',
+                estimatedCompletion: '2024-09-20 16:00:00',
+                actualTime: '2024-09-20 18:00:00',
+                protocolId: 'PROTO002',
+                protocolName: '空运预订服务协议',
+                baseCommission: 18,
+                totalCommission: 25,
+                revenue: 6800,
+                cost: 4500,
+                qualityScore: 88,
+                notes: '舱位紧张，正在联系其他航司',
+                issues: ['舱位不足', '价格波动'],
+                collaborators: ['客服部', '空运操作部']
+            },
+            {
+                id: 'EXEC003',
+                orderId: 'SH-AUTO-20240101-001',
+                serviceType: 'TRANSPORTATION',
+                serviceName: '运输服务',
+                operatorId: 'OP008',
+                operatorName: '高玲',
+                department: '西区操作部',
+                status: 'COMPLETED',
+                progress: 100,
+                startTime: '2024-09-19 14:00:00',
+                estimatedCompletion: '2024-09-20 10:00:00',
+                actualTime: '2024-09-20 09:45:00',
+                protocolId: 'PROTO003',
+                protocolName: '陆运运输服务协议',
+                baseCommission: 12,
+                totalCommission: 15,
+                revenue: 4200,
+                cost: 3100,
+                qualityScore: 98,
+                notes: '运输顺利完成，货物已安全送达',
+                issues: [],
+                collaborators: ['客服部', '西区操作部']
+            }
+        ];
+
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadExecutionTasks();
+            updateKPIDashboard();
+            updateProfitData();
+            
+            // 设置默认的预计完成时间为明天
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            document.getElementById('estimatedCompletion').value = tomorrow.toISOString().slice(0, 16);
+        });
+
+        // 生成模拟任务
+        function generateMockTasks() {
+            executionTasks = [...mockTasks];
+            displayExecutionTasks();
+            updateKPIDashboard();
+            updateProfitData();
+        }
+
+        // 加载执行任务
+        function loadExecutionTasks() {
+            // 从localStorage或API加载
+            const savedTasks = localStorage.getItem('execution_tasks');
+            if (savedTasks) {
+                executionTasks = JSON.parse(savedTasks);
+            } else {
+                executionTasks = [...mockTasks]; // 使用模拟数据
+            }
+            displayExecutionTasks();
+        }
+
+        // 显示执行任务
+        function displayExecutionTasks() {
+            const container = document.getElementById('executionTasksList');
+            
+            if (executionTasks.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-muted py-5">
+                        <i class="fas fa-tasks fa-3x mb-3"></i>
+                        <p>暂无执行中的任务</p>
+                        <button class="btn btn-outline-primary" onclick="generateMockTasks()">
+                            <i class="fas fa-plus"></i> 生成模拟任务
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            const tasksHTML = executionTasks.map(task => {
+                const statusClass = getExecutionStatusClass(task.status);
+                const statusText = getExecutionStatusText(task.status);
+                const progressColor = getProgressColor(task.progress, task.status);
+                const timeStatus = getTimeStatus(task.estimatedCompletion, task.actualTime);
+                
+                return `
+                    <div class="execution-card ${statusClass}" data-task-id="${task.id}">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="mb-0">${task.serviceName}</h6>
+                                        <span class="badge ${getStatusBadgeClass(task.status)} status-badge">${statusText}</span>
+                                    </div>
+                                    <p class="text-muted mb-2">订单: ${task.orderId} | 操作员: ${task.operatorName} (${task.department})</p>
+                                    
+                                    <!-- 进度条 -->
+                                    <div class="mb-2">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <small>执行进度</small>
+                                            <small class="fw-bold">${task.progress}%</small>
+                                        </div>
+                                        <div class="progress-indicator">
+                                            <div class="progress-fill ${progressColor}" style="width: ${task.progress}%"></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 时间信息 -->
+                                    <div class="d-flex gap-3 text-sm mb-2">
+                                        <span><i class="fas fa-play"></i> ${formatDateTime(task.startTime)}</span>
+                                        <span><i class="fas fa-flag-checkered"></i> ${formatDateTime(task.estimatedCompletion)}</span>
+                                        ${timeStatus.icon ? `<span class="${timeStatus.class}"><i class="${timeStatus.icon}"></i> ${timeStatus.text}</span>` : ''}
+                                    </div>
+                                    
+                                    <!-- 协议和质量信息 -->
+                                    <div class="d-flex gap-3 text-sm">
+                                        <span><i class="fas fa-handshake"></i> ${task.protocolName}</span>
+                                        <span><i class="fas fa-star"></i> 质量: ${task.qualityScore}%</span>
+                                        <span><i class="fas fa-users"></i> 协作: ${task.collaborators.length}个部门</span>
+                                    </div>
+                                    
+                                    <!-- 执行备注 -->
+                                    ${task.notes ? `
+                                        <div class="alert alert-light mt-2 mb-0">
+                                            <small><i class="fas fa-sticky-note"></i> ${task.notes}</small>
+                                        </div>
+                                    ` : ''}
+                                    
+                                    <!-- 问题提醒 -->
+                                    ${task.issues.length > 0 ? `
+                                        <div class="alert alert-warning mt-2 mb-0">
+                                            <small><i class="fas fa-exclamation-triangle"></i> 问题: ${task.issues.join(', ')}</small>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <!-- 分润预览 -->
+                                    <div class="profit-data-card mb-2">
+                                        <small class="text-muted">分润数据</small>
+                                        <div class="row text-center">
+                                            <div class="col-6">
+                                                <div class="text-success">
+                                                    <strong>¥${task.revenue}</strong>
+                                                    <small class="d-block">收入</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="text-primary">
+                                                    <strong>¥${task.cost}</strong>
+                                                    <small class="d-block">成本</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-12 mt-1">
+                                                <div class="text-warning">
+                                                    <strong>${task.totalCommission}%</strong>
+                                                    <small class="d-block">佣金率</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 操作按钮 -->
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-outline-primary btn-sm" onclick="viewTaskDetail('${task.id}')">
+                                            <i class="fas fa-eye"></i> 查看详情
+                                        </button>
+                                        ${task.status !== 'COMPLETED' ? `
+                                            <button class="btn btn-primary btn-sm" onclick="updateProgress('${task.id}')">
+                                                <i class="fas fa-edit"></i> 更新进度
+                                            </button>
+                                        ` : ''}
+                                        <button class="btn btn-outline-success btn-sm" onclick="contactOperator('${task.operatorId}')">
+                                            <i class="fas fa-comments"></i> 联系操作员
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = tasksHTML;
+        }
+
+        // 更新KPI仪表盘
+        function updateKPIDashboard() {
+            const inProgress = executionTasks.filter(t => t.status === 'IN_PROGRESS').length;
+            const completed = executionTasks.filter(t => t.status === 'COMPLETED').length;
+            const delayed = executionTasks.filter(t => t.status === 'DELAYED').length;
+            const total = executionTasks.length;
+            const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+            
+            // 计算平均执行时间
+            const completedTasks = executionTasks.filter(t => t.status === 'COMPLETED');
+            let avgTime = 0;
+            if (completedTasks.length > 0) {
+                const totalTime = completedTasks.reduce((sum, task) => {
+                    const start = new Date(task.startTime);
+                    const end = new Date(task.actualTime);
+                    return sum + (end - start) / (1000 * 60 * 60); // 转换为小时
+                }, 0);
+                avgTime = Math.round(totalTime / completedTasks.length);
+            }
+            
+            // 计算潜在分润
+            const potentialProfit = executionTasks.reduce((sum, task) => {
+                const profit = task.revenue - task.cost;
+                const commission = profit * (task.totalCommission / 100);
+                return sum + commission;
+            }, 0);
+
+            document.getElementById('inProgressCount').textContent = inProgress;
+            document.getElementById('completedCount').textContent = completed;
+            document.getElementById('delayedCount').textContent = delayed;
+            document.getElementById('completionRate').textContent = completionRate + '%';
+            document.getElementById('avgExecutionTime').textContent = avgTime + 'h';
+            document.getElementById('potentialProfit').textContent = '¥' + Math.round(potentialProfit);
+        }
+
+        // 更新分润数据
+        function updateProfitData() {
+            const totalRevenue = executionTasks.reduce((sum, task) => sum + task.revenue, 0);
+            const totalCost = executionTasks.reduce((sum, task) => sum + task.cost, 0);
+            const grossProfit = totalRevenue - totalCost;
+            const profitMargin = totalRevenue > 0 ? Math.round((grossProfit / totalRevenue) * 100) : 0;
+
+            document.getElementById('totalRevenue').textContent = '¥' + totalRevenue;
+            document.getElementById('totalCost').textContent = '¥' + totalCost;
+            document.getElementById('grossProfit').textContent = '¥' + grossProfit;
+            document.getElementById('profitMargin').textContent = profitMargin + '%';
+        }
+
+        // 查看任务详情
+        function viewTaskDetail(taskId) {
+            const task = executionTasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            selectedTaskId = taskId;
+            
+            const detailHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-info-circle"></i> 基本信息</h6>
+                        <table class="table table-sm">
+                            <tr><td>订单号</td><td>${task.orderId}</td></tr>
+                            <tr><td>服务类型</td><td>${task.serviceName}</td></tr>
+                            <tr><td>操作员</td><td>${task.operatorName}</td></tr>
+                            <tr><td>部门</td><td>${task.department}</td></tr>
+                            <tr><td>开始时间</td><td>${formatDateTime(task.startTime)}</td></tr>
+                            <tr><td>预计完成</td><td>${formatDateTime(task.estimatedCompletion)}</td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-chart-bar"></i> 执行数据</h6>
+                        <table class="table table-sm">
+                            <tr><td>状态</td><td><span class="badge ${getStatusBadgeClass(task.status)}">${getExecutionStatusText(task.status)}</span></td></tr>
+                            <tr><td>进度</td><td>${task.progress}%</td></tr>
+                            <tr><td>质量评分</td><td>${task.qualityScore}%</td></tr>
+                            <tr><td>协议佣金</td><td>${task.totalCommission}%</td></tr>
+                            <tr><td>预计收入</td><td>¥${task.revenue}</td></tr>
+                            <tr><td>预计成本</td><td>¥${task.cost}</td></tr>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <h6><i class="fas fa-timeline"></i> 执行时间线</h6>
+                    <div class="progress-timeline">
+                        <div class="timeline-step completed">
+                            <strong>任务开始</strong> - ${formatDateTime(task.startTime)}
+                            <small class="text-muted d-block">操作员确认接单并开始执行</small>
+                        </div>
+                        <div class="timeline-step ${task.progress > 50 ? 'completed' : 'current'}">
+                            <strong>进度更新</strong> - ${task.progress}% 完成
+                            <small class="text-muted d-block">${task.notes || '暂无备注'}</small>
+                        </div>
+                        <div class="timeline-step ${task.status === 'COMPLETED' ? 'completed' : ''}">
+                            <strong>任务完成</strong> - ${task.status === 'COMPLETED' ? formatDateTime(task.actualTime) : '待完成'}
+                            <small class="text-muted d-block">最终质量评估和分润计算</small>
+                        </div>
+                    </div>
+                </div>
+                
+                ${task.issues.length > 0 ? `
+                    <div class="mt-3">
+                        <h6><i class="fas fa-exclamation-triangle text-warning"></i> 遇到的问题</h6>
+                        <ul class="list-group">
+                            ${task.issues.map(issue => `<li class="list-group-item list-group-item-warning">${issue}</li>`).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
+                
+                <div class="mt-3">
+                    <h6><i class="fas fa-users"></i> 协作部门</h6>
+                    <div>
+                        ${task.collaborators.map(dept => `<span class="department-tag">${dept}</span>`).join('')}
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('taskDetailContent').innerHTML = detailHTML;
+            new bootstrap.Modal(document.getElementById('taskDetailModal')).show();
+        }
+
+        // 更新任务进度
+        function updateProgress(taskId) {
+            const task = executionTasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            selectedTaskId = taskId;
+            
+            // 预填表单
+            document.getElementById('taskStatus').value = task.status;
+            document.getElementById('progressSlider').value = task.progress;
+            document.getElementById('progressValue').textContent = task.progress;
+            document.getElementById('executionNotes').value = task.notes || '';
+
+            new bootstrap.Modal(document.getElementById('progressUpdateModal')).show();
+        }
+
+        // 提交进度更新
+        function submitProgressUpdate() {
+            if (!selectedTaskId) return;
+
+            const task = executionTasks.find(t => t.id === selectedTaskId);
+            if (!task) return;
+
+            // 更新任务数据
+            task.status = document.getElementById('taskStatus').value;
+            task.progress = parseInt(document.getElementById('progressSlider').value);
+            task.notes = document.getElementById('executionNotes').value;
+            
+            const estimatedCompletion = document.getElementById('estimatedCompletion').value;
+            if (estimatedCompletion) {
+                task.estimatedCompletion = new Date(estimatedCompletion).toISOString().replace('T', ' ').slice(0, 19);
+            }
+
+            // 如果标记为完成，设置实际完成时间
+            if (task.status === 'COMPLETED' && task.progress === 100) {
+                task.actualTime = new Date().toISOString().replace('T', ' ').slice(0, 19);
+            }
+
+            // 保存到localStorage
+            localStorage.setItem('execution_tasks', JSON.stringify(executionTasks));
+
+            // 更新显示
+            displayExecutionTasks();
+            updateKPIDashboard();
+            updateProfitData();
+
+            // 关闭弹窗
+            bootstrap.Modal.getInstance(document.getElementById('progressUpdateModal')).hide();
+
+            // 发送协作消息
+            sendMessage(`任务 ${task.serviceName} 进度已更新到 ${task.progress}%，状态：${getExecutionStatusText(task.status)}`);
+
+            showNotification('success', '任务进度更新成功！');
+        }
+
+        // 更新进度滑块显示
+        function updateProgressValue() {
+            const value = document.getElementById('progressSlider').value;
+            document.getElementById('progressValue').textContent = value;
+        }
+
+        // 发送消息
+        function sendMessage(message) {
+            if (!message) {
+                message = document.getElementById('messageInput').value.trim();
+                if (!message) return;
+            }
+
+            const messageHTML = `
+                <div class="message-item">
+                    <div class="d-flex justify-content-between">
+                        <strong>${currentUser.name} (${currentUser.department})</strong>
+                        <small class="text-muted">${new Date().toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'})}</small>
+                    </div>
+                    <p class="mb-0">${message}</p>
+                </div>
+            `;
+
+            const thread = document.getElementById('communicationThread');
+            thread.insertAdjacentHTML('beforeend', messageHTML);
+            thread.scrollTop = thread.scrollHeight;
+
+            document.getElementById('messageInput').value = '';
+        }
+
+        // 快速操作函数
+        function requestUpdate() {
+            sendMessage('请各部门更新当前任务的最新进度状态。');
+        }
+
+        function reportIssue() {
+            sendMessage('遇到执行问题，需要跨部门支持解决。');
+        }
+
+        function confirmCompletion() {
+            sendMessage('任务已完成，请财务部门开始分润计算流程。');
+        }
+
+        function contactOperator(operatorId) {
+            sendMessage(`联系操作员 ${operatorId}，请及时更新任务状态。`);
+        }
+
+        // 切换视图
+        function switchView(viewType) {
+            currentView = viewType;
+            
+            // 更新按钮状态
+            document.querySelectorAll('.btn-group button').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // 根据视图类型调整显示内容
+            if (viewType === 'operator') {
+                // 操作员视图：只显示自己的任务
+                displayExecutionTasks();
+            } else if (viewType === 'customer-service') {
+                // 客服视图：显示所有任务的跟踪
+                displayExecutionTasks();
+            } else if (viewType === 'manager') {
+                // 管理视图：专注于分润数据和KPI
+                displayExecutionTasks();
+            }
+
+            showNotification('info', `已切换到${getViewName(viewType)}视图`);
+        }
+
+        // 筛选任务
+        function filterTasks() {
+            const statusFilter = document.getElementById('statusFilter').value;
+            // 实现状态筛选逻辑
+            displayExecutionTasks();
+        }
+
+        // 刷新数据
+        function refreshData() {
+            loadExecutionTasks();
+            updateKPIDashboard();
+            updateProfitData();
+            showNotification('success', '数据已刷新');
+        }
+
+        // 辅助函数
+        function getExecutionStatusClass(status) {
+            const classes = {
+                'IN_PROGRESS': 'in-progress',
+                'COMPLETED': 'completed',
+                'PAUSED': 'paused',
+                'DELAYED': 'delayed'
+            };
+            return classes[status] || '';
+        }
+
+        function getExecutionStatusText(status) {
+            const texts = {
+                'IN_PROGRESS': '执行中',
+                'COMPLETED': '已完成',
+                'PAUSED': '暂停',
+                'DELAYED': '延期'
+            };
+            return texts[status] || status;
+        }
+
+        function getStatusBadgeClass(status) {
+            const classes = {
+                'IN_PROGRESS': 'bg-primary',
+                'COMPLETED': 'bg-success',
+                'PAUSED': 'bg-warning text-dark',
+                'DELAYED': 'bg-danger'
+            };
+            return classes[status] || 'bg-secondary';
+        }
+
+        function getProgressColor(progress, status) {
+            if (status === 'COMPLETED') return 'bg-success';
+            if (status === 'DELAYED') return 'bg-danger';
+            if (progress >= 80) return 'bg-success';
+            if (progress >= 50) return 'bg-warning';
+            return 'bg-primary';
+        }
+
+        function getTimeStatus(estimated, actual) {
+            const now = new Date();
+            const estimatedTime = new Date(estimated);
+            
+            if (actual) {
+                const actualTime = new Date(actual);
+                if (actualTime <= estimatedTime) {
+                    return { icon: 'fas fa-check-circle', text: '按时完成', class: 'text-success' };
+                } else {
+                    return { icon: 'fas fa-clock', text: '延期完成', class: 'text-warning' };
+                }
+            } else {
+                if (now > estimatedTime) {
+                    return { icon: 'fas fa-exclamation-triangle', text: '已超期', class: 'text-danger' };
+                } else {
+                    const hoursLeft = Math.ceil((estimatedTime - now) / (1000 * 60 * 60));
+                    if (hoursLeft <= 2) {
+                        return { icon: 'fas fa-clock', text: `剩余${hoursLeft}小时`, class: 'text-warning' };
+                    }
+                }
+            }
+            return {};
+        }
+
+        function getViewName(viewType) {
+            const names = {
+                'operator': '操作员',
+                'customer-service': '客服',
+                'manager': '管理'
+            };
+            return names[viewType] || viewType;
+        }
+
+        function formatDateTime(dateString) {
+            return new Date(dateString).toLocaleString('zh-CN', {
+                month: 'numeric', day: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            });
+        }
+
+        function showNotification(type, message) {
+            const alertClass = {
+                'success': 'alert-success',
+                'warning': 'alert-warning',
+                'info': 'alert-info',
+                'danger': 'alert-danger'
+            }[type] || 'alert-info';
+
+            const notification = document.createElement('div');
+            notification.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            notification.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+
+            document.body.appendChild(notification);
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

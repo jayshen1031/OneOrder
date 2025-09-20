@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>协议自动匹配演示 - OneOrder</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .matching-step {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            background: #f8f9fa;
+        }
+        .matching-step.active {
+            border-color: #0d6efd;
+            background: #e3f2fd;
+        }
+        .protocol-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            background: white;
+            transition: all 0.3s;
+        }
+        .protocol-card:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .protocol-card.selected {
+            border-color: #198754;
+            background: #d1e7dd;
+        }
+        .protocol-card.recommended {
+            border-color: #ffc107;
+            background: #fff3cd;
+        }
+        .match-score {
+            font-size: 24px;
+            font-weight: bold;
+            color: #198754;
+        }
+        .matching-criteria {
+            background: #e9ecef;
+            border-radius: 6px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .step-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            color: white;
+            font-weight: bold;
+        }
+        .step-complete {
+            background: #198754;
+        }
+        .step-active {
+            background: #0d6efd;
+        }
+        .step-pending {
+            background: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2><i class="fas fa-handshake text-primary"></i> 协议自动匹配演示</h2>
+                    <div>
+                        <button class="btn btn-success" onclick="startMatching()">
+                            <i class="fas fa-play"></i> 开始匹配演示
+                        </button>
+                        <button class="btn btn-secondary" onclick="resetDemo()">
+                            <i class="fas fa-refresh"></i> 重置
+                        </button>
+                        <a href="freight-order.html" class="btn btn-outline-primary">
+                            <i class="fas fa-arrow-left"></i> 返回主页
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- 左侧：匹配输入条件 -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-filter"></i> 匹配条件</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">客服部门</label>
+                            <select class="form-select" id="customerServiceDept">
+                                <option value="">请选择客服部门</option>
+                                <option value="SALES_OCEAN">海运销售部</option>
+                                <option value="SALES_AIR">空运销售部</option>
+                                <option value="SALES_LAND">陆运销售部</option>
+                                <option value="SALES_RAILWAY">铁运销售部</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">操作部门</label>
+                            <select class="form-select" id="operationDept">
+                                <option value="">请选择操作部门</option>
+                                <option value="OP_OCEAN">海运操作部</option>
+                                <option value="OP_AIR">空运操作部</option>
+                                <option value="OP_LAND">陆运操作部</option>
+                                <option value="OP_WEST">西区操作部</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">服务类型</label>
+                            <select class="form-select" id="serviceType">
+                                <option value="">请选择服务类型</option>
+                                <option value="BOOKING">预订服务</option>
+                                <option value="MBL_PROCESSING">主单处理</option>
+                                <option value="HBL_PROCESSING">分单处理</option>
+                                <option value="TRANSPORTATION">运输服务</option>
+                                <option value="CUSTOMS_CLEARANCE">清关服务</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">业务类型</label>
+                            <select class="form-select" id="businessType">
+                                <option value="">请选择业务类型</option>
+                                <option value="OCEAN_FCL">海运整柜</option>
+                                <option value="OCEAN_LCL">海运拼箱</option>
+                                <option value="AIR_EXPRESS">空运快递</option>
+                                <option value="LAND_TRUCK">陆运卡车</option>
+                            </select>
+                        </div>
+                        
+                        <button class="btn btn-primary w-100" onclick="executeMatching()">
+                            <i class="fas fa-search"></i> 执行匹配
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 匹配统计 -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h6><i class="fas fa-chart-bar"></i> 匹配统计</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="text-primary">
+                                    <i class="fas fa-database fa-2x"></i>
+                                    <div><strong id="totalProtocols">12</strong></div>
+                                    <small>总协议数</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-success">
+                                    <i class="fas fa-check-circle fa-2x"></i>
+                                    <div><strong id="matchedCount">0</strong></div>
+                                    <small>匹配数量</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右侧：匹配过程和结果 -->
+            <div class="col-md-8">
+                <!-- 匹配过程 -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-cogs"></i> 匹配过程</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="matchingSteps">
+                            <!-- 步骤1：条件过滤 -->
+                            <div class="matching-step" id="step1">
+                                <div class="d-flex align-items-center">
+                                    <div class="step-icon step-pending" id="step1-icon">1</div>
+                                    <div>
+                                        <h6>步骤1：条件过滤</h6>
+                                        <p class="mb-0">根据部门组合和服务类型筛选候选协议</p>
+                                        <div class="matching-criteria" id="step1-criteria" style="display:none;">
+                                            <small><strong>过滤条件：</strong><span id="filterCriteria"></span></small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 步骤2：匹配度计算 -->
+                            <div class="matching-step" id="step2">
+                                <div class="d-flex align-items-center">
+                                    <div class="step-icon step-pending" id="step2-icon">2</div>
+                                    <div>
+                                        <h6>步骤2：匹配度计算</h6>
+                                        <p class="mb-0">计算每个候选协议的匹配度评分</p>
+                                        <div class="matching-criteria" id="step2-criteria" style="display:none;">
+                                            <small>
+                                                <strong>评分权重：</strong>
+                                                部门匹配(40%) + 服务匹配(30%) + 业务类型(20%) + 协议状态(10%)
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 步骤3：最优选择 -->
+                            <div class="matching-step" id="step3">
+                                <div class="d-flex align-items-center">
+                                    <div class="step-icon step-pending" id="step3-icon">3</div>
+                                    <div>
+                                        <h6>步骤3：最优选择</h6>
+                                        <p class="mb-0">选择评分最高的协议作为推荐结果</p>
+                                        <div class="matching-criteria" id="step3-criteria" style="display:none;">
+                                            <small><strong>选择策略：</strong>优先推荐协议 > 匹配度最高 > 佣金率最优</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 匹配结果 -->
+                <div class="card mt-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5><i class="fas fa-trophy"></i> 匹配结果</h5>
+                        <span class="badge bg-info" id="resultCount">等待匹配...</span>
+                    </div>
+                    <div class="card-body">
+                        <div id="matchingResults">
+                            <div class="text-center text-muted py-5">
+                                <i class="fas fa-search fa-3x mb-3"></i>
+                                <p>请选择匹配条件并执行匹配</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 模拟协议数据库
+        const protocolDatabase = [
+            {
+                id: 'PROTO001',
+                name: '海运MBL处理标准协议',
+                salesDept: 'SALES_OCEAN',
+                operationDept: 'OP_OCEAN',
+                serviceTypes: ['MBL_PROCESSING', 'BOOKING'],
+                businessTypes: ['OCEAN_FCL', 'OCEAN_LCL'],
+                baseCommission: 15,
+                urgencyCommission: 5,
+                totalCommission: 20,
+                status: 'ACTIVE',
+                recommended: true,
+                description: '海运主单处理的标准协议，适用于FCL和LCL业务'
+            },
+            {
+                id: 'PROTO002',
+                name: '空运预订服务协议',
+                salesDept: 'SALES_AIR',
+                operationDept: 'OP_AIR',
+                serviceTypes: ['BOOKING', 'CUSTOMS_CLEARANCE'],
+                businessTypes: ['AIR_EXPRESS'],
+                baseCommission: 18,
+                urgencyCommission: 7,
+                totalCommission: 25,
+                status: 'ACTIVE',
+                recommended: false,
+                description: '空运预订和清关服务的综合协议'
+            },
+            {
+                id: 'PROTO003',
+                name: '陆运运输服务协议',
+                salesDept: 'SALES_LAND',
+                operationDept: 'OP_LAND',
+                serviceTypes: ['TRANSPORTATION', 'CUSTOMS_CLEARANCE'],
+                businessTypes: ['LAND_TRUCK'],
+                baseCommission: 12,
+                urgencyCommission: 3,
+                totalCommission: 15,
+                status: 'ACTIVE',
+                recommended: true,
+                description: '陆运运输和清关的一体化服务协议'
+            },
+            {
+                id: 'PROTO004',
+                name: '海运分单处理协议',
+                salesDept: 'SALES_OCEAN',
+                operationDept: 'OP_OCEAN',
+                serviceTypes: ['HBL_PROCESSING'],
+                businessTypes: ['OCEAN_LCL'],
+                baseCommission: 10,
+                urgencyCommission: 2,
+                totalCommission: 12,
+                status: 'ACTIVE',
+                recommended: false,
+                description: '专门针对海运拼箱分单处理的协议'
+            },
+            {
+                id: 'PROTO005',
+                name: '西区综合操作协议',
+                salesDept: 'SALES_OCEAN',
+                operationDept: 'OP_WEST',
+                serviceTypes: ['TRANSPORTATION', 'MBL_PROCESSING'],
+                businessTypes: ['OCEAN_FCL'],
+                baseCommission: 14,
+                urgencyCommission: 4,
+                totalCommission: 18,
+                status: 'ACTIVE',
+                recommended: false,
+                description: '西区操作部门的综合服务协议'
+            }
+        ];
+
+        let currentMatching = [];
+        let matchingStepIndex = 0;
+
+        // 开始匹配演示
+        function startMatching() {
+            // 设置演示数据
+            document.getElementById('customerServiceDept').value = 'SALES_OCEAN';
+            document.getElementById('operationDept').value = 'OP_OCEAN';
+            document.getElementById('serviceType').value = 'MBL_PROCESSING';
+            document.getElementById('businessType').value = 'OCEAN_FCL';
+            
+            // 执行匹配
+            setTimeout(() => executeMatching(), 500);
+        }
+
+        // 重置演示
+        function resetDemo() {
+            document.getElementById('customerServiceDept').value = '';
+            document.getElementById('operationDept').value = '';
+            document.getElementById('serviceType').value = '';
+            document.getElementById('businessType').value = '';
+            
+            // 重置步骤状态
+            for (let i = 1; i <= 3; i++) {
+                document.getElementById(`step${i}`).classList.remove('active');
+                document.getElementById(`step${i}-icon`).className = 'step-icon step-pending';
+                document.getElementById(`step${i}-icon`).textContent = i;
+                document.getElementById(`step${i}-criteria`).style.display = 'none';
+            }
+            
+            // 清空结果
+            document.getElementById('matchingResults').innerHTML = `
+                <div class="text-center text-muted py-5">
+                    <i class="fas fa-search fa-3x mb-3"></i>
+                    <p>请选择匹配条件并执行匹配</p>
+                </div>
+            `;
+            document.getElementById('resultCount').textContent = '等待匹配...';
+            document.getElementById('matchedCount').textContent = '0';
+        }
+
+        // 执行匹配
+        function executeMatching() {
+            const salesDept = document.getElementById('customerServiceDept').value;
+            const opDept = document.getElementById('operationDept').value;
+            const serviceType = document.getElementById('serviceType').value;
+            const businessType = document.getElementById('businessType').value;
+
+            if (!salesDept || !opDept) {
+                alert('请至少选择客服部门和操作部门');
+                return;
+            }
+
+            // 逐步执行匹配
+            executeStep1(salesDept, opDept, serviceType, businessType);
+        }
+
+        // 步骤1：条件过滤
+        function executeStep1(salesDept, opDept, serviceType, businessType) {
+            updateStepStatus(1, 'active');
+            
+            // 显示过滤条件
+            const criteria = [];
+            if (salesDept) criteria.push(`客服部门: ${getDeptName(salesDept)}`);
+            if (opDept) criteria.push(`操作部门: ${getDeptName(opDept)}`);
+            if (serviceType) criteria.push(`服务类型: ${getServiceName(serviceType)}`);
+            if (businessType) criteria.push(`业务类型: ${getBusinessName(businessType)}`);
+            
+            document.getElementById('filterCriteria').textContent = criteria.join(', ');
+            document.getElementById('step1-criteria').style.display = 'block';
+
+            // 过滤协议
+            const filtered = protocolDatabase.filter(protocol => {
+                let match = true;
+                if (salesDept && protocol.salesDept !== salesDept) match = false;
+                if (opDept && protocol.operationDept !== opDept) match = false;
+                if (serviceType && !protocol.serviceTypes.includes(serviceType)) match = false;
+                if (businessType && !protocol.businessTypes.includes(businessType)) match = false;
+                return match;
+            });
+
+            console.log('步骤1过滤结果:', filtered);
+            
+            setTimeout(() => {
+                updateStepStatus(1, 'complete');
+                executeStep2(filtered, serviceType, businessType);
+            }, 1500);
+        }
+
+        // 步骤2：匹配度计算
+        function executeStep2(candidates, serviceType, businessType) {
+            updateStepStatus(2, 'active');
+            document.getElementById('step2-criteria').style.display = 'block';
+
+            // 计算匹配度
+            const scored = candidates.map(protocol => {
+                let score = 0;
+                
+                // 部门匹配 (40%)
+                score += 40;
+                
+                // 服务匹配 (30%)
+                if (serviceType && protocol.serviceTypes.includes(serviceType)) {
+                    score += 30;
+                } else if (serviceType) {
+                    score += 15; // 部分匹配
+                }
+                
+                // 业务类型 (20%)
+                if (businessType && protocol.businessTypes.includes(businessType)) {
+                    score += 20;
+                } else if (businessType) {
+                    score += 10; // 部分匹配
+                }
+                
+                // 协议状态 (10%)
+                if (protocol.status === 'ACTIVE') {
+                    score += 10;
+                }
+                
+                return { ...protocol, matchScore: score };
+            });
+
+            console.log('步骤2评分结果:', scored);
+            
+            setTimeout(() => {
+                updateStepStatus(2, 'complete');
+                executeStep3(scored);
+            }, 1500);
+        }
+
+        // 步骤3：最优选择
+        function executeStep3(scoredProtocols) {
+            updateStepStatus(3, 'active');
+            document.getElementById('step3-criteria').style.display = 'block';
+
+            // 排序：推荐 > 匹配度 > 佣金率
+            const sorted = scoredProtocols.sort((a, b) => {
+                if (a.recommended && !b.recommended) return -1;
+                if (!a.recommended && b.recommended) return 1;
+                if (a.matchScore !== b.matchScore) return b.matchScore - a.matchScore;
+                return b.totalCommission - a.totalCommission;
+            });
+
+            console.log('步骤3最终结果:', sorted);
+            
+            setTimeout(() => {
+                updateStepStatus(3, 'complete');
+                displayResults(sorted);
+            }, 1500);
+        }
+
+        // 更新步骤状态
+        function updateStepStatus(stepNum, status) {
+            const step = document.getElementById(`step${stepNum}`);
+            const icon = document.getElementById(`step${stepNum}-icon`);
+            
+            // 清除所有状态
+            step.classList.remove('active');
+            
+            if (status === 'active') {
+                step.classList.add('active');
+                icon.className = 'step-icon step-active';
+                icon.innerHTML = '<i class="fas fa-cog fa-spin"></i>';
+            } else if (status === 'complete') {
+                icon.className = 'step-icon step-complete';
+                icon.innerHTML = '<i class="fas fa-check"></i>';
+            }
+        }
+
+        // 显示匹配结果
+        function displayResults(protocols) {
+            document.getElementById('matchedCount').textContent = protocols.length;
+            document.getElementById('resultCount').textContent = `找到 ${protocols.length} 个匹配协议`;
+
+            if (protocols.length === 0) {
+                document.getElementById('matchingResults').innerHTML = `
+                    <div class="text-center text-warning py-5">
+                        <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                        <p>未找到匹配的协议</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const resultHTML = protocols.map((protocol, index) => `
+                <div class="protocol-card ${index === 0 ? 'selected' : ''} ${protocol.recommended ? 'recommended' : ''}">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <div class="d-flex align-items-center mb-2">
+                                <h6 class="mb-0">${protocol.name}</h6>
+                                ${index === 0 ? '<span class="badge bg-success ms-2">最佳匹配</span>' : ''}
+                                ${protocol.recommended ? '<span class="badge bg-warning ms-2">推荐协议</span>' : ''}
+                            </div>
+                            <p class="text-muted mb-2">${protocol.description}</p>
+                            <div class="d-flex gap-3 text-sm">
+                                <span><i class="fas fa-users"></i> ${getDeptName(protocol.salesDept)} → ${getDeptName(protocol.operationDept)}</span>
+                                <span><i class="fas fa-cogs"></i> ${protocol.serviceTypes.map(getServiceName).join(', ')}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="match-score">${protocol.matchScore}%</div>
+                            <div class="text-muted">匹配度</div>
+                            <div class="mt-2">
+                                <strong class="text-success">${protocol.totalCommission}%</strong>
+                                <small class="text-muted">佣金率</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('matchingResults').innerHTML = resultHTML;
+        }
+
+        // 辅助函数
+        function getDeptName(deptCode) {
+            const names = {
+                'SALES_OCEAN': '海运销售',
+                'SALES_AIR': '空运销售',
+                'SALES_LAND': '陆运销售',
+                'SALES_RAILWAY': '铁运销售',
+                'OP_OCEAN': '海运操作',
+                'OP_AIR': '空运操作', 
+                'OP_LAND': '陆运操作',
+                'OP_WEST': '西区操作'
+            };
+            return names[deptCode] || deptCode;
+        }
+
+        function getServiceName(serviceCode) {
+            const names = {
+                'BOOKING': '预订服务',
+                'MBL_PROCESSING': '主单处理',
+                'HBL_PROCESSING': '分单处理',
+                'TRANSPORTATION': '运输服务',
+                'CUSTOMS_CLEARANCE': '清关服务'
+            };
+            return names[serviceCode] || serviceCode;
+        }
+
+        function getBusinessName(businessCode) {
+            const names = {
+                'OCEAN_FCL': '海运整柜',
+                'OCEAN_LCL': '海运拼箱',
+                'AIR_EXPRESS': '空运快递',
+                'LAND_TRUCK': '陆运卡车'
+            };
+            return names[businessCode] || businessCode;
+        }
+
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('totalProtocols').textContent = protocolDatabase.length;
+        });
+    </script>
+</body>
+</html>

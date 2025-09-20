@@ -1,0 +1,464 @@
+package com.oneorder.clearing.service;
+
+import com.oneorder.clearing.entity.*;
+import com.oneorder.clearing.repository.*;
+import com.oneorder.clearing.dto.ManagementProfitCalculationRequest;
+import com.oneorder.clearing.dto.ManagementProfitCalculationResult;
+import com.oneorder.clearing.dto.ServiceProfitResult;
+import com.oneorder.clearing.dto.DepartmentProfitSummary;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+
+/**
+ * 管理账分润计算服务
+ * 基于PRD v1.1实现部门维度的虚拟利润分配
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class ManagementProfitSharingService {
+
+    private final ExpenseEntryRepository expenseEntryRepository;
+    private final ManagementProfitSharingResultRepository profitSharingResultRepository;
+    private final DepartmentProfitSummaryRepository departmentSummaryRepository;
+    private final InternalProfitSharingProtocolRepository protocolRepository;
+    private final ManagementProfitCalculationHistoryRepository calculationHistoryRepository;
+    private final ProfitCalculationDetailLogRepository detailLogRepository;
+
+    /**
+     * 执行管理账分润计算
+     * 
+     * @param request 计算请求
+     * @return 计算结果
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public ManagementProfitCalculationResult calculateManagementProfit(ManagementProfitCalculationRequest request) {
+        String orderId = request.getOrderId();
+        boolean forceRecalculate = request.isForceRecalculate();
+        
+        log.info("开始管理账分润计算: orderId={}, forceRecalculate={}", orderId, forceRecalculate);
+        
+        // 记录计算历史
+        ManagementProfitCalculationHistory history = createCalculationHistory(orderId);
+        
+        try {
+            // 1. 检查前置条件
+            validatePreconditions(orderId, forceRecalculate);
+            
+            // 2. 获取费用明细数据
+            List<ExpenseEntry> expenseEntries = expenseEntryRepository.findByOrderId(orderId);
+            if (expenseEntries.isEmpty()) {
+                throw new BusinessException("订单 " + orderId + " 没有费用明细数据");
+            }
+            
+            // 3. 按服务项目分组
+            Map<String, List<ExpenseEntry>> serviceGroups = groupExpensesByService(expenseEntries);
+            log.info("订单 {} 包含 {} 个服务项目", orderId, serviceGroups.size());
+            
+            // 4. 计算各服务的分润结果
+            List<ServiceProfitResult> serviceProfitResults = new ArrayList<>();
+            List<ManagementProfitSharingResult> profitSharingResults = new ArrayList<>();
+            
+            for (Map.Entry<String, List<ExpenseEntry>> entry : serviceGroups.entrySet()) {
+                String serviceCode = entry.getKey();
+                List<ExpenseEntry> serviceExpenses = entry.getValue();
+                
+                // 计算单个服务的分润
+                ServiceProfitResult serviceResult = calculateServiceProfit(orderId, serviceCode, serviceExpenses, history.getCalculationVersion());
+                serviceProfitResults.add(serviceResult);
+                
+                // 转换为数据库实体
+                ManagementProfitSharingResult profitResult = convertToEntity(orderId, serviceResult, history.getCalculationVersion());
+                profitSharingResults.add(profitResult);
+            }
+            
+            // 5. 保存分润结果
+            profitSharingResultRepository.saveAll(profitSharingResults);
+            log.info("保存了 {} 条服务分润结果", profitSharingResults.size());
+            
+            // 6. 计算部门汇总
+            List<DepartmentProfitSummary> departmentSummaries = calculateDepartmentSummary(orderId, serviceProfitResults, history.getCalculationVersion());
+            
+            // 7. 保存部门汇总
+            departmentSummaryRepository.saveAll(departmentSummaries);
+            log.info("保存了 {} 条部门汇总结果", departmentSummaries.size());
+            
+            // 8. 数据验证
+            validateCalculationResults(orderId, serviceProfitResults, departmentSummaries);
+            
+            // 9. 更新计算历史状态
+            updateCalculationHistorySuccess(history, serviceProfitResults, departmentSummaries);
+            
+            // 10. 构造返回结果
+            ManagementProfitCalculationResult result = ManagementProfitCalculationResult.builder()
+                .orderId(orderId)
+                .calculationTime(LocalDateTime.now())
+                .totalGrossProfit(calculateTotalGrossProfit(serviceProfitResults))
+                .serviceCount(serviceProfitResults.size())
+                .departmentCount(departmentSummaries.size())
+                .calculationVersion(history.getCalculationVersion())
+                .serviceProfitResults(serviceProfitResults)
+                .departmentSummaries(departmentSummaries)
+                .build();
+            
+            log.info("管理账分润计算完成: orderId={}, 总毛利={}, 服务数={}, 部门数={}", 
+                orderId, result.getTotalGrossProfit(), result.getServiceCount(), result.getDepartmentCount());
+            
+            return result;
+            
+        } catch (Exception e) {
+            log.error("管理账分润计算失败: orderId={}", orderId, e);
+            updateCalculationHistoryFailure(history, e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * 计算单个服务的分润结果
+     */
+    private ServiceProfitResult calculateServiceProfit(String orderId, String serviceCode, 
+                                                     List<ExpenseEntry> serviceExpenses,
+                                                     int calculationVersion) {
+        
+        log.debug("计算服务分润: orderId={}, serviceCode={}", orderId, serviceCode);
+        
+        // 记录计算步骤
+        logCalculationStep(orderId, calculationVersion, serviceCode, "开始服务分润计算", 1, serviceExpenses, null);
+        
+        // 1. 计算外部收入和支出
+        BigDecimal externalRevenue = serviceExpenses.stream()
+            .filter(e -> "RECEIVABLE".equals(e.getEntryType()))
+            .map(ExpenseEntry::getAmount)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+            
+        BigDecimal externalCost = serviceExpenses.stream()
+            .filter(e -> "PAYABLE".equals(e.getEntryType()))
+            .map(ExpenseEntry::getAmount)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+            
+        // 2. 计算服务毛利
+        BigDecimal grossProfit = externalRevenue.subtract(externalCost);
+        
+        logCalculationStep(orderId, calculationVersion, serviceCode, "毛利计算", 2, 
+            Map.of("外部收入", externalRevenue, "外部支出", externalCost), 
+            Map.of("服务毛利", grossProfit));
+        
+        // 3. 获取销售和操作部门信息
+        String salesDepartmentId = extractSalesDepartmentId(serviceExpenses);
+        String operationDepartmentId = extractOperationDepartmentId(serviceExpenses);
+        
+        if (salesDepartmentId == null || operationDepartmentId == null) {
+            throw new BusinessException("无法确定服务 " + serviceCode + " 的销售或操作部门");
+        }
+        
+        // 4. 查找适用的内部协议
+        InternalProfitSharingProtocol protocol = findBestMatchProtocol(serviceCode, salesDepartmentId, operationDepartmentId);
+        
+        logCalculationStep(orderId, calculationVersion, serviceCode, "协议匹配", 3,
+            Map.of("销售部门", salesDepartmentId, "操作部门", operationDepartmentId),
+            Map.of("协议", protocol.getProtocolName(), "销售比例", protocol.getSalesRatio(), "操作比例", protocol.getOperationRatio()));
+        
+        // 5. 计算分润金额
+        BigDecimal salesProfitAmount = grossProfit.multiply(protocol.getSalesRatio()).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal operationProfitAmount = grossProfit.multiply(protocol.getOperationRatio()).setScale(2, RoundingMode.HALF_UP);
+        
+        // 6. 计算内部支付
+        BigDecimal salesInternalPayment = externalCost.add(operationProfitAmount);
+        BigDecimal operationInternalIncome = salesInternalPayment;
+        
+        logCalculationStep(orderId, calculationVersion, serviceCode, "分润计算", 4,
+            Map.of("服务毛利", grossProfit, "销售比例", protocol.getSalesRatio(), "操作比例", protocol.getOperationRatio()),
+            Map.of("销售分润", salesProfitAmount, "操作分润", operationProfitAmount, "销售内部支出", salesInternalPayment, "操作内部收入", operationInternalIncome));
+        
+        // 7. 构造结果
+        return ServiceProfitResult.builder()
+            .serviceCode(serviceCode)
+            .serviceName(getServiceName(serviceCode))
+            .salesDepartmentId(salesDepartmentId)
+            .operationDepartmentId(operationDepartmentId)
+            .externalRevenue(externalRevenue)
+            .externalCost(externalCost)
+            .grossProfit(grossProfit)
+            .protocolId(protocol.getId())
+            .protocolName(protocol.getProtocolName())
+            .profitSharingRatio(formatRatio(protocol.getSalesRatio(), protocol.getOperationRatio()))
+            .salesProfitAmount(salesProfitAmount)
+            .operationProfitAmount(operationProfitAmount)
+            .salesInternalPayment(salesInternalPayment)
+            .operationInternalIncome(operationInternalIncome)
+            .build();
+    }
+
+    /**
+     * 计算部门汇总 - 五项要素汇总
+     */
+    private List<DepartmentProfitSummary> calculateDepartmentSummary(String orderId, 
+                                                                   List<ServiceProfitResult> serviceProfitResults,
+                                                                   int calculationVersion) {
+        
+        log.debug("计算部门汇总: orderId={}", orderId);
+        
+        // 按部门分组
+        Map<String, List<ServiceProfitResult>> departmentGroups = new HashMap<>();
+        
+        // 收集所有销售部门的数据
+        for (ServiceProfitResult result : serviceProfitResults) {
+            departmentGroups.computeIfAbsent(result.getSalesDepartmentId(), k -> new ArrayList<>()).add(result);
+        }
+        
+        // 收集所有操作部门的数据
+        for (ServiceProfitResult result : serviceProfitResults) {
+            departmentGroups.computeIfAbsent(result.getOperationDepartmentId(), k -> new ArrayList<>()).add(result);
+        }
+        
+        List<DepartmentProfitSummary> summaries = new ArrayList<>();
+        
+        for (Map.Entry<String, List<ServiceProfitResult>> entry : departmentGroups.entrySet()) {
+            String departmentId = entry.getKey();
+            List<ServiceProfitResult> departmentResults = entry.getValue();
+            
+            // 计算部门五项要素
+            BigDecimal externalRevenue = BigDecimal.ZERO;
+            BigDecimal internalIncome = BigDecimal.ZERO;
+            BigDecimal internalPayment = BigDecimal.ZERO;
+            BigDecimal externalCost = BigDecimal.ZERO;
+            int serviceCount = 0;
+            
+            String departmentType = null;
+            
+            for (ServiceProfitResult result : departmentResults) {
+                if (departmentId.equals(result.getSalesDepartmentId())) {
+                    // 销售部门的数据
+                    externalRevenue = externalRevenue.add(result.getExternalRevenue());
+                    internalPayment = internalPayment.add(result.getSalesInternalPayment());
+                    serviceCount++;
+                    departmentType = "SALES";
+                } else if (departmentId.equals(result.getOperationDepartmentId())) {
+                    // 操作部门的数据
+                    internalIncome = internalIncome.add(result.getOperationInternalIncome());
+                    externalCost = externalCost.add(result.getExternalCost());
+                    if (!"SALES".equals(departmentType)) {
+                        serviceCount++;
+                        departmentType = "OPERATION";
+                    }
+                }
+            }
+            
+            // 计算部门毛利
+            BigDecimal departmentProfit = externalRevenue.add(internalIncome).subtract(internalPayment).subtract(externalCost);
+            
+            // 计算利润率
+            BigDecimal totalIncome = externalRevenue.add(internalIncome);
+            BigDecimal profitMargin = totalIncome.compareTo(BigDecimal.ZERO) > 0 ? 
+                departmentProfit.divide(totalIncome, 4, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+            
+            DepartmentProfitSummary summary = DepartmentProfitSummary.builder()
+                .orderId(orderId)
+                .departmentId(departmentId)
+                .departmentName(getDepartmentName(departmentId))
+                .departmentType(departmentType)
+                .externalRevenue(externalRevenue)
+                .internalIncome(internalIncome)
+                .internalPayment(internalPayment)
+                .externalCost(externalCost)
+                .departmentProfit(departmentProfit)
+                .profitMargin(profitMargin)
+                .serviceCount(serviceCount)
+                .calculationTime(LocalDateTime.now())
+                .calculationVersion(calculationVersion)
+                .build();
+                
+            summaries.add(summary);
+            
+            log.debug("部门汇总: 部门={}, 外部收入={}, 内部收入={}, 内部支出={}, 外部支出={}, 部门毛利={}",
+                departmentId, externalRevenue, internalIncome, internalPayment, externalCost, departmentProfit);
+        }
+        
+        return summaries;
+    }
+
+    /**
+     * 协议匹配引擎 - 按优先级和匹配度选择最佳协议
+     */
+    private InternalProfitSharingProtocol findBestMatchProtocol(String serviceCode, 
+                                                               String salesDepartmentId, 
+                                                               String operationDepartmentId) {
+        
+        log.debug("查找协议: serviceCode={}, salesDept={}, operationDept={}", serviceCode, salesDepartmentId, operationDepartmentId);
+        
+        List<InternalProfitSharingProtocol> activeProtocols = protocolRepository.findActiveProtocols(LocalDateTime.now());
+        
+        // 按优先级排序并匹配
+        Optional<InternalProfitSharingProtocol> bestMatch = activeProtocols.stream()
+            .sorted(Comparator.comparing(InternalProfitSharingProtocol::getPriority).reversed())
+            .filter(p -> matchesService(p, serviceCode))
+            .filter(p -> matchesDepartments(p, salesDepartmentId, operationDepartmentId))
+            .findFirst();
+            
+        if (bestMatch.isPresent()) {
+            log.debug("匹配到协议: {}", bestMatch.get().getProtocolName());
+            return bestMatch.get();
+        }
+        
+        // 如果没有找到精确匹配，查找默认协议
+        Optional<InternalProfitSharingProtocol> defaultProtocol = activeProtocols.stream()
+            .filter(p -> p.getServiceCode() == null && p.getSalesDepartmentId() == null && p.getOperationDepartmentId() == null)
+            .max(Comparator.comparing(InternalProfitSharingProtocol::getPriority));
+            
+        if (defaultProtocol.isPresent()) {
+            log.debug("使用默认协议: {}", defaultProtocol.get().getProtocolName());
+            return defaultProtocol.get();
+        }
+        
+        throw new BusinessException(String.format("找不到适用的分润协议: 服务=%s, 销售部门=%s, 操作部门=%s", 
+            serviceCode, salesDepartmentId, operationDepartmentId));
+    }
+
+    // 辅助方法
+
+    private boolean matchesService(InternalProfitSharingProtocol protocol, String serviceCode) {
+        return protocol.getServiceCode() == null || protocol.getServiceCode().equals(serviceCode);
+    }
+
+    private boolean matchesDepartments(InternalProfitSharingProtocol protocol, 
+                                     String salesDepartmentId, 
+                                     String operationDepartmentId) {
+        boolean salesMatch = protocol.getSalesDepartmentId() == null || 
+                            protocol.getSalesDepartmentId().equals(salesDepartmentId);
+        boolean operationMatch = protocol.getOperationDepartmentId() == null || 
+                               protocol.getOperationDepartmentId().equals(operationDepartmentId);
+        return salesMatch && operationMatch;
+    }
+
+    private Map<String, List<ExpenseEntry>> groupExpensesByService(List<ExpenseEntry> expenseEntries) {
+        return expenseEntries.stream()
+            .collect(Collectors.groupingBy(ExpenseEntry::getServiceCode));
+    }
+
+    private String extractSalesDepartmentId(List<ExpenseEntry> expenses) {
+        // 从客服ID推导销售部门ID
+        return expenses.stream()
+            .map(ExpenseEntry::getCustomerServiceId)
+            .filter(Objects::nonNull)
+            .findFirst()
+            .map(this::mapCustomerServiceToDepartment)
+            .orElse(null);
+    }
+
+    private String extractOperationDepartmentId(List<ExpenseEntry> expenses) {
+        // 从操作ID推导操作部门ID
+        return expenses.stream()
+            .map(ExpenseEntry::getOperatorId)
+            .filter(Objects::nonNull)
+            .findFirst()
+            .map(this::mapOperatorToDepartment)
+            .orElse(null);
+    }
+
+    private String mapCustomerServiceToDepartment(String customerServiceId) {
+        // 映射客服ID到部门ID的逻辑
+        Map<String, String> mapping = Map.of(
+            "CS001", "OCEAN_SALES",
+            "CS002", "AIR_SALES", 
+            "CS003", "LAND_SALES"
+        );
+        return mapping.getOrDefault(customerServiceId, "OCEAN_SALES");
+    }
+
+    private String mapOperatorToDepartment(String operatorId) {
+        // 映射操作员ID到部门ID的逻辑
+        Map<String, String> mapping = Map.of(
+            "OP001", "AIR_OPERATION",
+            "OP002", "OCEAN_OPERATION",
+            "OP003", "CONTAINER_OPERATION",
+            "OP004", "CUSTOMS_OPERATION",
+            "OP008", "LAND_OPERATION"
+        );
+        return mapping.getOrDefault(operatorId, "OCEAN_OPERATION");
+    }
+
+    private String getServiceName(String serviceCode) {
+        Map<String, String> serviceNames = Map.of(
+            "MBL_PROCESSING", "MBL处理",
+            "HBL_PROCESSING", "HBL处理",
+            "BOOKING", "预订服务",
+            "TRANSPORTATION", "运输服务",
+            "CUSTOMS_CLEARANCE", "清关服务",
+            "CONTAINER_LOADING", "内装服务"
+        );
+        return serviceNames.getOrDefault(serviceCode, serviceCode);
+    }
+
+    private String getDepartmentName(String departmentId) {
+        Map<String, String> departmentNames = Map.of(
+            "OCEAN_SALES", "海运销售部",
+            "AIR_SALES", "空运销售部",
+            "LAND_SALES", "陆运销售部",
+            "OCEAN_OPERATION", "海运操作部",
+            "AIR_OPERATION", "空运操作部",
+            "LAND_OPERATION", "陆运操作部",
+            "CONTAINER_OPERATION", "内装操作部",
+            "CUSTOMS_OPERATION", "报关部"
+        );
+        return departmentNames.getOrDefault(departmentId, departmentId);
+    }
+
+    private String formatRatio(BigDecimal salesRatio, BigDecimal operationRatio) {
+        int salesPercent = salesRatio.multiply(new BigDecimal("100")).intValue();
+        int operationPercent = operationRatio.multiply(new BigDecimal("100")).intValue();
+        return salesPercent + ":" + operationPercent;
+    }
+
+    private BigDecimal calculateTotalGrossProfit(List<ServiceProfitResult> results) {
+        return results.stream()
+            .map(ServiceProfitResult::getGrossProfit)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    // 其他辅助方法（验证、日志记录等）会在下一部分实现...
+    
+    private void validatePreconditions(String orderId, boolean forceRecalculate) {
+        // 实现前置条件验证
+    }
+    
+    private ManagementProfitCalculationHistory createCalculationHistory(String orderId) {
+        // 实现计算历史记录创建
+        return new ManagementProfitCalculationHistory();
+    }
+    
+    private void logCalculationStep(String orderId, int version, String serviceCode, String stepName, int sequence, Object input, Object output) {
+        // 实现计算步骤日志记录
+    }
+    
+    private ManagementProfitSharingResult convertToEntity(String orderId, ServiceProfitResult result, int version) {
+        // 实现DTO到Entity的转换
+        return new ManagementProfitSharingResult();
+    }
+    
+    private void validateCalculationResults(String orderId, List<ServiceProfitResult> serviceResults, List<DepartmentProfitSummary> departmentSummaries) {
+        // 实现计算结果验证
+    }
+    
+    private void updateCalculationHistorySuccess(ManagementProfitCalculationHistory history, List<ServiceProfitResult> serviceResults, List<DepartmentProfitSummary> departmentSummaries) {
+        // 实现成功状态更新
+    }
+    
+    private void updateCalculationHistoryFailure(ManagementProfitCalculationHistory history, String errorMessage) {
+        // 实现失败状态更新
+    }
+}
+
+// 自定义异常类
+class BusinessException extends RuntimeException {
+    public BusinessException(String message) {
+        super(message);
+    }
+}

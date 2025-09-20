@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>操作接单与协议确认 - OneOrder</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .task-card {
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            margin: 15px 0;
+            transition: all 0.3s;
+            background: white;
+        }
+        .task-card:hover {
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        .task-card.pending {
+            border-left: 5px solid #ffc107;
+        }
+        .task-card.accepted {
+            border-left: 5px solid #198754;
+        }
+        .task-card.rejected {
+            border-left: 5px solid #dc3545;
+        }
+        .protocol-details {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+        .protocol-terms {
+            background: #e3f2fd;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .commission-highlight {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            margin: 15px 0;
+        }
+        .notification-badge {
+            position: relative;
+            top: -8px;
+            right: -8px;
+            background: #dc3545;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .operator-info {
+            background: #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .timeline-item {
+            position: relative;
+            padding-left: 30px;
+            margin-bottom: 20px;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 8px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #6c757d;
+        }
+        .timeline-item.completed::before {
+            background: #28a745;
+        }
+        .timeline-item.current::before {
+            background: #007bff;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0,123,255,0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(0,123,255,0); }
+            100% { box-shadow: 0 0 0 0 rgba(0,123,255,0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2><i class="fas fa-clipboard-check text-primary"></i> 操作接单与协议确认</h2>
+                    <div>
+                        <button class="btn btn-outline-primary" onclick="refreshTasks()">
+                            <i class="fas fa-sync-alt"></i> 刷新
+                        </button>
+                        <a href="freight-order.html" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> 返回主页
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- 左侧：操作员信息和任务统计 -->
+            <div class="col-md-4">
+                <!-- 当前操作员信息 -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-user-tie"></i> 当前操作员</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="operator-info">
+                            <div class="d-flex align-items-center mb-3">
+                                <img src="https://via.placeholder.com/60x60?text=👤" class="rounded-circle me-3" alt="操作员头像">
+                                <div>
+                                    <h6 class="mb-1" id="currentOperatorName">马晓东</h6>
+                                    <small class="text-muted" id="currentOperatorDept">空运操作部</small>
+                                </div>
+                            </div>
+                            <div class="row text-center">
+                                <div class="col-4">
+                                    <div class="text-warning">
+                                        <i class="fas fa-clock fa-lg"></i>
+                                        <div><strong id="pendingCount">0</strong></div>
+                                        <small>待接单</small>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="text-success">
+                                        <i class="fas fa-check-circle fa-lg"></i>
+                                        <div><strong id="acceptedCount">0</strong></div>
+                                        <small>已接单</small>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="text-primary">
+                                        <i class="fas fa-tasks fa-lg"></i>
+                                        <div><strong id="totalTasks">0</strong></div>
+                                        <small>总任务</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 切换操作员（测试用） -->
+                        <div class="mb-3">
+                            <label class="form-label">切换操作员（测试）</label>
+                            <select class="form-select" id="operatorSelect" onchange="switchOperator()">
+                                <option value="OP001">马晓东 (空运操作)</option>
+                                <option value="OP002">林芳 (海运操作)</option>
+                                <option value="OP008">高玲 (西区操作)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 接单流程说明 -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h6><i class="fas fa-info-circle"></i> 接单流程</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="timeline-item completed">
+                            <strong>步骤1：</strong>客服派单
+                            <small class="text-muted d-block">任务已分配到操作员</small>
+                        </div>
+                        <div class="timeline-item completed">
+                            <strong>步骤2：</strong>任务通知
+                            <small class="text-muted d-block">操作员收到任务通知</small>
+                        </div>
+                        <div class="timeline-item current">
+                            <strong>步骤3：</strong>协议确认
+                            <small class="text-muted d-block">查看协议条款并确认接单</small>
+                        </div>
+                        <div class="timeline-item">
+                            <strong>步骤4：</strong>任务执行
+                            <small class="text-muted d-block">开始执行具体服务任务</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：待接单任务列表 -->
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5><i class="fas fa-inbox"></i> 待接单任务 
+                            <span class="notification-badge" id="taskNotificationBadge">0</span>
+                        </h5>
+                        <div>
+                            <button class="btn btn-success btn-sm" onclick="acceptAllTasks()" disabled id="acceptAllBtn">
+                                <i class="fas fa-check-double"></i> 批量接单
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="pendingTasksList">
+                            <div class="text-center text-muted py-5">
+                                <i class="fas fa-inbox fa-3x mb-3"></i>
+                                <p>暂无待接单任务</p>
+                                <button class="btn btn-outline-primary" onclick="generateTestTasks()">
+                                    <i class="fas fa-plus"></i> 生成测试任务
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 已接单任务历史 -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h6><i class="fas fa-history"></i> 接单历史</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="acceptedTasksList">
+                            <div class="text-center text-muted py-3">
+                                <small>暂无接单历史</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 协议确认模态框 -->
+    <div class="modal fade" id="protocolConfirmModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-handshake text-primary"></i> 协议确认
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="taskProtocolDetails">
+                        <!-- 任务基本信息 -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-file-alt"></i> 任务信息</h6>
+                                <div class="protocol-terms">
+                                    <p><strong>订单号:</strong> <span id="modalOrderNo">-</span></p>
+                                    <p><strong>服务类型:</strong> <span id="modalServiceType">-</span></p>
+                                    <p><strong>任务描述:</strong> <span id="modalTaskDescription">-</span></p>
+                                    <p><strong>优先级:</strong> <span id="modalPriority">-</span></p>
+                                    <p><strong>预计工时:</strong> <span id="modalEstimatedHours">-</span> 小时</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-user-cog"></i> 派单信息</h6>
+                                <div class="protocol-terms">
+                                    <p><strong>派单人:</strong> <span id="modalAssignedBy">-</span></p>
+                                    <p><strong>派单时间:</strong> <span id="modalAssignedTime">-</span></p>
+                                    <p><strong>截止时间:</strong> <span id="modalDeadline">-</span></p>
+                                    <p><strong>特殊要求:</strong> <span id="modalSpecialRequirements">无</span></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 协议详情 -->
+                        <div class="protocol-details">
+                            <h6><i class="fas fa-contract"></i> 内部协议详情</h6>
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <p><strong>协议名称:</strong> <span id="modalProtocolName">-</span></p>
+                                    <p><strong>协议编号:</strong> <span id="modalProtocolId">-</span></p>
+                                    <p><strong>适用范围:</strong> <span id="modalProtocolScope">-</span></p>
+                                    <p><strong>生效条件:</strong> 操作员接单确认后立即生效</p>
+                                    <p><strong>协议期限:</strong> 本次任务期间有效</p>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="commission-highlight">
+                                        <h5 class="mb-1">
+                                            <i class="fas fa-percentage"></i> <span id="modalCommissionRate">0</span>%
+                                        </h5>
+                                        <small>佣金比例</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 协议条款 -->
+                            <div class="mt-3">
+                                <h6><i class="fas fa-list-ul"></i> 协议条款</h6>
+                                <div class="protocol-terms" id="modalProtocolTerms">
+                                    <ul class="mb-0">
+                                        <li>按时按质完成分配的服务任务</li>
+                                        <li>遵守公司操作规范和质量标准</li>
+                                        <li>及时反馈任务进度和异常情况</li>
+                                        <li>确保客户信息和商业机密安全</li>
+                                        <li>协议生效后影响本次任务的分润计算</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- 佣金计算说明 -->
+                            <div class="mt-3">
+                                <h6><i class="fas fa-calculator"></i> 佣金计算说明</h6>
+                                <div class="protocol-terms">
+                                    <p class="mb-2"><strong>基础佣金:</strong> <span id="modalBaseCommission">-</span>%</p>
+                                    <p class="mb-2"><strong>紧急加成:</strong> <span id="modalUrgencyBonus">-</span>%</p>
+                                    <p class="mb-2"><strong>质量奖励:</strong> 根据任务完成质量评估</p>
+                                    <p class="mb-0"><strong>总佣金率:</strong> <span id="modalTotalCommission">-</span>%</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 确认声明 -->
+                        <div class="alert alert-info mt-3">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>重要声明:</strong> 确认接单即表示您同意上述协议条款，协议将立即生效并影响后续的分润计算。请仔细阅读协议内容后再确认。
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> 取消
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="rejectTask()">
+                        <i class="fas fa-ban"></i> 拒绝接单
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="confirmTaskAcceptance()">
+                        <i class="fas fa-check"></i> 确认接单
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 全局变量
+        let currentOperator = { id: 'OP001', name: '马晓东', department: '空运操作部' };
+        let pendingTasks = [];
+        let acceptedTasks = [];
+        let currentTaskForConfirmation = null;
+
+        // 操作员数据库
+        const operatorDatabase = {
+            'OP001': { id: 'OP001', name: '马晓东', department: '空运操作部', skills: ['AWB_PROCESSING', 'CARGO_LOADING', 'CUSTOMS_CLEARANCE'] },
+            'OP002': { id: 'OP002', name: '林芳', department: '海运操作部', skills: ['MBL_PROCESSING', 'HBL_PROCESSING', 'BOOKING'] },
+            'OP008': { id: 'OP008', name: '高玲', department: '西区操作部', skills: ['TRANSPORTATION', 'CARGO_LOADING', 'CUSTOMS_CLEARANCE'] }
+        };
+
+        // 协议数据库
+        const protocolDatabase = {
+            'PROTO001': {
+                id: 'PROTO001',
+                name: '海运MBL处理标准协议',
+                scope: '海运主单处理服务',
+                baseCommission: 15,
+                urgencyBonus: 5,
+                totalCommission: 20,
+                department: '海运操作部'
+            },
+            'PROTO002': {
+                id: 'PROTO002',
+                name: '空运预订服务协议',
+                scope: '空运预订和清关服务',
+                baseCommission: 18,
+                urgencyBonus: 7,
+                totalCommission: 25,
+                department: '空运操作部'
+            },
+            'PROTO003': {
+                id: 'PROTO003',
+                name: '陆运运输服务协议',
+                scope: '陆运运输和清关服务',
+                baseCommission: 12,
+                urgencyBonus: 3,
+                totalCommission: 15,
+                department: '西区操作部'
+            }
+        };
+
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadOperatorInfo();
+            loadPendingTasks();
+            updateTaskStatistics();
+        });
+
+        // 切换操作员
+        function switchOperator() {
+            const selectElement = document.getElementById('operatorSelect');
+            const operatorId = selectElement.value;
+            currentOperator = operatorDatabase[operatorId];
+            
+            loadOperatorInfo();
+            loadPendingTasks();
+            updateTaskStatistics();
+        }
+
+        // 加载操作员信息
+        function loadOperatorInfo() {
+            document.getElementById('currentOperatorName').textContent = currentOperator.name;
+            document.getElementById('currentOperatorDept').textContent = currentOperator.department;
+            document.getElementById('operatorSelect').value = currentOperator.id;
+        }
+
+        // 生成测试任务
+        function generateTestTasks() {
+            const testTasks = [
+                {
+                    id: 'TASK001',
+                    orderNo: 'HW-EXPORT-20240101-001',
+                    serviceType: 'MBL_PROCESSING',
+                    serviceName: '主单处理',
+                    description: '处理海运主提单制作、审核和签发',
+                    priority: 'HIGH',
+                    estimatedHours: 3,
+                    assignedBy: '张美华',
+                    assignedTime: new Date().toISOString(),
+                    deadline: new Date(Date.now() + 48*60*60*1000).toISOString(),
+                    protocolId: 'PROTO001',
+                    status: 'PENDING',
+                    specialRequirements: '紧急货物，请优先处理'
+                },
+                {
+                    id: 'TASK002',
+                    orderNo: 'MIDEA-SHIP-20240103-001',
+                    serviceType: 'BOOKING',
+                    serviceName: '预订服务',
+                    description: '为客户预订船舶舱位',
+                    priority: 'MEDIUM',
+                    estimatedHours: 2,
+                    assignedBy: '李文静',
+                    assignedTime: new Date().toISOString(),
+                    deadline: new Date(Date.now() + 24*60*60*1000).toISOString(),
+                    protocolId: 'PROTO002',
+                    status: 'PENDING',
+                    specialRequirements: '客户要求指定船期'
+                }
+            ];
+
+            // 根据当前操作员筛选适合的任务
+            pendingTasks = testTasks.filter(task => {
+                if (currentOperator.id === 'OP001') return task.serviceType === 'BOOKING';
+                if (currentOperator.id === 'OP002') return task.serviceType === 'MBL_PROCESSING';
+                if (currentOperator.id === 'OP008') return task.serviceType === 'TRANSPORTATION';
+                return false;
+            });
+
+            // 如果没有匹配的任务，创建一个通用任务
+            if (pendingTasks.length === 0) {
+                const serviceTypes = {
+                    'OP001': 'BOOKING',
+                    'OP002': 'MBL_PROCESSING', 
+                    'OP008': 'TRANSPORTATION'
+                };
+                
+                const protocolIds = {
+                    'OP001': 'PROTO002',
+                    'OP002': 'PROTO001',
+                    'OP008': 'PROTO003'
+                };
+
+                pendingTasks = [{
+                    id: 'TASK_' + currentOperator.id,
+                    orderNo: 'TEST-ORDER-001',
+                    serviceType: serviceTypes[currentOperator.id],
+                    serviceName: getServiceName(serviceTypes[currentOperator.id]),
+                    description: `为${currentOperator.name}分配的测试任务`,
+                    priority: 'MEDIUM',
+                    estimatedHours: 2,
+                    assignedBy: '张美华',
+                    assignedTime: new Date().toISOString(),
+                    deadline: new Date(Date.now() + 24*60*60*1000).toISOString(),
+                    protocolId: protocolIds[currentOperator.id],
+                    status: 'PENDING',
+                    specialRequirements: '这是一个测试任务'
+                }];
+            }
+
+            displayPendingTasks();
+            updateTaskStatistics();
+        }
+
+        // 加载待办任务
+        function loadPendingTasks() {
+            // 从localStorage或API加载任务
+            const savedTasks = localStorage.getItem(`pending_tasks_${currentOperator.id}`);
+            if (savedTasks) {
+                pendingTasks = JSON.parse(savedTasks);
+                displayPendingTasks();
+            }
+            
+            const savedAccepted = localStorage.getItem(`accepted_tasks_${currentOperator.id}`);
+            if (savedAccepted) {
+                acceptedTasks = JSON.parse(savedAccepted);
+                displayAcceptedTasks();
+            }
+        }
+
+        // 显示待办任务
+        function displayPendingTasks() {
+            const container = document.getElementById('pendingTasksList');
+            
+            if (pendingTasks.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-muted py-5">
+                        <i class="fas fa-inbox fa-3x mb-3"></i>
+                        <p>暂无待接单任务</p>
+                        <button class="btn btn-outline-primary" onclick="generateTestTasks()">
+                            <i class="fas fa-plus"></i> 生成测试任务
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            const tasksHTML = pendingTasks.map(task => {
+                const protocol = protocolDatabase[task.protocolId];
+                const priorityClass = getPriorityClass(task.priority);
+                const priorityText = getPriorityText(task.priority);
+                
+                return `
+                    <div class="task-card pending" data-task-id="${task.id}">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="mb-0">${task.serviceName}</h6>
+                                        <span class="badge ${priorityClass}">${priorityText}</span>
+                                    </div>
+                                    <p class="text-muted mb-2">${task.description}</p>
+                                    <div class="d-flex gap-3 text-sm">
+                                        <span><i class="fas fa-file-alt"></i> ${task.orderNo}</span>
+                                        <span><i class="fas fa-clock"></i> ${task.estimatedHours}小时</span>
+                                        <span><i class="fas fa-calendar"></i> ${formatDateTime(task.deadline)}</span>
+                                    </div>
+                                    ${task.specialRequirements ? `
+                                        <div class="alert alert-warning alert-sm mt-2 mb-0">
+                                            <i class="fas fa-exclamation-triangle"></i> ${task.specialRequirements}
+                                        </div>
+                                    ` : ''}
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <div class="mb-2">
+                                        <div class="text-success fw-bold">${protocol ? protocol.totalCommission : 0}%</div>
+                                        <small class="text-muted">佣金率</small>
+                                    </div>
+                                    <div class="mb-2">
+                                        <small class="text-muted">协议: ${protocol ? protocol.name : '未知'}</small>
+                                    </div>
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-success btn-sm" onclick="showProtocolConfirmation('${task.id}')">
+                                            <i class="fas fa-eye"></i> 查看协议
+                                        </button>
+                                        <button class="btn btn-outline-danger btn-sm" onclick="quickReject('${task.id}')">
+                                            <i class="fas fa-times"></i> 拒绝
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = tasksHTML;
+            
+            // 更新批量接单按钮状态
+            document.getElementById('acceptAllBtn').disabled = pendingTasks.length === 0;
+        }
+
+        // 显示接单历史
+        function displayAcceptedTasks() {
+            const container = document.getElementById('acceptedTasksList');
+            
+            if (acceptedTasks.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-muted py-3">
+                        <small>暂无接单历史</small>
+                    </div>
+                `;
+                return;
+            }
+
+            const historyHTML = acceptedTasks.slice(0, 5).map(task => `
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <div>
+                        <strong>${task.serviceName}</strong>
+                        <small class="text-muted d-block">${task.orderNo}</small>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-success">已接单</span>
+                        <small class="text-muted d-block">${formatDateTime(task.acceptedTime)}</small>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = historyHTML;
+        }
+
+        // 显示协议确认弹窗
+        function showProtocolConfirmation(taskId) {
+            const task = pendingTasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            currentTaskForConfirmation = task;
+            const protocol = protocolDatabase[task.protocolId];
+
+            // 填充任务信息
+            document.getElementById('modalOrderNo').textContent = task.orderNo;
+            document.getElementById('modalServiceType').textContent = task.serviceName;
+            document.getElementById('modalTaskDescription').textContent = task.description;
+            document.getElementById('modalPriority').textContent = getPriorityText(task.priority);
+            document.getElementById('modalEstimatedHours').textContent = task.estimatedHours;
+            document.getElementById('modalAssignedBy').textContent = task.assignedBy;
+            document.getElementById('modalAssignedTime').textContent = formatDateTime(task.assignedTime);
+            document.getElementById('modalDeadline').textContent = formatDateTime(task.deadline);
+            document.getElementById('modalSpecialRequirements').textContent = task.specialRequirements || '无';
+
+            // 填充协议信息
+            if (protocol) {
+                document.getElementById('modalProtocolName').textContent = protocol.name;
+                document.getElementById('modalProtocolId').textContent = protocol.id;
+                document.getElementById('modalProtocolScope').textContent = protocol.scope;
+                document.getElementById('modalCommissionRate').textContent = protocol.totalCommission;
+                document.getElementById('modalBaseCommission').textContent = protocol.baseCommission;
+                document.getElementById('modalUrgencyBonus').textContent = protocol.urgencyBonus;
+                document.getElementById('modalTotalCommission').textContent = protocol.totalCommission;
+            }
+
+            // 显示弹窗
+            new bootstrap.Modal(document.getElementById('protocolConfirmModal')).show();
+        }
+
+        // 确认接单
+        function confirmTaskAcceptance() {
+            if (!currentTaskForConfirmation) return;
+
+            const task = currentTaskForConfirmation;
+            
+            // 移除待办任务
+            pendingTasks = pendingTasks.filter(t => t.id !== task.id);
+            
+            // 添加到已接单列表
+            task.status = 'ACCEPTED';
+            task.acceptedTime = new Date().toISOString();
+            task.acceptedBy = currentOperator.name;
+            acceptedTasks.unshift(task);
+
+            // 保存到localStorage
+            localStorage.setItem(`pending_tasks_${currentOperator.id}`, JSON.stringify(pendingTasks));
+            localStorage.setItem(`accepted_tasks_${currentOperator.id}`, JSON.stringify(acceptedTasks));
+
+            // 更新显示
+            displayPendingTasks();
+            displayAcceptedTasks();
+            updateTaskStatistics();
+
+            // 关闭弹窗
+            bootstrap.Modal.getInstance(document.getElementById('protocolConfirmModal')).hide();
+
+            // 显示成功消息
+            showNotification('success', `任务 ${task.serviceName} 接单成功！协议已生效，将影响分润计算。`);
+
+            // 记录接单日志
+            console.log('✅ 任务接单成功:', {
+                taskId: task.id,
+                serviceName: task.serviceName,
+                operator: currentOperator.name,
+                protocol: protocolDatabase[task.protocolId]?.name,
+                acceptedTime: task.acceptedTime
+            });
+
+            currentTaskForConfirmation = null;
+        }
+
+        // 拒绝接单
+        function rejectTask() {
+            if (!currentTaskForConfirmation) return;
+
+            const task = currentTaskForConfirmation;
+            
+            // 移除任务
+            pendingTasks = pendingTasks.filter(t => t.id !== task.id);
+            
+            // 保存状态
+            localStorage.setItem(`pending_tasks_${currentOperator.id}`, JSON.stringify(pendingTasks));
+
+            // 更新显示
+            displayPendingTasks();
+            updateTaskStatistics();
+
+            // 关闭弹窗
+            bootstrap.Modal.getInstance(document.getElementById('protocolConfirmModal')).hide();
+
+            // 显示消息
+            showNotification('warning', `任务 ${task.serviceName} 已拒绝接单。`);
+
+            currentTaskForConfirmation = null;
+        }
+
+        // 快速拒绝
+        function quickReject(taskId) {
+            if (confirm('确定要拒绝这个任务吗？')) {
+                const task = pendingTasks.find(t => t.id === taskId);
+                pendingTasks = pendingTasks.filter(t => t.id !== taskId);
+                
+                localStorage.setItem(`pending_tasks_${currentOperator.id}`, JSON.stringify(pendingTasks));
+                
+                displayPendingTasks();
+                updateTaskStatistics();
+                
+                showNotification('warning', `任务 ${task?.serviceName} 已拒绝。`);
+            }
+        }
+
+        // 批量接单
+        function acceptAllTasks() {
+            if (pendingTasks.length === 0) return;
+
+            if (confirm(`确定要接受所有 ${pendingTasks.length} 个任务吗？`)) {
+                pendingTasks.forEach(task => {
+                    task.status = 'ACCEPTED';
+                    task.acceptedTime = new Date().toISOString();
+                    task.acceptedBy = currentOperator.name;
+                    acceptedTasks.unshift(task);
+                });
+
+                pendingTasks = [];
+
+                // 保存状态
+                localStorage.setItem(`pending_tasks_${currentOperator.id}`, JSON.stringify(pendingTasks));
+                localStorage.setItem(`accepted_tasks_${currentOperator.id}`, JSON.stringify(acceptedTasks));
+
+                // 更新显示
+                displayPendingTasks();
+                displayAcceptedTasks();
+                updateTaskStatistics();
+
+                showNotification('success', '所有任务已批量接单成功！');
+            }
+        }
+
+        // 更新任务统计
+        function updateTaskStatistics() {
+            document.getElementById('pendingCount').textContent = pendingTasks.length;
+            document.getElementById('acceptedCount').textContent = acceptedTasks.length;
+            document.getElementById('totalTasks').textContent = pendingTasks.length + acceptedTasks.length;
+            document.getElementById('taskNotificationBadge').textContent = pendingTasks.length;
+        }
+
+        // 刷新任务
+        function refreshTasks() {
+            loadPendingTasks();
+            updateTaskStatistics();
+            showNotification('info', '任务列表已刷新');
+        }
+
+        // 辅助函数
+        function getServiceName(serviceCode) {
+            const names = {
+                'BOOKING': '预订服务',
+                'MBL_PROCESSING': '主单处理',
+                'HBL_PROCESSING': '分单处理',
+                'TRANSPORTATION': '运输服务',
+                'CUSTOMS_CLEARANCE': '清关服务'
+            };
+            return names[serviceCode] || serviceCode;
+        }
+
+        function getPriorityClass(priority) {
+            const classes = { HIGH: 'bg-danger', MEDIUM: 'bg-warning text-dark', LOW: 'bg-info' };
+            return classes[priority] || 'bg-secondary';
+        }
+
+        function getPriorityText(priority) {
+            const texts = { HIGH: '高', MEDIUM: '中', LOW: '低' };
+            return texts[priority] || '未知';
+        }
+
+        function formatDateTime(dateString) {
+            return new Date(dateString).toLocaleString('zh-CN', {
+                month: 'numeric', day: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            });
+        }
+
+        function showNotification(type, message) {
+            // 简单的通知实现
+            const alertClass = {
+                'success': 'alert-success',
+                'warning': 'alert-warning',
+                'info': 'alert-info',
+                'danger': 'alert-danger'
+            }[type] || 'alert-info';
+
+            const notification = document.createElement('div');
+            notification.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            notification.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+
+            document.body.appendChild(notification);
+
+            // 3秒后自动消失
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

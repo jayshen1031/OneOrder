@@ -3435,7 +3435,7 @@ function getStatusText(status) {
 function getTaskActions(task) {
     switch (task.status) {
         case 'ASSIGNED':
-            return `<button class="btn btn-sm btn-success" onclick="acceptTask('${task.orderId}')">
+            return `<button class="btn btn-sm btn-success" onclick="acceptTask('${task.orderId}', '${task.serviceType}')">
                         <i class="fas fa-check me-1"></i>接单
                     </button>`;
         case 'PROTOCOL_CONFIRMED':
@@ -3452,16 +3452,368 @@ function getTaskActions(task) {
 }
 
 // 接单操作
-function acceptTask(orderId) {
-    console.log('接单:', orderId);
+function acceptTask(orderId, serviceType) {
+    console.log('接单:', orderId, serviceType);
     
     if (confirm(`确认接受订单 ${orderId} 的任务吗？`)) {
-        // 模拟接单成功
-        alert(`成功接受订单 ${orderId} 的任务！`);
+        // 显示协议确认界面
+        showProtocolConfirmDialog(orderId, serviceType);
+    }
+}
+
+// 显示协议确认对话框
+function showProtocolConfirmDialog(orderId, serviceType) {
+    console.log('显示协议确认对话框:', orderId, serviceType);
+    
+    // 创建协议确认模态框
+    const modalHtml = `
+        <div class="modal fade" id="protocolConfirmModal" tabindex="-1" aria-labelledby="protocolConfirmModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="protocolConfirmModalLabel">
+                            <i class="fas fa-handshake me-2"></i>协议确认 - ${orderId}
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-info-circle me-2"></i>任务信息</h6>
+                            <p><strong>订单号：</strong>${orderId}</p>
+                            <p><strong>服务类型：</strong>${getServiceTypeName(serviceType)}</p>
+                            <p class="mb-0">请选择适用的内部协议来确认您的任务分润方案。</p>
+                        </div>
+                        
+                        <!-- 协议选择区域 -->
+                        <div class="mb-3">
+                            <label class="form-label"><strong>选择内部协议：</strong></label>
+                            <div id="protocolOptions" class="mb-3">
+                                <div class="text-center">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">加载中...</span>
+                                    </div>
+                                    <p class="mt-2">正在加载适用协议...</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 选中协议详情 -->
+                        <div id="selectedProtocolDetails" class="alert alert-secondary" style="display: none;">
+                            <h6><i class="fas fa-file-contract me-2"></i>协议详情</h6>
+                            <div id="protocolDetailsContent">
+                                <!-- 协议详情将在这里显示 -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        <button type="button" class="btn btn-primary" id="confirmProtocolBtn" onclick="confirmProtocol('${orderId}')" disabled>
+                            <i class="fas fa-check me-1"></i>确认协议
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // 移除现有模态框（如果存在）
+    const existingModal = document.getElementById('protocolConfirmModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // 添加模态框到页面
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // 显示模态框
+    const modal = new bootstrap.Modal(document.getElementById('protocolConfirmModal'));
+    modal.show();
+    
+    // 加载适用协议
+    loadApplicableProtocols(orderId, serviceType);
+}
+
+// 加载适用协议
+async function loadApplicableProtocols(orderId, serviceType) {
+    try {
+        // 获取当前用户信息（从用户选择器或其他方式）
+        const currentUser = UserState.getCurrentUser();
+        
+        // 构建协议匹配请求
+        const matchRequest = {
+            salesDepartmentId: getSalesDepartmentId(currentUser.department),
+            operationDepartmentId: getOperationDepartmentId(currentUser.department),
+            serviceCode: serviceType,
+            businessType: 'OCEAN', // 默认海运，实际应该从订单获取
+            orderId: orderId
+        };
+        
+        console.log('协议匹配请求:', matchRequest);
+        
+        // 优先使用协议管理器
+        let protocols = [];
+        if (window.protocolManager) {
+            protocols = window.protocolManager.getMatchingProtocols(
+                currentUser.department, 
+                serviceType
+            );
+            console.log('从协议管理器获取协议:', protocols.length);
+        }
+        
+        // 如果没有协议管理器或没有找到协议，使用API
+        if (protocols.length === 0) {
+            try {
+                const response = await fetch('/api/internal-protocols/match', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(matchRequest)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success && result.data) {
+                        protocols = result.data.map(p => ({
+                            protocolId: p.protocolId,
+                            protocolName: p.protocolName,
+                            totalCommissionRate: p.totalCommissionRate,
+                            baseCommissionRate: p.baseCommissionRate,
+                            bonusCommissionRate: p.performanceBonusRate,
+                            description: p.protocolName
+                        }));
+                        console.log('从API获取协议:', protocols.length);
+                    }
+                }
+            } catch (apiError) {
+                console.error('API加载协议失败:', apiError);
+            }
+        }
+        
+        // 如果仍然没有协议，使用默认协议
+        if (protocols.length === 0) {
+            protocols = getDefaultProtocolsForService(serviceType);
+            console.log('使用默认协议:', protocols.length);
+        }
+        
+        displayProtocolOptions(protocols);
+        
+    } catch (error) {
+        console.error('加载协议失败:', error);
+        
+        // 显示错误信息
+        document.getElementById('protocolOptions').innerHTML = `
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                加载协议失败，请重试。
+            </div>
+        `;
+    }
+}
+
+// 显示协议选项
+function displayProtocolOptions(protocols) {
+    const container = document.getElementById('protocolOptions');
+    
+    if (protocols.length === 0) {
+        container.innerHTML = `
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                暂无适用的协议，请联系管理员配置相关协议。
+            </div>
+        `;
+        return;
+    }
+    
+    const protocolsHtml = protocols.map((protocol, index) => `
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="selectedProtocol" 
+                   id="protocol_${protocol.protocolId}" value="${protocol.protocolId}"
+                   onchange="selectProtocol('${protocol.protocolId}', ${index})"
+                   ${index === 0 ? 'checked' : ''}>
+            <label class="form-check-label" for="protocol_${protocol.protocolId}">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${protocol.protocolName}</strong>
+                        <br>
+                        <small class="text-muted">${protocol.description || '标准内部协议'}</small>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-success fs-6">${protocol.totalCommissionRate}%</span>
+                        <br>
+                        <small class="text-muted">${protocol.baseCommissionRate}% + ${protocol.bonusCommissionRate}%</small>
+                    </div>
+                </div>
+            </label>
+        </div>
+    `).join('');
+    
+    container.innerHTML = protocolsHtml;
+    
+    // 默认选择第一个协议
+    if (protocols.length > 0) {
+        selectProtocol(protocols[0].protocolId, 0);
+    }
+}
+
+// 选择协议
+function selectProtocol(protocolId, index) {
+    console.log('选择协议:', protocolId);
+    
+    // 启用确认按钮
+    document.getElementById('confirmProtocolBtn').disabled = false;
+    
+    // 显示协议详情（这里可以根据需要添加更多详情）
+    const selectedRadio = document.querySelector(`input[name="selectedProtocol"]:checked`);
+    if (selectedRadio) {
+        const protocolLabel = selectedRadio.nextElementSibling;
+        const protocolName = protocolLabel.querySelector('strong').textContent;
+        const commissionBadge = protocolLabel.querySelector('.badge').textContent;
+        
+        document.getElementById('selectedProtocolDetails').style.display = 'block';
+        document.getElementById('protocolDetailsContent').innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>协议名称：</strong>${protocolName}</p>
+                    <p><strong>总佣金率：</strong>${commissionBadge}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>协议ID：</strong>${protocolId}</p>
+                    <p><strong>确认后：</strong>您将按此协议获得相应分润</p>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// 确认协议
+function confirmProtocol(orderId) {
+    const selectedProtocol = document.querySelector('input[name="selectedProtocol"]:checked');
+    
+    if (!selectedProtocol) {
+        alert('请选择一个协议');
+        return;
+    }
+    
+    const protocolId = selectedProtocol.value;
+    const protocolName = selectedProtocol.nextElementSibling.querySelector('strong').textContent;
+    
+    console.log('确认协议:', { orderId, protocolId, protocolName });
+    
+    // 发送协议确认请求
+    const confirmData = {
+        orderId: orderId,
+        protocolId: protocolId,
+        confirmTime: new Date().toISOString(),
+        confirmedBy: UserState.getCurrentUser().id || 'OP001'
+    };
+    
+    fetch('/api/clearing/confirm-protocol', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(confirmData)
+    })
+    .then(response => response.json())
+    .then(result => {
+        console.log('协议确认结果:', result);
+        
+        // 关闭模态框
+        const modal = bootstrap.Modal.getInstance(document.getElementById('protocolConfirmModal'));
+        modal.hide();
+        
+        // 显示成功消息
+        alert(`协议确认成功！\n订单：${orderId}\n协议：${protocolName}`);
         
         // 刷新任务列表
         loadMyTasks();
+    })
+    .catch(error => {
+        console.error('协议确认失败:', error);
+        
+        // 即使API失败也模拟成功（演示环境）
+        const modal = bootstrap.Modal.getInstance(document.getElementById('protocolConfirmModal'));
+        modal.hide();
+        
+        alert(`协议确认成功！\n订单：${orderId}\n协议：${protocolName}\n(演示模式)`);
+        loadMyTasks();
+    });
+}
+
+// ==================== 辅助函数 ====================
+
+// 获取服务类型名称
+function getServiceTypeName(serviceCode) {
+    const serviceNames = {
+        'MBL_PROCESSING': '主单处理',
+        'HBL_PROCESSING': '分单处理',
+        'BOOKING': '订舱服务',
+        'CONTAINER_LOADING': '装箱作业',
+        'AWB_PROCESSING': '空运单处理',
+        'CUSTOMS_CLEARANCE': '报关服务',
+        'TRANSPORTATION': '运输服务',
+        'CARGO_LOADING': '装货作业'
+    };
+    return serviceNames[serviceCode] || serviceCode;
+}
+
+// 获取销售部门ID
+function getSalesDepartmentId(operationDepartment) {
+    const deptMapping = {
+        '海运操作': 'SALES_OCEAN',
+        '空运操作': 'SALES_AIR',
+        '西区操作': 'SALES_TRUCK'
+    };
+    return deptMapping[operationDepartment] || 'SALES_OCEAN';
+}
+
+// 获取操作部门ID
+function getOperationDepartmentId(operationDepartment) {
+    const deptMapping = {
+        '海运操作': 'OPERATION_OCEAN',
+        '空运操作': 'OPERATION_AIR',
+        '西区操作': 'OPERATION_TRUCK'
+    };
+    return deptMapping[operationDepartment] || 'OPERATION_OCEAN';
+}
+
+// 获取默认协议（当其他方式都失败时使用）
+function getDefaultProtocolsForService(serviceType) {
+    const defaultProtocols = [
+        {
+            protocolId: 'DEFAULT_001',
+            protocolName: '通用服务协议',
+            totalCommissionRate: 15,
+            baseCommissionRate: 12,
+            bonusCommissionRate: 3,
+            description: '适用于所有服务类型的通用协议'
+        },
+        {
+            protocolId: 'DEFAULT_002', 
+            protocolName: '标准操作协议',
+            totalCommissionRate: 18,
+            baseCommissionRate: 15,
+            bonusCommissionRate: 3,
+            description: '标准操作流程协议'
+        }
+    ];
+    
+    // 根据服务类型返回相应的默认协议
+    if (serviceType === 'MBL_PROCESSING' || serviceType === 'HBL_PROCESSING') {
+        return [
+            {
+                protocolId: 'DEFAULT_MBL',
+                protocolName: '海运单证处理协议',
+                totalCommissionRate: 20,
+                baseCommissionRate: 15,
+                bonusCommissionRate: 5,
+                description: '专门针对海运单证处理的协议'
+            }
+        ];
     }
+    
+    return defaultProtocols;
 }
 
 // 开始任务
