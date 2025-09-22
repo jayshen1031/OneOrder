@@ -312,15 +312,21 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link" href="#expense-entry" onclick="showSection('expense-entry')" data-page-permission="finance">
+                                <i class="fas fa-file-invoice-dollar me-2"></i>
+                                3. 费用录入
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link" href="#profitsharing" onclick="showSection('profitsharing')" data-page-permission="reports">
                                 <i class="fas fa-calculator me-2"></i>
-                                3. 分润计算
+                                4. 分润计算
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="#clearing" onclick="showSection('clearing')" data-page-permission="clearing">
                                 <i class="fas fa-cogs me-2"></i>
-                                4. 清分处理
+                                5. 清分处理
                             </a>
                         </li>
                         <li class="nav-item">
@@ -459,6 +465,9 @@
                             </button>
                         </div>
                     </div>
+                    
+                    <!-- 角色提示区域 -->
+                    <div id="roleNoticeArea" class="mb-3"></div>
                     
                     <!-- 新建订单表单 -->
                     <div class="card mb-4" id="newOrderForm" style="display:none;">
@@ -852,13 +861,209 @@
                     </div>
                 </div>
                 
+                <!-- 操作员工作台 -->
+                <div id="operator-workbench" class="content-section" style="display:none;">
+                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                        <h1 class="h2"><i class="fas fa-briefcase me-2"></i>我的工作台</h1>
+                        <div class="btn-toolbar mb-2 mb-md-0">
+                            <div class="btn-group me-2">
+                                <button type="button" class="btn btn-outline-primary" onclick="refreshMyTasks()">
+                                    <i class="fas fa-sync-alt me-2"></i>刷新任务
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 欢迎消息 -->
+                    <div class="alert alert-info border-info mb-4" style="border-left: 5px solid #17a2b8;">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-user-circle fa-2x text-info me-3"></i>
+                            <div>
+                                <h6 class="alert-heading mb-1">👋 欢迎回来！</h6>
+                                <p class="mb-0">
+                                    <span id="operatorWelcomeName">操作员</span>，您有 <span id="pendingTaskCount" class="fw-bold text-primary">0</span> 个待处理任务
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 我的任务列表 -->
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-clipboard-list me-2"></i>我的待办任务
+                                    </h5>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div id="myTasksList">
+                                        <div class="text-center py-5">
+                                            <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                                            <p class="text-muted">正在加载您的任务...</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-4">
+                            <!-- 任务统计 -->
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-chart-pie me-2"></i>任务统计
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row text-center">
+                                        <div class="col-6">
+                                            <div class="border-end">
+                                                <h4 class="text-warning mb-1" id="pendingTasksCount">0</h4>
+                                                <small class="text-muted">待处理</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <h4 class="text-success mb-1" id="completedTasksCount">0</h4>
+                                            <small class="text-muted">已完成</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 快速操作 -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-bolt me-2"></i>快速操作
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-grid gap-2">
+                                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="showSection('expense-entry')">
+                                            <i class="fas fa-file-invoice-dollar me-2"></i>录入费用
+                                        </button>
+                                        <button type="button" class="btn btn-outline-info btn-sm" onclick="viewTaskHistory()">
+                                            <i class="fas fa-history me-2"></i>任务历史
+                                        </button>
+                                        <button type="button" class="btn btn-outline-success btn-sm" onclick="markAllTasksRead()">
+                                            <i class="fas fa-check-double me-2"></i>标记已读
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 费用录入 -->
+                <div id="expense-entry" class="content-section" style="display:none;">
+                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                        <h1 class="h2"><i class="fas fa-file-invoice-dollar me-2"></i>费用录入</h1>
+                        <div class="btn-toolbar mb-2 mb-md-0">
+                            <div class="btn-group me-2">
+                                <button type="button" class="btn btn-outline-secondary" onclick="showSection('assignment')">
+                                    <i class="fas fa-arrow-left me-2"></i>返回接派单
+                                </button>
+                                <button type="button" class="btn btn-primary" onclick="proceedToProfit()">
+                                    <i class="fas fa-arrow-right me-2"></i>进入分润计算
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 流程提示 -->
+                    <div class="alert alert-info">
+                        <h5 class="alert-heading">
+                            <i class="fas fa-route me-2"></i>业务流程提示
+                        </h5>
+                        <p class="mb-2">
+                            <strong>当前环节：费用录入</strong> - 在派单完成后，需要录入订单的收费和付费明细
+                        </p>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>📝 需要录入的费用：</strong>
+                                <ul class="mb-0">
+                                    <li>外部收款明细（向客户收取的费用）</li>
+                                    <li>外部付款明细（向供应商支付的费用）</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>⚡ 借抬头功能增强：</strong>
+                                <ul class="mb-0">
+                                    <li>自动识别默认法人与实际法人差异</li>
+                                    <li>智能标记借抬头类型（收款/付款）</li>
+                                    <li>大额借抬头自动需要审批（≥5万元）</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 费用录入界面集成 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-plus-circle me-2"></i>费用明细录入
+                                <span class="badge bg-success ms-2">已增强借抬头功能</span>
+                            </h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <iframe id="expenseEntryFrame" 
+                                    src="expense-entry-management.html?v=20250921-2330" 
+                                    frameborder="0" 
+                                    style="width: 100%; height: 800px; border: none;">
+                                <p>您的浏览器不支持iframe，请<a href="expense-entry-management.html" target="_blank">点击这里</a>访问费用录入页面。</p>
+                            </iframe>
+                        </div>
+                    </div>
+                    
+                    <!-- 费用录入状态监控 -->
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6><i class="fas fa-list-check me-2"></i>费用录入进度</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="expenseEntryProgress">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="fas fa-circle-notch fa-spin text-primary me-2"></i>
+                                            <span>正在加载费用录入状态...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6><i class="fas fa-exclamation-triangle me-2"></i>借抬头提醒</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="transitEntityReminder">
+                                        <p class="text-muted mb-2">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            系统已自动增强借抬头记录功能
+                                        </p>
+                                        <ul class="list-unstyled small">
+                                            <li>✅ 自动记录默认法人与实际法人差异</li>
+                                            <li>✅ 智能判断是否需要借抬头审批</li>
+                                            <li>✅ 完整保留借抬头选择的业务原因</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- 分润计算 -->
                 <div id="profitsharing" class="content-section" style="display:none;">
                     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                         <h1 class="h2"><i class="fas fa-calculator me-2"></i>分润计算</h1>
                         <div class="btn-toolbar mb-2 mb-md-0">
-                            <button type="button" class="btn btn-outline-secondary" onclick="showSection('assignment')">
-                                <i class="fas fa-arrow-left me-2"></i>返回接派单
+                            <button type="button" class="btn btn-outline-secondary" onclick="showSection('expense-entry')">
+                                <i class="fas fa-arrow-left me-2"></i>返回费用录入
                             </button>
                         </div>
                     </div>
@@ -1338,9 +1543,9 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/user-state.js"></script>
     <script src="js/global-user-manager.js"></script>
-    <script src="js/permission-manager.js?v=20250919-1647"></script>
-    <script src="js/protocol-manager.js?v=20250920-1400"></script>
-    <script src="js/freight-order.js?v=20250918-1025"></script>
+    <script src="js/permission-manager.js?v=20250920-1952"></script>
+    <script src="js/protocol-manager.js?v=20250920-2200"></script>
+    <script src="js/freight-order.js?v=20250921-2010"></script>
     <!-- 临时注释其他JS文件排查问题 -->
     <!-- <script src="js/customer-service.js"></script> -->
     <script src="js/service-assignment.js?v=20250919-1805"></script>

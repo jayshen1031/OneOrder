@@ -3,8 +3,8 @@
 
 // =================== 操作员数据系统 ===================
 const operatorData = {
-    // 当前登录用户
-    currentUser: {
+    // 默认用户配置
+    defaultUser: {
         opid: 'CS001',
         name: '张美华',
         department: '客服中心',
@@ -47,6 +47,641 @@ const operatorData = {
     ]
 };
 
+// =================== 业务流程控制函数 ===================
+
+
+/**
+ * 生成业务友好的订单号格式
+ * @param {string} originalOrderNo - 原始技术订单号 
+ * @param {number} index - 订单索引
+ * @returns {string} 业务友好的订单号
+ */
+function generateBusinessOrderNumber(originalOrderNo, index) {
+    // 业务订单号前缀列表
+    const businessPrefixes = [
+        'HW-EXPORT',    // 华为出口
+        'MIDEA-SHIP',   // 美的海运
+        'SH-AUTO',      // 上汽汽车
+        'BYD-OCEAN',    // 比亚迪海运
+        'TENCENT-AIR',  // 腾讯空运
+        'BAIDU-RAIL',   // 百度铁运
+        'ALIBABA-MULTI', // 阿里多式联运
+        'XIAOMI-EXPRESS' // 小米快运
+    ];
+    
+    // 根据索引选择前缀
+    const prefix = businessPrefixes[index % businessPrefixes.length];
+    
+    // 生成日期部分 (格式: 20240101)
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const dateStr = `${year}${month}${day}`;
+    
+    // 生成序号部分 (001-999)
+    const sequence = String((index + 1) % 1000).padStart(3, '0');
+    
+    return `${prefix}-${dateStr}-${sequence}`;
+}
+
+
+/**
+ * 从费用录入进入分润计算
+ */
+function proceedToProfit() {
+    // 检查费用录入是否完成
+    if (validateExpenseEntryCompletion()) {
+        showSection('profitsharing');
+        showNotification('已进入分润计算环节', 'success');
+    } else {
+        showNotification('请先完成费用录入再进入分润计算', 'warning');
+    }
+}
+
+/**
+ * 验证费用录入是否完成
+ */
+function validateExpenseEntryCompletion() {
+    // 这里应该检查当前订单的费用录入状态
+    // 暂时简化为总是返回true，实际应用中需要调用API检查
+    return true;
+}
+
+/**
+ * 更新费用录入进度显示
+ */
+function updateExpenseEntryProgress(orderId) {
+    const progressContainer = document.getElementById('expenseEntryProgress');
+    if (!progressContainer) return;
+    
+    // 模拟费用录入进度检查
+    progressContainer.innerHTML = `
+        <div class="d-flex align-items-center mb-2">
+            <i class="fas fa-check-circle text-success me-2"></i>
+            <span>费用录入状态检查中...</span>
+        </div>
+        <div class="progress mb-2" style="height: 6px;">
+            <div class="progress-bar bg-success" style="width: 75%"></div>
+        </div>
+        <small class="text-muted">当前订单: ${orderId || '请先选择订单'}</small>
+    `;
+}
+
+/**
+ * 初始化费用录入页面
+ */
+function initExpenseEntrySection() {
+    console.log('🔧 初始化费用录入页面...');
+    
+    // 获取当前选中的订单ID（如果有）
+    const currentSelectedOrderId = getCurrentSelectedOrderId();
+    
+    // 更新费用录入进度
+    updateExpenseEntryProgress(currentSelectedOrderId);
+    
+    // 通知iframe进行初始化，包括传递订单数据
+    setTimeout(() => {
+        const iframe = document.getElementById('expenseEntryFrame');
+        if (iframe && iframe.contentWindow) {
+            // 总是传递订单数据，即使iframe API调用失败也能工作
+            if (window.orders && Array.isArray(window.orders) && window.orders.length > 0) {
+                // 准备订单数据，加上客户名称映射
+                const ordersData = window.orders.slice(0, 50).map(order => ({
+                    orderId: order.orderId,
+                    orderNo: order.orderNo,
+                    customerName: order.customerName || getCustomerNameById(order.customerId) || '未知客户',
+                    totalAmount: order.totalAmount || 0,
+                    totalCost: order.totalCost || 0,
+                    orderStatus: order.orderStatus || 'CONFIRMED',
+                    clearingStatus: order.clearingStatus || 'PENDING',
+                    customerId: order.customerId
+                }));
+                
+                // 传递订单数据
+                iframe.contentWindow.postMessage({
+                    type: 'ORDER_DATA_TRANSFER',
+                    orders: ordersData,
+                    source: 'freight-order-main'
+                }, '*');
+                console.log('📨 发送订单数据到费用录入页面:', ordersData.length, '条订单');
+                
+                // 如果有选中的订单，再发送选择消息
+                if (currentSelectedOrderId) {
+                    setTimeout(() => {
+                        iframe.contentWindow.postMessage({
+                            type: 'ORDER_CONTEXT',
+                            orderId: currentSelectedOrderId,
+                            source: 'freight-order-main'
+                        }, '*');
+                        console.log('📨 发送订单选择消息到费用录入页面:', currentSelectedOrderId);
+                    }, 500);
+                } else {
+                    // 没有选中订单时显示默认内容
+                    setTimeout(() => {
+                        iframe.contentWindow.postMessage({
+                            type: 'SHOW_DEFAULT_CONTENT',
+                            source: 'freight-order-main'
+                        }, '*');
+                        console.log('📨 发送显示默认内容消息到费用录入页面');
+                    }, 500);
+                }
+            } else {
+                console.log('⚠️ 主页面没有订单数据，仅发送默认内容消息');
+                iframe.contentWindow.postMessage({
+                    type: 'SHOW_DEFAULT_CONTENT',
+                    source: 'freight-order-main'
+                }, '*');
+                console.log('📨 发送显示默认内容消息到费用录入页面');
+            }
+        }
+    }, 1000); // 等待iframe加载完成
+    
+    // 显示借抬头功能增强提示
+    showTransitEntityEnhancementNotice();
+}
+
+/**
+ * 根据客户ID获取客户名称
+ */
+function getCustomerNameById(customerId) {
+    const customerMap = {
+        'CUST_001': '华为技术有限公司',
+        'CUST_002': '美的集团股份有限公司', 
+        'CUST_003': '比亚迪股份有限公司',
+        'CUST_004': '腾讯科技有限公司',
+        'CUST_005': '阿里巴巴集团',
+        'CUST_006': '小米科技有限公司',
+        'CUST_007': '海尔集团公司'
+    };
+    return customerMap[customerId] || null;
+}
+
+/**
+ * 获取当前选中的订单ID
+ */
+function getCurrentSelectedOrderId() {
+    // 从全局状态或局部存储获取当前选中的订单
+    // 这里可以从多个来源尝试获取
+    
+    // 1. 检查是否有从goToExpenseEntryWithOrder传递的订单ID
+    if (window.lastSelectedOrderForExpense) {
+        return window.lastSelectedOrderForExpense;
+    }
+    
+    // 2. 检查localStorage中的最近选择
+    const recentSelection = localStorage.getItem('oneorder_recent_selected_order');
+    if (recentSelection) {
+        try {
+            const parsed = JSON.parse(recentSelection);
+            if (parsed.orderId && parsed.timestamp && (Date.now() - parsed.timestamp < 300000)) { // 5分钟内有效
+                return parsed.orderId;
+            }
+        } catch (e) {
+            console.warn('解析最近选择的订单失败:', e);
+        }
+    }
+    
+    // 3. 没有选中的订单
+    return null;
+}
+
+/**
+ * 显示借抬头功能增强提示
+ */
+function showTransitEntityEnhancementNotice() {
+    const reminderContainer = document.getElementById('transitEntityReminder');
+    if (!reminderContainer) return;
+    
+    reminderContainer.innerHTML = `
+        <div class="alert alert-success alert-sm">
+            <h6 class="alert-heading">
+                <i class="fas fa-rocket me-2"></i>借抬头功能已增强
+            </h6>
+            <p class="mb-2">系统已按照PRD文档《02.录费模块PRD_V3.md》完成借抬头记录功能增强：</p>
+            <ul class="list-unstyled small mb-2">
+                <li>✅ <strong>默认法人记录</strong>: 自动记录用户角色对应的默认法人</li>
+                <li>✅ <strong>法人差异标记</strong>: 实时对比默认法人与实际经办法人</li>
+                <li>✅ <strong>借抬头类型</strong>: 自动区分收款借抬头/付款借抬头</li>
+                <li>✅ <strong>审批流程</strong>: 大额借抬头(≥5万元)自动需要审批</li>
+                <li>✅ <strong>业务原因</strong>: 完整保留借抬头选择的业务原因记录</li>
+            </ul>
+            <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">更新时间: 2025-09-21</small>
+                <a href="/Users/jay/Documents/baidu/projects/OneOrder/借抬头功能测试导航.html" 
+                   target="_blank" class="btn btn-outline-success btn-sm">
+                    <i class="fas fa-external-link-alt me-1"></i>功能测试
+                </a>
+            </div>
+        </div>
+    `;
+}
+
+// =================== 角色化数据过滤功能 ===================
+
+/**
+ * 基于角色过滤订单数据
+ */
+function loadOrdersWithRoleFilter() {
+    console.log('🔄 开始加载角色过滤的订单数据...');
+    
+    const currentUser = UserState.getCurrentUser();
+    if (!currentUser) {
+        console.warn('无法获取当前用户信息');
+        return;
+    }
+    
+    console.log('当前用户角色:', currentUser.role, '用户ID:', currentUser.id);
+    
+    // 重新加载所有订单数据
+    loadOrdersData().then(() => {
+        // 根据角色过滤订单
+        const filteredOrders = filterOrdersByRole(orders, currentUser);
+        
+        // 更新显示
+        displayFilteredOrders(filteredOrders, currentUser.role);
+        updateDashboardStats(filteredOrders);
+        
+        console.log(`✅ 角色过滤完成: ${currentUser.role} 可查看 ${filteredOrders.length} 个订单`);
+    }).catch(error => {
+        console.error('❌ 加载订单数据失败:', error);
+    });
+}
+
+/**
+ * 基于角色过滤派单数据
+ */
+function loadAssignmentWithRoleFilter() {
+    console.log('🔄 开始加载角色过滤的派单数据...');
+    
+    const currentUser = UserState.getCurrentUser();
+    if (!currentUser) {
+        console.warn('无法获取当前用户信息');
+        return;
+    }
+    
+    // 刷新派单历史显示（应用角色过滤）
+    if (window.displayAssignmentHistory) {
+        console.log('🔄 刷新派单历史显示...');
+        window.displayAssignmentHistory();
+    }
+    
+    // 根据角色显示不同的派单视图
+    if (currentUser.role.includes('客服') || currentUser.level === 'CS') {
+        // 客服角色：显示自己派发的订单状态
+        displayCustomerServiceAssignments(currentUser);
+    } else if (currentUser.role.includes('操作') || currentUser.level === 'OP') {
+        // 操作员角色：显示分配给自己的待操作订单
+        displayOperatorAssignments(currentUser);
+    } else {
+        // 管理角色：显示全部派单信息
+        displayManagementAssignments(currentUser);
+    }
+}
+
+/**
+ * 根据角色过滤订单
+ */
+function filterOrdersByRole(allOrders, user) {
+    if (!allOrders || !user) return [];
+    
+    const userRole = user.role;
+    const userId = user.id;
+    const userLevel = user.level;
+    
+    // 管理层可以看到所有订单
+    if (userLevel === 'GM') {
+        console.log('🔍 管理层用户，显示所有订单');
+        return allOrders;
+    }
+    
+    // 客服角色：显示自己创建的订单和需要派单的订单
+    if (userRole.includes('客服') || userLevel === 'CS') {
+        console.log('🔍 客服角色，过滤相关订单');
+        return allOrders.filter(order => {
+            // 自己创建的订单
+            const isMyOrder = order.createdBy === userId || order.salesStaffId === userId;
+            // 需要派单的订单
+            const needsAssignment = order.orderStatus === 'PENDING' || order.orderStatus === 'CONFIRMED';
+            // 已派单但需要跟踪的订单
+            const isAssigned = order.orderStatus === 'PROCESSING' || order.orderStatus === 'SHIPPED';
+            
+            return isMyOrder || needsAssignment || isAssigned;
+        });
+    }
+    
+    // 操作员角色：显示分配给自己的订单
+    if (userRole.includes('操作') || userLevel === 'OP') {
+        console.log('🔍 操作员角色，过滤分配的订单');
+        return allOrders.filter(order => {
+            // 检查是否有分配给自己的服务（这里需要查询派单历史）
+            return isOrderAssignedToOperator(order, userId);
+        });
+    }
+    
+    // 销售角色：显示相关客户的订单
+    if (userRole.includes('销售') || userLevel === 'SA') {
+        console.log('🔍 销售角色，过滤客户订单');
+        return allOrders.filter(order => {
+            return order.salesStaffId === userId || order.salesDepartmentId === user.departmentId;
+        });
+    }
+    
+    // 默认返回空数组
+    console.log('🔍 未知角色，不显示订单');
+    return [];
+}
+
+/**
+ * 检查订单是否分配给指定操作员
+ */
+function isOrderAssignedToOperator(order, operatorId) {
+    // 这里需要查询派单历史数据
+    // 暂时简化处理，实际应用中需要调用API查询
+    try {
+        const assignmentHistory = JSON.parse(localStorage.getItem('oneorder_assignment_history') || '[]');
+        return assignmentHistory.some(assignment => 
+            assignment.orderId === order.orderId && 
+            assignment.assignedOperatorId === operatorId &&
+            assignment.status === 'ASSIGNED'
+        );
+    } catch (error) {
+        console.error('检查订单分配失败:', error);
+        return false;
+    }
+}
+
+/**
+ * 显示客服派单状态
+ */
+function displayCustomerServiceAssignments(user) {
+    console.log('📋 显示客服派单状态视图');
+    
+    // 获取自己派发的订单
+    const assignmentHistory = JSON.parse(localStorage.getItem('oneorder_assignment_history') || '[]');
+    const myAssignments = assignmentHistory.filter(assignment => 
+        assignment.operatorName === user.name || assignment.createdBy === user.id
+    );
+    
+    // 按状态分组
+    const statusGroups = {
+        PENDING: myAssignments.filter(a => a.status === 'PENDING'),
+        ASSIGNED: myAssignments.filter(a => a.status === 'ASSIGNED'),
+        IN_PROGRESS: myAssignments.filter(a => a.status === 'IN_PROGRESS'),
+        COMPLETED: myAssignments.filter(a => a.status === 'COMPLETED')
+    };
+    
+    // 更新派单状态显示
+    updateAssignmentStatusDisplay(statusGroups, 'customerService');
+}
+
+/**
+ * 显示操作员待办任务
+ */
+function displayOperatorAssignments(user) {
+    console.log('🛠️ 显示操作员待办任务视图');
+    
+    // 获取分配给自己的任务
+    const assignmentHistory = JSON.parse(localStorage.getItem('oneorder_assignment_history') || '[]');
+    const myTasks = assignmentHistory.filter(assignment => 
+        assignment.assignedOperatorId === user.id && 
+        (assignment.status === 'ASSIGNED' || assignment.status === 'IN_PROGRESS')
+    );
+    
+    // 按紧急程度排序
+    myTasks.sort((a, b) => {
+        const urgencyOrder = { 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1 };
+        return (urgencyOrder[b.urgency] || 1) - (urgencyOrder[a.urgency] || 1);
+    });
+    
+    // 更新任务列表显示
+    updateOperatorTaskDisplay(myTasks);
+}
+
+/**
+ * 显示管理层派单概览
+ */
+function displayManagementAssignments(user) {
+    console.log('👥 显示管理层派单概览');
+    
+    const assignmentHistory = JSON.parse(localStorage.getItem('oneorder_assignment_history') || '[]');
+    
+    // 统计各种状态的派单
+    const stats = {
+        total: assignmentHistory.length,
+        pending: assignmentHistory.filter(a => a.status === 'PENDING').length,
+        assigned: assignmentHistory.filter(a => a.status === 'ASSIGNED').length,
+        inProgress: assignmentHistory.filter(a => a.status === 'IN_PROGRESS').length,
+        completed: assignmentHistory.filter(a => a.status === 'COMPLETED').length
+    };
+    
+    // 更新管理概览显示
+    updateManagementOverview(stats);
+}
+
+/**
+ * 显示过滤后的订单
+ */
+function displayFilteredOrders(filteredOrders, userRole) {
+    console.log(`📊 显示${userRole}角色的订单数据:`, filteredOrders.length, '个订单');
+    
+    // 修正：直接使用tbody的ID（ordersTable是tbody元素的ID，不是table的ID）
+    const tbody = document.getElementById('ordersTable');
+    if (tbody) {
+        tbody.innerHTML = '';
+        
+        if (filteredOrders.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="11" class="text-center text-muted py-4">
+                        <i class="fas fa-inbox me-2"></i>
+                        暂无${userRole}可查看的订单数据
+                    </td>
+                </tr>
+            `;
+        } else {
+            filteredOrders.forEach(order => {
+                const row = createOrderTableRow(order, userRole);
+                tbody.appendChild(row);
+            });
+        }
+    } else {
+        console.error('❌ 找不到ordersTable tbody元素');
+    }
+    
+    // 显示角色相关的提示信息
+    displayRoleSpecificNotice(userRole, filteredOrders.length);
+}
+
+/**
+ * 创建订单表格行（根据角色显示不同信息）
+ */
+function createOrderTableRow(order, userRole) {
+    const row = document.createElement('tr');
+    
+    // 表头列：订单号、客户、业务类型、包含服务、起始地、目的地、金额、状态、客服负责人、创建时间、操作 (共11列)
+    // 确保所有角色都返回11列数据
+    
+    // 获取业务类型名称
+    const businessTypeName = getBusinessTypeName(order.businessType);
+    
+    // 获取服务列表或派单状态
+    const servicesInfo = getServicesDisplayInfo(order);
+    
+    // 获取起始地和目的地
+    const portOfLoading = order.portOfLoading || '上海港';
+    const portOfDischarge = order.portOfDischarge || '洛杉矶港';
+    
+    // 获取金额信息
+    const totalAmount = order.totalAmount ? `¥${order.totalAmount.toLocaleString()}` : '待确认';
+    
+    // 获取状态信息
+    const statusBadge = `<span class="badge bg-${getStatusColor(order.orderStatus)}">${getStatusText(order.orderStatus)}</span>`;
+    
+    // 获取客服负责人
+    const salesStaff = getSalesStaffName(order);
+    
+    // 获取创建时间
+    const createTime = formatDate(order.orderDate);
+    
+    // 根据角色显示不同的操作按钮，但保持11列结构
+    let actionButtons = '';
+    if (userRole.includes('客服')) {
+        actionButtons = `
+            <button class="btn btn-sm btn-primary" onclick="viewOrderDetail('${order.orderId}')">查看</button>
+            ${order.orderStatus === 'CONFIRMED' ? `<button class="btn btn-sm btn-success" onclick="assignOrder('${order.orderId}')">派单</button>` : ''}
+            <button class="btn btn-sm btn-warning" onclick="goToExpenseEntryWithOrder('${order.orderId}')">录费</button>
+        `;
+    } else if (userRole.includes('操作')) {
+        actionButtons = `
+            <button class="btn btn-sm btn-success" onclick="startWork('${order.orderId}')">开始处理</button>
+            <button class="btn btn-sm btn-outline-primary" onclick="viewOrderDetail('${order.orderId}')">详情</button>
+        `;
+    } else {
+        actionButtons = `
+            <button class="btn btn-sm btn-primary" onclick="viewOrderDetail('${order.orderId}')">查看</button>
+        `;
+    }
+    
+    // 统一的11列结构
+    row.innerHTML = `
+        <td class="order-no-cell">${order.orderNo}</td>
+        <td title="${getCustomerName(order)}">${getCustomerName(order)}</td>
+        <td>${businessTypeName}</td>
+        <td>${servicesInfo}</td>
+        <td>${portOfLoading}</td>
+        <td>${portOfDischarge}</td>
+        <td>${totalAmount}</td>
+        <td>${statusBadge}</td>
+        <td>${salesStaff}</td>
+        <td>${createTime}</td>
+        <td>${actionButtons}</td>
+    `;
+    
+    return row;
+}
+
+/**
+ * 显示角色相关提示
+ */
+function displayRoleSpecificNotice(userRole, orderCount) {
+    const noticeArea = document.getElementById('roleNoticeArea');
+    if (!noticeArea) return;
+    
+    let noticeHtml = '';
+    
+    if (userRole.includes('客服')) {
+        noticeHtml = `
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>客服视图</strong>: 显示您创建的订单(${orderCount}个)和需要派单的订单。
+                您可以查看派单状态并跟踪订单执行情况。
+            </div>
+        `;
+    } else if (userRole.includes('操作')) {
+        noticeHtml = `
+            <div class="alert alert-success">
+                <i class="fas fa-tasks me-2"></i>
+                <strong>操作员视图</strong>: 显示分配给您的待处理订单(${orderCount}个)。
+                请按优先级处理您的工作任务。
+            </div>
+        `;
+    } else {
+        noticeHtml = `
+            <div class="alert alert-primary">
+                <i class="fas fa-eye me-2"></i>
+                <strong>${userRole}视图</strong>: 显示相关订单${orderCount}个。
+            </div>
+        `;
+    }
+    
+    noticeArea.innerHTML = noticeHtml;
+}
+
+// 辅助函数
+function getStatusColor(status) {
+    const colors = {
+        'PENDING': 'warning',
+        'CONFIRMED': 'info',
+        'PROCESSING': 'primary',
+        'SHIPPED': 'success',
+        'DELIVERED': 'success',
+        'COMPLETED': 'success'
+    };
+    return colors[status] || 'secondary';
+}
+
+function getStatusText(status) {
+    const texts = {
+        'PENDING': '待确认',
+        'CONFIRMED': '已确认',
+        'PROCESSING': '处理中',
+        'SHIPPED': '已发货',
+        'DELIVERED': '已送达',
+        'COMPLETED': '已完成'
+    };
+    return texts[status] || status;
+}
+
+function getAssignmentStatus(orderId) {
+    try {
+        const assignmentHistory = JSON.parse(localStorage.getItem('oneorder_assignment_history') || '[]');
+        const assignments = assignmentHistory.filter(a => a.orderId === orderId);
+        if (assignments.length === 0) return '未派单';
+        
+        const pending = assignments.filter(a => a.status === 'PENDING').length;
+        const completed = assignments.filter(a => a.status === 'COMPLETED').length;
+        
+        return `${completed}/${assignments.length} 已完成`;
+    } catch (error) {
+        return '未知';
+    }
+}
+
+function getMyServiceTasks(orderId) {
+    try {
+        const assignmentHistory = JSON.parse(localStorage.getItem('oneorder_assignment_history') || '[]');
+        const currentUser = UserState.getCurrentUser();
+        const myTasks = assignmentHistory.filter(a => 
+            a.orderId === orderId && 
+            a.assignedOperatorId === currentUser.id
+        );
+        
+        return myTasks.map(task => task.serviceName || task.serviceCode).join(', ') || '无任务';
+    } catch (error) {
+        return '无任务';
+    }
+}
+
+function formatDate(dateStr) {
+    if (!dateStr) return '-';
+    try {
+        return new Date(dateStr).toLocaleDateString('zh-CN');
+    } catch (error) {
+        return dateStr;
+    }
+}
+
 // 获取操作员信息
 function getOperatorInfo(opid) {
     return operatorData.operators.find(op => op.opid === opid);
@@ -54,7 +689,7 @@ function getOperatorInfo(opid) {
 
 // 获取当前用户信息
 function getCurrentUser() {
-    return operatorData.currentUser;
+    return operatorData.defaultUser;
 }
 
 // 获取当前用户角色（兼容其他模块）
@@ -67,7 +702,7 @@ function getCurrentUserRole() {
 window.switchUser = function(opid) {
     const operator = getOperatorInfo(opid);
     if (operator) {
-        operatorData.currentUser = {
+        operatorData.defaultUser = {
             opid: operator.opid,
             name: operator.name,
             department: `${operator.dept1} - ${operator.dept2}`,
@@ -94,6 +729,11 @@ window.switchUser = function(opid) {
         }
         
         updateUserInterface();
+        
+        // 根据用户角色显示合适的默认界面
+        setTimeout(() => {
+            showRoleBasedDefaultSection();
+        }, 200);
     }
 }
 
@@ -432,11 +1072,35 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeSystem();
     console.log('initializeSystem() 完成，现在强制调用 loadOrders()');
     
+    // 添加用户状态变更监听器
+    if (window.UserState) {
+        UserState.addListener((event, oldUser, newUser) => {
+            if (event === 'userChanged') {
+                console.log('👤 用户已切换:', oldUser?.name, '→', newUser?.name);
+                // 重新加载当前页面的数据以应用新的角色过滤
+                if (currentSection === 'orders') {
+                    loadOrdersWithRoleFilter();
+                } else if (currentSection === 'assignment') {
+                    loadAssignmentWithRoleFilter();
+                }
+            }
+        });
+    }
+    
     // 强制调用API加载实时数据
     loadOrdersData().then(() => {
         console.log('loadOrdersData() 完成，orders.length =', orders.length);
         console.log('前3个订单号:', orders.slice(0, 3).map(o => o.orderNo));
         updateDashboardStats();
+        
+        // 应用角色过滤（如果当前显示订单页面）
+        if (currentSection === 'orders') {
+            const currentUser = UserState.getCurrentUser();
+            if (currentUser) {
+                const filteredOrders = filterOrdersByRole(orders, currentUser);
+                displayFilteredOrders(filteredOrders, currentUser.role);
+            }
+        }
     }).catch(error => {
         console.error('loadOrdersData() 失败，使用fallback:', error);
         // 只有在API失败时才使用模拟数据
@@ -456,6 +1120,11 @@ function initializeSystem() {
     
     // 初始化用户界面
     updateUserInterface();
+    
+    // 根据用户角色显示合适的默认界面
+    setTimeout(() => {
+        showRoleBasedDefaultSection();
+    }, 500);
     
     // 不再生成模拟数据，改为从API加载真实数据
     // generateMockOrders(); // 注释掉模拟数据生成
@@ -609,8 +1278,27 @@ function updateCurrentDateTime() {
     // 可以在界面某个地方显示当前时间
 }
 
-// 显示指定区域
-function showSection(sectionId) {
+/**
+ * 检查用户角色并显示适当的默认界面
+ */
+function showRoleBasedDefaultSection() {
+    const currentUser = UserState.getCurrentUser();
+    
+    if (currentUser && currentUser.level === 'OP') {
+        // 操作员默认显示任务工作台
+        console.log('🔧 操作员登录，显示任务工作台');
+        showSection('operator-workbench');
+    } else {
+        // 其他角色显示订单管理
+        console.log('👔 客服/管理员登录，显示订单管理');
+        showSection('orders');
+    }
+}
+
+// 显示指定区域 - 确保在全局作用域
+window.showSection = function showSection(sectionId) {
+    console.log('🎯 showSection被调用:', sectionId);
+    
     // 隐藏所有区域
     document.querySelectorAll('.content-section').forEach(section => {
         section.style.display = 'none';
@@ -621,6 +1309,18 @@ function showSection(sectionId) {
     if (targetSection) {
         targetSection.style.display = 'block';
         currentSection = sectionId;
+        console.log('✅ 成功显示区域:', sectionId);
+        
+        // 特殊页面处理
+        if (sectionId === 'expense-entry') {
+            initExpenseEntrySection();
+        } else if (sectionId === 'orders') {
+            // 重新加载订单数据以应用角色过滤
+            loadOrdersWithRoleFilter();
+        } else if (sectionId === 'assignment') {
+            // 重新加载派单数据以应用角色过滤
+            loadAssignmentWithRoleFilter();
+        }
     } else {
         console.warn(`页面元素 ${sectionId} 不存在`);
         return;
@@ -662,7 +1362,7 @@ function showSection(sectionId) {
             loadCustomers();
             break;
     }
-}
+};
 
 // 加载仪表盘
 function loadDashboard() {
@@ -1862,10 +2562,10 @@ async function loadOrdersData() {
         console.log('获取到的API订单数据:', apiOrders);
         
         // 转换API数据为前端需要的格式（移除旧的推断逻辑，使用getCustomerName函数）
-        orders = apiOrders.map(order => {
+        orders = apiOrders.map((order, index) => {
             return {
                 orderId: order.orderId || 'N/A',
-                orderNo: order.orderNo || 'N/A',
+                orderNo: generateBusinessOrderNumber(order.orderNo, index),
                 customerId: order.customerId || 'N/A',
                 customerName: order.customerName,  // 保持原始值，由getCustomerName函数处理
                 businessType: order.businessType || 'OCEAN',
@@ -1894,6 +2594,10 @@ async function loadOrders() {
     const tableBody = document.getElementById('ordersTable');
     
     if (!tableBody) return;
+    
+    // 在函数开头统一获取当前用户信息
+    const currentUser = UserState.getCurrentUser();
+    const userRole = currentUser?.role || currentUser?.name || '客服专员';
     
     try {
         // 显示加载状态
@@ -1934,7 +2638,7 @@ async function loadOrders() {
             
             return {
                 orderId: order.orderId || 'N/A',
-                orderNo: order.orderNo || 'N/A',
+                orderNo: generateBusinessOrderNumber(order.orderNo, index),
                 customerId: order.customerId || 'N/A',
                 customerName: order.customerName,  // 保持原始值，由getCustomerName函数处理
                 businessType: businessType,
@@ -1956,7 +2660,6 @@ async function loadOrders() {
         
         // 临时取消权限过滤，显示所有订单用于调试
         orders = allOrders; // filterOrdersByPermission(allOrders);
-        const currentUser = getCurrentUser();
         const userDetail = getOperatorInfo(currentUser.opid);
         const permissionInfo = getPermissionLevelDescription(userDetail);
         
@@ -1979,61 +2682,18 @@ async function loadOrders() {
             return;
         }
         
-        // 渲染订单列表
-        tableBody.innerHTML = orders.map(order => {
-            const creatorInfo = getOperatorInfo(order.staffId) || { name: '未知', opid: order.staffId };
-            const isDisabled = order.orderStatus !== 'COMPLETED';
-            const disabledAttr = isDisabled ? 'disabled="true"' : '';
-            
-            // 获取订单包含的服务信息
-            const serviceInfo = getOrderServicesDisplay(order);
-            
-            return `
-            <tr>
-                <td class="order-no-cell"><code>${order.orderNo}</code></td>
-                <td title="${getCustomerName(order)}">${getCustomerName(order).length > 50 ? getCustomerName(order).substring(0, 47) + '...' : getCustomerName(order)}</td>
-                <td>
-                    <div class="d-flex align-items-center">
-                        <i class="${getBusinessTypeIcon(order.businessType)} me-1"></i>
-                        <span class="badge ${getBusinessTypeBadgeClass(order.businessType)}">${getBusinessTypeName(order.businessType)}</span>
-                    </div>
-                </td>
-                <td>
-                    <div class="service-summary">
-                        <small class="text-muted d-block">共${serviceInfo.count}项服务</small>
-                        <div class="service-tags">
-                            ${serviceInfo.tags}
-                        </div>
-                    </div>
-                </td>
-                <td>${order.portOfLoading}</td>
-                <td>${order.portOfDischarge}</td>
-                <td><strong>¥${order.totalAmount.toLocaleString()}</strong></td>
-                <td><span class="order-status status-${order.orderStatus.toLowerCase()}">${getStatusName(order.orderStatus)}</span></td>
-                <td>
-                    <div class="d-flex align-items-center">
-                        <span class="badge bg-info me-1">${creatorInfo.opid}</span>
-                        <small>${creatorInfo.name}</small>
-                        <div class="text-muted" style="font-size: 0.7rem;">客服</div>
-                    </div>
-                </td>
-                <td>${formatDateTime(order.createdAt)}</td>
-                <td>
-                    <div class="btn-group btn-group-sm">
-                        <button class="btn btn-outline-primary" onclick="showOrderDetail('${order.orderId}')" title="查看详情">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        <button class="btn btn-outline-warning" onclick="editOrder('${order.orderId}')" title="编辑">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-outline-success" onclick="executeOrderClearing('${order.orderId}')" title="执行清分" ` + disabledAttr + `>
-                            <i class="fas fa-coins"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-            `;
-        }).join('');
+        // 渲染订单列表 - 使用createOrderTableRow函数支持录费按钮
+        
+        console.log('🔧 使用createOrderTableRow渲染订单列表，用户角色:', userRole);
+        
+        // 清空表格内容
+        tableBody.innerHTML = '';
+        
+        // 使用createOrderTableRow函数生成每一行
+        orders.forEach(order => {
+            const row = createOrderTableRow(order, userRole);
+            tableBody.appendChild(row);
+        });
         
         // 更新统计信息
         updateDashboardStats();
@@ -2045,37 +2705,18 @@ async function loadOrders() {
         orders = generateMockOrders();
         console.log('使用模拟订单数据:', orders.length, '条记录');
         
-        // 渲染模拟数据到表格
-        tableBody.innerHTML = orders.map(order => {
-            const isDisabled = order.orderStatus !== 'COMPLETED';
-            const disabledAttr = isDisabled ? 'disabled="true"' : '';
-            
-            return `
-            <tr>
-                <td class="order-no-cell"><code>${order.orderNo}</code></td>
-                <td title="${getCustomerName(order)}">${getCustomerName(order).length > 50 ? getCustomerName(order).substring(0, 47) + '...' : getCustomerName(order)}</td>
-                <td><span class="badge bg-primary">${getBusinessTypeName(order.businessType)}</span></td>
-                <td>${order.portOfLoading}</td>
-                <td>${order.portOfDischarge}</td>
-                <td><strong>¥${order.totalAmount.toLocaleString()}</strong></td>
-                <td><span class="order-status status-${order.orderStatus.toLowerCase()}">${getStatusName(order.orderStatus)}</span></td>
-                <td>${formatDateTime(order.createdAt)}</td>
-                <td>
-                    <div class="btn-group btn-group-sm">
-                        <button class="btn btn-outline-primary" onclick="showOrderDetail('${order.orderId}')" title="查看详情">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        <button class="btn btn-outline-warning" onclick="editOrder('${order.orderId}')" title="编辑">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-outline-success" onclick="executeOrderClearing('${order.orderId}')" title="执行清分" ${disabledAttr}>
-                            <i class="fas fa-coins"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-            `;
-        }).join('');
+        // 渲染模拟数据到表格 - 使用createOrderTableRow函数支持录费按钮
+        
+        console.log('🔧 使用createOrderTableRow渲染模拟数据，用户角色:', userRole);
+        
+        // 清空表格内容
+        tableBody.innerHTML = '';
+        
+        // 使用createOrderTableRow函数生成每一行
+        orders.forEach(order => {
+            const row = createOrderTableRow(order, userRole);
+            tableBody.appendChild(row);
+        });
         
         // 更新统计信息
         updateDashboardStats();
@@ -3990,4 +4631,505 @@ function loadStaff() {
 function formatDateTime(dateTimeStr) {
     if (!dateTimeStr) return '-';
     return new Date(dateTimeStr).toLocaleString('zh-CN');
+}
+
+// =================== 操作员工作台功能 ===================
+
+/**
+ * 初始化操作员工作台
+ */
+function initOperatorWorkbench() {
+    const currentUser = UserState.getCurrentUser();
+    if (!currentUser || currentUser.level !== 'OP') {
+        return;
+    }
+    
+    console.log('🔧 初始化操作员工作台，当前用户:', currentUser.name);
+    
+    // 更新欢迎信息
+    const welcomeNameElement = document.getElementById('operatorWelcomeName');
+    if (welcomeNameElement) {
+        welcomeNameElement.textContent = currentUser.name;
+    }
+    
+    // 加载操作员的任务
+    loadOperatorTasks(currentUser.id);
+}
+
+/**
+ * 加载操作员的任务
+ */
+async function loadOperatorTasks(operatorId) {
+    try {
+        console.log('📋 加载操作员任务:', operatorId);
+        
+        // 从 localStorage 获取派单历史
+        const assignmentHistory = JSON.parse(localStorage.getItem('oneorder_assignment_history') || '[]');
+        
+        // 筛选分配给当前操作员的任务
+        const myTasks = assignmentHistory.filter(record => {
+            return record.results && record.results.some(result => 
+                result.operatorId === operatorId || result.operatorName === UserState.getCurrentUser().name
+            );
+        }).flatMap(record => {
+            return record.results.filter(result => 
+                result.operatorId === operatorId || result.operatorName === UserState.getCurrentUser().name
+            ).map(result => ({
+                ...result,
+                orderId: record.orderId,
+                assignmentTime: record.assignmentTime,
+                assignmentType: record.assignmentType,
+                status: result.status || 'ASSIGNED' // 默认为已派单状态
+            }));
+        });
+        
+        console.log('📊 找到任务:', myTasks.length, '个');
+        
+        // 更新任务统计
+        updateTaskStatistics(myTasks);
+        
+        // 显示任务列表
+        displayMyTasks(myTasks);
+        
+    } catch (error) {
+        console.error('加载操作员任务失败:', error);
+        
+        // 显示错误状态
+        const tasksList = document.getElementById('myTasksList');
+        if (tasksList) {
+            tasksList.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                    <p class="text-muted">暂时无法加载任务列表</p>
+                    <button class="btn btn-outline-primary btn-sm" onclick="loadOperatorTasks('${operatorId}')">
+                        <i class="fas fa-sync-alt me-2"></i>重试
+                    </button>
+                </div>
+            `;
+        }
+    }
+}
+
+/**
+ * 更新任务统计
+ */
+function updateTaskStatistics(tasks) {
+    const pendingTasks = tasks.filter(task => task.status === 'ASSIGNED' || task.status === 'PENDING');
+    const completedTasks = tasks.filter(task => task.status === 'COMPLETED');
+    
+    // 更新统计数字
+    const pendingTaskCount = document.getElementById('pendingTaskCount');
+    const pendingTasksCount = document.getElementById('pendingTasksCount');
+    const completedTasksCount = document.getElementById('completedTasksCount');
+    
+    if (pendingTaskCount) pendingTaskCount.textContent = pendingTasks.length;
+    if (pendingTasksCount) pendingTasksCount.textContent = pendingTasks.length;
+    if (completedTasksCount) completedTasksCount.textContent = completedTasks.length;
+}
+
+/**
+ * 显示我的任务列表
+ */
+function displayMyTasks(tasks) {
+    const tasksList = document.getElementById('myTasksList');
+    if (!tasksList) return;
+    
+    if (tasks.length === 0) {
+        tasksList.innerHTML = `
+            <div class="text-center py-5">
+                <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                <h5 class="text-muted">太棒了！</h5>
+                <p class="text-muted">当前没有待处理的任务</p>
+                <button class="btn btn-outline-primary btn-sm" onclick="refreshMyTasks()">
+                    <i class="fas fa-sync-alt me-2"></i>刷新任务
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    // 按时间倒序排列
+    const sortedTasks = tasks.sort((a, b) => new Date(b.assignmentTime) - new Date(a.assignmentTime));
+    
+    const tasksHtml = sortedTasks.map((task, index) => {
+        const assignmentTime = new Date(task.assignmentTime).toLocaleString('zh-CN');
+        const statusClass = getTaskStatusClass(task.status);
+        const statusText = getTaskStatusText(task.status);
+        const priorityClass = getPriorityClass(task.priority || 'MEDIUM');
+        
+        return `
+            <div class="border-bottom p-3 task-item" data-task-id="${task.serviceCode}-${task.orderId}">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center mb-2">
+                            <h6 class="mb-0 me-2">${task.serviceName}</h6>
+                            <span class="badge ${statusClass} me-2">${statusText}</span>
+                            ${task.protocolName ? `<span class="badge bg-info">${task.protocolName}</span>` : ''}
+                        </div>
+                        <div class="text-muted small mb-2">
+                            <i class="fas fa-file-alt me-1"></i>订单: <strong>${task.orderId}</strong>
+                            <span class="ms-3"><i class="fas fa-clock me-1"></i>${assignmentTime}</span>
+                        </div>
+                        ${task.protocolCommission ? `
+                            <div class="text-muted small">
+                                <i class="fas fa-money-bill-wave me-1"></i>佣金: ${task.protocolCommission}%
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="ms-3">
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                操作
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item" href="#" onclick="startWorkOnTask('${task.orderId}', '${task.serviceCode}')">
+                                        <i class="fas fa-play me-2"></i>开始处理
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="#" onclick="viewTaskDetails('${task.orderId}', '${task.serviceCode}')">
+                                        <i class="fas fa-eye me-2"></i>查看详情
+                                    </a>
+                                </li>
+                                ${task.status === 'ASSIGNED' ? `
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item text-success" href="#" onclick="markTaskCompleted('${task.orderId}', '${task.serviceCode}')">
+                                            <i class="fas fa-check me-2"></i>标记完成
+                                        </a>
+                                    </li>
+                                ` : ''}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    tasksList.innerHTML = tasksHtml;
+}
+
+/**
+ * 获取任务状态样式
+ */
+function getTaskStatusClass(status) {
+    const statusClasses = {
+        'ASSIGNED': 'bg-warning text-dark',
+        'IN_PROGRESS': 'bg-primary',
+        'COMPLETED': 'bg-success',
+        'PENDING': 'bg-secondary'
+    };
+    return statusClasses[status] || 'bg-secondary';
+}
+
+/**
+ * 获取任务状态文本
+ */
+function getTaskStatusText(status) {
+    const statusTexts = {
+        'ASSIGNED': '待处理',
+        'IN_PROGRESS': '处理中',
+        'COMPLETED': '已完成',
+        'PENDING': '等待中'
+    };
+    return statusTexts[status] || '未知';
+}
+
+/**
+ * 刷新我的任务
+ */
+function refreshMyTasks() {
+    const currentUser = UserState.getCurrentUser();
+    if (currentUser && currentUser.level === 'OP') {
+        console.log('🔄 刷新操作员任务');
+        loadOperatorTasks(currentUser.id);
+        showNotification('任务列表已刷新', 'success');
+    }
+}
+
+/**
+ * 开始处理任务
+ */
+function startWorkOnTask(orderId, serviceCode) {
+    console.log('▶️ 开始处理任务:', orderId, serviceCode);
+    
+    // 显示处理选项
+    const options = [
+        { text: '录入费用明细', action: () => goToExpenseEntry(orderId) },
+        { text: '查看订单详情', action: () => showOrderDetails(orderId) },
+        { text: '更新任务状态', action: () => updateTaskStatus(orderId, serviceCode) }
+    ];
+    
+    showTaskActionModal(orderId, serviceCode, options);
+}
+
+/**
+ * 跳转到费用录入页面
+ */
+function goToExpenseEntry(orderId) {
+    console.log('💰 跳转到费用录入，订单:', orderId);
+    
+    // 切换到费用录入页面
+    showSection('expense-entry');
+    
+    // 通知费用录入页面选择特定订单
+    setTimeout(() => {
+        const expenseEntryFrame = document.getElementById('expenseEntryFrame');
+        if (expenseEntryFrame && expenseEntryFrame.contentWindow) {
+            expenseEntryFrame.contentWindow.postMessage({
+                type: 'SELECT_ORDER_FROM_OPERATOR',
+                orderId: orderId,
+                source: 'operator-workbench'
+            }, '*');
+        }
+    }, 1000);
+    
+    showNotification(`正在为订单 ${orderId} 录入费用...`, 'info');
+}
+
+/**
+ * 从订单管理页面跳转到费用录入（带订单上下文）
+ */
+function goToExpenseEntryWithOrder(orderId, orderNo, customerName, totalAmount, totalCost) {
+    console.log('💰 从订单管理跳转到费用录入');
+    console.log('订单参数:', { orderId, orderNo, customerName, totalAmount, totalCost });
+    
+    // 保存完整的订单信息到全局变量
+    window.lastSelectedOrderForExpense = orderNo; // 使用orderNo而不是orderId
+    window.lastSelectedOrderInfo = {
+        orderId: orderId,
+        orderNo: orderNo,
+        customerName: customerName,
+        totalAmount: totalAmount,
+        totalCost: totalCost,
+        source: 'orders-management',
+        timestamp: Date.now()
+    };
+    
+    // 保存到localStorage，包含完整信息
+    localStorage.setItem('oneorder_recent_selected_order', JSON.stringify({
+        orderId: orderId,
+        orderNo: orderNo,
+        customerName: customerName,
+        totalAmount: totalAmount,
+        totalCost: totalCost,
+        timestamp: Date.now(),
+        source: 'orders-management'
+    }));
+    
+    console.log('✅ 订单信息已保存到localStorage');
+    
+    // 切换到费用录入页面
+    showSection('expense-entry');
+    
+    // 通知费用录入页面自动选择指定订单
+    setTimeout(() => {
+        const expenseEntryFrame = document.getElementById('expenseEntryFrame');
+        if (expenseEntryFrame && expenseEntryFrame.contentWindow) {
+            console.log('📨 向iframe发送ORDER_CONTEXT消息...');
+            expenseEntryFrame.contentWindow.postMessage({
+                type: 'ORDER_CONTEXT',
+                orderId: orderId,
+                orderNo: orderNo,
+                customerName: customerName,
+                totalAmount: totalAmount,
+                totalCost: totalCost,
+                source: 'orders-management'
+            }, '*');
+            
+            console.log('✅ ORDER_CONTEXT消息已发送到iframe');
+        } else {
+            console.log('❌ 找不到费用录入iframe');
+        }
+    }, 2000); // 增加延时确保iframe完全加载
+    
+    showNotification(`来源：订单管理\\n系统已自动选择订单：${orderNo || orderId}，您可以直接开始录入费用明细。`, 'success');
+}
+
+/**
+ * 查看任务详情
+ */
+function viewTaskDetails(orderId, serviceCode) {
+    console.log('👁️ 查看任务详情:', orderId, serviceCode);
+    // 这里可以显示任务的详细信息模态框
+    showNotification('查看任务详情功能开发中...', 'info');
+}
+
+/**
+ * 标记任务完成
+ */
+function markTaskCompleted(orderId, serviceCode) {
+    console.log('✅ 标记任务完成:', orderId, serviceCode);
+    
+    // 更新 localStorage 中的任务状态
+    const assignmentHistory = JSON.parse(localStorage.getItem('oneorder_assignment_history') || '[]');
+    
+    assignmentHistory.forEach(record => {
+        if (record.orderId === orderId) {
+            record.results.forEach(result => {
+                if (result.serviceCode === serviceCode && 
+                    (result.operatorId === UserState.getCurrentUser().id || 
+                     result.operatorName === UserState.getCurrentUser().name)) {
+                    result.status = 'COMPLETED';
+                    result.completedTime = new Date().toISOString();
+                }
+            });
+        }
+    });
+    
+    localStorage.setItem('oneorder_assignment_history', JSON.stringify(assignmentHistory));
+    
+    // 刷新任务列表
+    refreshMyTasks();
+    
+    showNotification(`任务 ${serviceCode} 已标记为完成`, 'success');
+}
+
+/**
+ * 显示任务操作模态框
+ */
+function showTaskActionModal(orderId, serviceCode, options) {
+    // 创建简单的确认对话框
+    const optionsText = options.map((option, index) => `${index + 1}. ${option.text}`).join('\n');
+    const choice = prompt(`选择操作 (订单: ${orderId}, 服务: ${serviceCode}):\n\n${optionsText}\n\n请输入选项编号(1-${options.length}):`);
+    
+    const choiceIndex = parseInt(choice) - 1;
+    if (choiceIndex >= 0 && choiceIndex < options.length) {
+        options[choiceIndex].action();
+    }
+}
+
+/**
+ * 查看任务历史
+ */
+function viewTaskHistory() {
+    console.log('📜 查看任务历史');
+    showNotification('任务历史功能开发中...', 'info');
+}
+
+/**
+ * 标记所有任务为已读
+ */
+function markAllTasksRead() {
+    console.log('📖 标记所有任务为已读');
+    showNotification('所有任务已标记为已读', 'success');
+}
+
+// 当用户切换时重新初始化工作台
+if (window.UserState) {
+    UserState.addListener((event, oldUser, newUser) => {
+        if (event === 'userChanged' && newUser && newUser.level === 'OP') {
+            setTimeout(() => {
+                if (document.getElementById('operator-workbench').style.display !== 'none') {
+                    initOperatorWorkbench();
+                }
+            }, 500);
+        }
+    });
+}
+
+// 监听showSection调用，如果显示操作员工作台，则初始化 - 修复全局作用域
+const originalShowSection = window.showSection;
+window.showSection = function(sectionId) {
+    originalShowSection(sectionId);
+    
+    if (sectionId === 'operator-workbench') {
+        setTimeout(() => {
+            initOperatorWorkbench();
+        }, 100);
+    }
+};
+
+// =================== 表格显示辅助函数 ===================
+
+// 获取服务信息显示
+function getServicesDisplayInfo(order) {
+    // 检查是否有派单信息
+    if (order.servicesList && order.servicesList.length > 0) {
+        return order.servicesList.slice(0, 3).join(', ') + (order.servicesList.length > 3 ? '...' : '');
+    }
+    
+    // 检查派单状态
+    const assignmentStatus = getAssignmentStatus(order.orderId);
+    if (assignmentStatus && assignmentStatus !== '未派单') {
+        return assignmentStatus;
+    }
+    
+    // 默认根据业务类型显示服务
+    const businessType = order.businessType || 'OCEAN';
+    const defaultServices = {
+        'OCEAN': '订舱, 拖车, 报关',
+        'AIR': '订舱, 拖车, 报关',
+        'TRUCK': '调车, 装货, 陆运',
+        'RAIL': '装车, 铁运, 接货',
+        'MULTIMODAL': '订舱, 中转, 清关'
+    };
+    
+    return defaultServices[businessType] || '未派单';
+}
+
+// 获取销售人员名称
+function getSalesStaffName(order) {
+    // 如果有明确的销售人员ID，从operatorData中查找
+    if (order.salesStaffId || order.createdBy || order.staffId) {
+        const staffId = order.salesStaffId || order.createdBy || order.staffId;
+        const operator = operatorData.operators.find(op => op.opid === staffId);
+        if (operator) {
+            return operator.name;
+        }
+    }
+    
+    // 根据客户ID推断负责人（模拟业务逻辑）
+    const customerSalesMapping = {
+        'CUST_001': '张美华',
+        'CUST_002': '李小红', 
+        'CUST_003': '王丽娟',
+        'CUST_004': '张美华',
+        'CUST_005': '陈晓芳',
+        'CUST_006': '李小红',
+        'CUST_007': '周建华',
+        'CUST_008': '孙丽萍',
+        'CUST_009': '张美华',
+        'CUST_010': '王丽娟'
+    };
+    
+    return customerSalesMapping[order.customerId] || '待分配';
+}
+
+// 获取状态颜色
+function getStatusColor(status) {
+    const colors = {
+        'PENDING': 'warning',
+        'CONFIRMED': 'success', 
+        'IN_PROGRESS': 'info',
+        'COMPLETED': 'success',
+        'CANCELLED': 'danger'
+    };
+    return colors[status] || 'secondary';
+}
+
+// 获取状态文本
+function getStatusText(status) {
+    const texts = {
+        'PENDING': '待确认',
+        'CONFIRMED': '已确认',
+        'IN_PROGRESS': '进行中', 
+        'COMPLETED': '已完成',
+        'CANCELLED': '已取消'
+    };
+    return texts[status] || status;
+}
+
+// 获取派单状态
+function getAssignmentStatus(orderId) {
+    // 这里应该从实际的派单数据中获取，现在返回模拟状态
+    const mockAssignments = {
+        'ORD1758114785268': '已派单(3/6)',
+        'ORD1758114785327': '部分派单(2/5)', 
+        'ORD1758114785341': '未派单'
+    };
+    
+    return mockAssignments[orderId] || '未派单';
 }

@@ -105,6 +105,27 @@ public class ExpenseEntryRequest {
     private String transitReason;
     
     /**
+     * 默认法人ID
+     */
+    private String defaultEntityId;
+    
+    /**
+     * 借抬头类型
+     */
+    private ExpenseEntry.TransitType transitType;
+    
+    /**
+     * 是否需要审批
+     */
+    private Boolean approvalRequired = false;
+    
+    /**
+     * 审批意见
+     */
+    @Size(max = 1000, message = "审批意见长度不能超过1000")
+    private String approvalComment;
+    
+    /**
      * 备注信息
      */
     @Size(max = 500, message = "备注信息长度不能超过500")
@@ -135,6 +156,32 @@ public class ExpenseEntryRequest {
     public boolean isTransitReasonValidWhenTransitEntity() {
         if (Boolean.TRUE.equals(isTransitEntity)) {
             return transitReason != null && !transitReason.trim().isEmpty();
+        }
+        return true;
+    }
+    
+    /**
+     * 校验借抬头类型
+     */
+    @AssertTrue(message = "借抬头时必须选择借抬头类型")
+    public boolean isTransitTypeValidWhenTransitEntity() {
+        if (Boolean.TRUE.equals(isTransitEntity)) {
+            return transitType != null;
+        }
+        return true;
+    }
+    
+    /**
+     * 校验借抬头类型与收付类型的一致性
+     */
+    @AssertTrue(message = "借抬头类型必须与收付类型一致")
+    public boolean isTransitTypeConsistentWithEntryType() {
+        if (Boolean.TRUE.equals(isTransitEntity) && transitType != null) {
+            if (entryType == ExpenseEntry.EntryType.RECEIVABLE) {
+                return transitType == ExpenseEntry.TransitType.RECEIVABLE_TRANSIT;
+            } else if (entryType == ExpenseEntry.EntryType.PAYABLE) {
+                return transitType == ExpenseEntry.TransitType.PAYABLE_TRANSIT;
+            }
         }
         return true;
     }

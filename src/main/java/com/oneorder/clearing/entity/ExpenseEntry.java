@@ -108,6 +108,50 @@ public class ExpenseEntry extends BaseEntity {
     private String transitReason;
     
     /**
+     * 默认法人ID（用户角色对应的默认法人，用于记录差异）
+     */
+    @Column(name = "default_entity_id", length = 50)
+    private String defaultEntityId;
+    
+    /**
+     * 借抬头类型
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "transit_type", length = 20)
+    private TransitType transitType;
+    
+    /**
+     * 是否需要审批
+     */
+    @Column(name = "approval_required")
+    private Boolean approvalRequired = false;
+    
+    /**
+     * 审批状态
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "approval_status", length = 10)
+    private ApprovalStatus approvalStatus;
+    
+    /**
+     * 审批人
+     */
+    @Column(name = "approved_by", length = 50)
+    private String approvedBy;
+    
+    /**
+     * 审批时间
+     */
+    @Column(name = "approved_time")
+    private LocalDateTime approvedTime;
+    
+    /**
+     * 审批意见
+     */
+    @Column(name = "approval_comment", columnDefinition = "TEXT")
+    private String approvalComment;
+    
+    /**
      * 校验状态
      */
     @Enumerated(EnumType.STRING)
@@ -149,6 +193,43 @@ public class ExpenseEntry extends BaseEntity {
         private final String description;
         
         EntryType(String description) {
+            this.description = description;
+        }
+        
+        public String getDescription() {
+            return description;
+        }
+    }
+    
+    /**
+     * 借抬头类型枚举
+     */
+    public enum TransitType {
+        RECEIVABLE_TRANSIT("收款借抬头"),
+        PAYABLE_TRANSIT("付款借抬头");
+        
+        private final String description;
+        
+        TransitType(String description) {
+            this.description = description;
+        }
+        
+        public String getDescription() {
+            return description;
+        }
+    }
+    
+    /**
+     * 审批状态枚举
+     */
+    public enum ApprovalStatus {
+        PENDING("待审批"),
+        APPROVED("已通过"),
+        REJECTED("已拒绝");
+        
+        private final String description;
+        
+        ApprovalStatus(String description) {
             this.description = description;
         }
         
@@ -235,6 +316,72 @@ public class ExpenseEntry extends BaseEntity {
      */
     public boolean isValidationPassed() {
         return ValidationStatus.VALID.equals(validationStatus);
+    }
+    
+    /**
+     * 是否使用了借抬头（实际法人与默认法人不同）
+     */
+    public boolean hasEntityDifference() {
+        return defaultEntityId != null && ourEntityId != null && 
+               !defaultEntityId.equals(ourEntityId);
+    }
+    
+    /**
+     * 是否为收款借抬头
+     */
+    public boolean isReceivableTransit() {
+        return Boolean.TRUE.equals(isTransitEntity) && 
+               TransitType.RECEIVABLE_TRANSIT.equals(transitType);
+    }
+    
+    /**
+     * 是否为付款借抬头
+     */
+    public boolean isPayableTransit() {
+        return Boolean.TRUE.equals(isTransitEntity) && 
+               TransitType.PAYABLE_TRANSIT.equals(transitType);
+    }
+    
+    /**
+     * 是否需要审批
+     */
+    public boolean requiresApproval() {
+        return Boolean.TRUE.equals(approvalRequired);
+    }
+    
+    /**
+     * 是否已审批通过
+     */
+    public boolean isApproved() {
+        return ApprovalStatus.APPROVED.equals(approvalStatus);
+    }
+    
+    /**
+     * 是否审批被拒绝
+     */
+    public boolean isRejected() {
+        return ApprovalStatus.REJECTED.equals(approvalStatus);
+    }
+    
+    /**
+     * 是否审批中
+     */
+    public boolean isPendingApproval() {
+        return ApprovalStatus.PENDING.equals(approvalStatus);
+    }
+    
+    /**
+     * 获取借抬头类型描述
+     */
+    public String getTransitTypeDescription() {
+        return transitType != null ? transitType.getDescription() : "";
+    }
+    
+    /**
+     * 获取审批状态描述
+     */
+    public String getApprovalStatusDescription() {
+        return approvalStatus != null ? approvalStatus.getDescription() : "";
     }
     
     /**

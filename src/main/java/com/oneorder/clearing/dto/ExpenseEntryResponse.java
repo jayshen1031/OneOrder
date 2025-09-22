@@ -129,6 +129,61 @@ public class ExpenseEntryResponse {
     private String transitReason;
     
     /**
+     * 默认法人ID
+     */
+    private String defaultEntityId;
+    
+    /**
+     * 默认法人名称
+     */
+    private String defaultEntityName;
+    
+    /**
+     * 是否存在法人差异（使用了借抬头）
+     */
+    private Boolean hasEntityDifference;
+    
+    /**
+     * 借抬头类型
+     */
+    private ExpenseEntry.TransitType transitType;
+    
+    /**
+     * 借抬头类型描述
+     */
+    private String transitTypeDescription;
+    
+    /**
+     * 是否需要审批
+     */
+    private Boolean approvalRequired;
+    
+    /**
+     * 审批状态
+     */
+    private ExpenseEntry.ApprovalStatus approvalStatus;
+    
+    /**
+     * 审批状态描述
+     */
+    private String approvalStatusDescription;
+    
+    /**
+     * 审批人
+     */
+    private String approvedBy;
+    
+    /**
+     * 审批时间
+     */
+    private LocalDateTime approvedTime;
+    
+    /**
+     * 审批意见
+     */
+    private String approvalComment;
+    
+    /**
      * 校验状态
      */
     private ExpenseEntry.ValidationStatus validationStatus;

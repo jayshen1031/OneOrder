@@ -31,6 +31,7 @@ public class ExpenseEntryService {
     
     private final ExpenseEntryRepository expenseEntryRepository;
     private final FeeValidationService feeValidationService;
+    private final DefaultEntityService defaultEntityService;
     private final SmartServiceSuggestionService smartServiceSuggestionService;
     
     /**
@@ -297,7 +298,37 @@ public class ExpenseEntryService {
      */
     private ExpenseEntry buildExpenseEntry(ExpenseEntryRequest request, 
                                          FeeValidationService.ValidationResult validationResult) {
-        return ExpenseEntry.builder()
+        
+        // 1. 自动设置默认法人（如果未提供）
+        String defaultEntityId = null;
+        if (request.getDefaultEntityId() == null && request.getCreatedBy() != null) {
+            defaultEntityId = defaultEntityService.getDefaultEntityByUserId(request.getCreatedBy());
+            log.debug("自动设置用户{}的默认法人: {}", request.getCreatedBy(), defaultEntityId);
+        } else {
+            defaultEntityId = request.getDefaultEntityId();
+        }
+        
+        // 2. 自动设置借抬头类型（如果使用借抬头但未指定类型）
+        ExpenseEntry.TransitType transitType = request.getTransitType();
+        if (Boolean.TRUE.equals(request.getIsTransitEntity()) && transitType == null) {
+            transitType = request.getEntryType() == ExpenseEntry.EntryType.RECEIVABLE ? 
+                ExpenseEntry.TransitType.RECEIVABLE_TRANSIT : 
+                ExpenseEntry.TransitType.PAYABLE_TRANSIT;
+            log.debug("自动设置借抬头类型: {}", transitType);
+        }
+        
+        // 3. 自动检查是否需要审批
+        boolean approvalRequired = request.getApprovalRequired() != null ? 
+            request.getApprovalRequired() : 
+            defaultEntityService.requiresApproval(request.getCreatedBy(), request.getOurEntityId(), request.getAmount());
+        
+        // 4. 自动设置审批状态
+        ExpenseEntry.ApprovalStatus approvalStatus = null;
+        if (approvalRequired) {
+            approvalStatus = ExpenseEntry.ApprovalStatus.PENDING;
+        }
+        
+        ExpenseEntry entry = ExpenseEntry.builder()
             .orderId(request.getOrderId())
             .serviceCode(request.getServiceCode())
             .feeCode(request.getFeeCode())
@@ -311,13 +342,24 @@ public class ExpenseEntryService {
             .currency(request.getCurrency())
             .isTransitEntity(request.getIsTransitEntity())
             .transitReason(request.getTransitReason())
+            // 新增字段
+            .defaultEntityId(defaultEntityId)
+            .transitType(transitType)
+            .approvalRequired(approvalRequired)
+            .approvalStatus(approvalStatus)
+            .approvalComment(request.getApprovalComment())
+            // 原有字段
             .validationStatus(validationResult.getStatus())
             .validationMessage(validationResult.getMessage())
             .entryStatus(ExpenseEntry.EntryStatus.DRAFT)
-            .versionNumber(1)
             .remarks(request.getRemarks())
-            // createdBy和createdTime将由BaseEntity的@PrePersist处理
             .build();
+        
+        // 手动设置BaseEntity字段
+        entry.setCreatedBy(request.getCreatedBy());
+        entry.setVersion(1L);
+        
+        return entry;
     }
     
     /**
